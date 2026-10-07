@@ -57,6 +57,9 @@ final class BiliHomeBar {
     private static volatile WeakReference<Activity> sHomeActivity = new WeakReference<>(null);
     private static volatile WeakReference<View> sWindowBar = new WeakReference<>(null);
     private static volatile WeakReference<View> sRealBar = new WeakReference<>(null);
+    private static volatile WeakReference<ViewGroup> sRealParent = new WeakReference<>(null);
+    private static volatile int sRealIdx = -1;
+    private static volatile ViewGroup.LayoutParams sRealLp = null;
     private static volatile Method mSetItem;
     private static volatile Method mGetItem;
     /** Pill slot -> real-bar page index; the centre publish (2) is not a page. */
@@ -496,7 +499,10 @@ final class BiliHomeBar {
             sInstalled = true;
             sLeftHost = new WeakReference<>(leftHost);
             sRealBar = new WeakReference<>(real);
-            real.setVisibility(View.GONE);
+            sRealParent = new WeakReference<>(parent);
+            sRealIdx = idx;
+            sRealLp = originalLp;
+            applyNativeBarVisibility();
 
             // Width is owned by the installer's hug (hugContentWidth → per-tab
             // column rewrite). Pinning it again here from row.getMeasuredWidth()
@@ -588,6 +594,10 @@ final class BiliHomeBar {
             Context ctx = act;
             float d = ctx.getResources().getDisplayMetrics().density;
             boolean night = isNight(ctx);
+            // Manager-side pill tuning: overall scale + bottom/right offsets.
+            float ps = GlassConfig.biliPubScale;
+            if (ps < 0.5f) ps = 0.5f;
+            if (ps > 2f) ps = 2f;
 
             LiquidGlassHostLayout host = new LiquidGlassHostLayout(ctx, backdrop, null);
             host.setupShadow(d, night);
@@ -608,7 +618,7 @@ final class BiliHomeBar {
             ImageView icon = new ImageView(ctx);
             icon.setImageDrawable(glyph);
             icon.setColorFilter(PINK, PorterDuff.Mode.SRC_ATOP);
-            int side = Math.round(26 * d);
+            int side = Math.round(26 * d * ps);
             row.addView(icon, new LinearLayout.LayoutParams(side, side));
             row.setOnClickListener(v -> openPublish(v));
 
@@ -638,11 +648,11 @@ final class BiliHomeBar {
             host.setClipToPadding(false);
 
             FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                    Math.round(56 * d) + shadowPad * 2,
-                    Math.round(52 * d) + shadowPad * 2,
+                    Math.round(56 * d * ps) + shadowPad * 2,
+                    Math.round(52 * d * ps) + shadowPad * 2,
                     Gravity.BOTTOM | Gravity.END);
-            lp.bottomMargin = Math.round(12 * d) - shadowPad + navInset(act);
-            lp.rightMargin = Math.round(16 * d);
+            lp.bottomMargin = Math.round(GlassConfig.biliPubBottomDp * d) - shadowPad + navInset(act);
+            lp.rightMargin = Math.round(GlassConfig.biliPubSideDp * d);
 
             // Park beside the left pill in the app's own root, not in the
             // content root: the glass samples the page container, and a host
@@ -693,7 +703,7 @@ final class BiliHomeBar {
     // ---------------------------------------------------------------- publish
 
     private static void openPublish(View v) {
-        String target = sPublishRoute != null ? sPublishRoute : PUBLISH_FALLBACK;
+        String target = sPublishRoute != null ? sPublishRoute : GlassConfig.biliPublishFallback;
         try {
             if (mRouteTo != null) {
                 Object arg = buildRouteArg(target);
@@ -778,11 +788,9 @@ final class BiliHomeBar {
                 scheduleProbe();
                 return;
             }
-            // Keep the real bar hidden — a skin/theme pass may re-show it.
-            View real = sRealBar.get();
-            if (real != null && real.getVisibility() != View.GONE) {
-                real.setVisibility(View.GONE);
-            }
+            // Keep the native bar out of the way unless the manager asks to
+            // keep it (a skin/theme pass may re-show it).
+            applyNativeBarVisibility();
             // The publish pill follows the left pill's live theme — its own
             // one-shot isNight() read at build time goes stale when the app
             // flips its skin later, and an inverted glass reads way off.
@@ -793,6 +801,7 @@ final class BiliHomeBar {
                 panel.setTheme(leftHost.isDark());
             }
             // Follow the app's own page state (back navigation, deep links).
+            View real = sRealBar.get();
             if (real != null && mGetItem != null) {
                 int slot = appToSlot(readIndex(real));
                 if (slot >= 0 && slot != sLastIndex) {
@@ -892,7 +901,17 @@ final class BiliHomeBar {
 
             final int index = i;
             tab.setOnClickListener(v -> {
-                switchTo(SLOT_TO_APP[index]);
+                int appIndex = SLOT_TO_APP[index];
+                View real = sRealBar.get();
+                Integer cur = real == null ? null : Integer.valueOf(readIndex(real));
+                if (appIndex == 0 && cur != null && cur == 0) {
+                    // Already on home: re-tap means "refresh", not "switch".
+                    // Hand the click to the native bar's own home tab so the
+                    // app runs its stock refresh path (scroll top + reload).
+                    refreshHomeFeed(real);
+                } else {
+                    switchTo(appIndex);
+                }
                 sLastIndex = index;
                 applySelection(row, index);
             });
@@ -946,6 +965,56 @@ final class BiliHomeBar {
         // Obfuscated members on the impl class may be package-private.
         m.setAccessible(true);
         return m;
+    }
+
+    /**
+     * Hide or restore the native bar per the manager's "hide native bar"
+     * switch. The real bar is detached on install, so restoring means adding
+     * it back at its original index with its original layout params.
+     */
+    private static void applyNativeBarVisibility() {
+        View real = sRealBar.get();
+        if (real == null) {
+            return;
+        }
+        if (GlassConfig.biliHideNative) {
+            if (real.getParent() instanceof ViewGroup) {
+                ((ViewGroup) real.getParent()).removeView(real);
+            }
+            real.setVisibility(View.GONE);
+        } else {
+            real.setVisibility(View.VISIBLE);
+            ViewGroup p = sRealParent.get();
+            if (real.getParent() == null && p != null && sRealLp != null && sRealIdx >= 0) {
+                try {
+                    p.addView(real, sRealIdx, sRealLp);
+                    LiquidGlassModule.log(android.util.Log.INFO,
+                            "bili: native bar restored (manager switch)");
+                } catch (Throwable t) {
+                    LiquidGlassModule.logErr("bili: native bar restore failed", t);
+                }
+            }
+        }
+    }
+
+    /**
+     * Home re-tap: forward the click to the native bar's own home tab view so
+     * Bilibili runs its stock re-select refresh (scroll to top + feed reload).
+     * Falls back to a plain page switch when the native path is unavailable.
+     */
+    private static void refreshHomeFeed(View real) {
+        try {
+            if (real instanceof ViewGroup && ((ViewGroup) real).getChildCount() > 0) {
+                View home = ((ViewGroup) real).getChildAt(0);
+                home.performClick();
+                LiquidGlassModule.log(android.util.Log.INFO,
+                        "bili: home re-tap -> native refresh dispatched");
+                return;
+            }
+        } catch (Throwable t) {
+            LiquidGlassModule.logErr("bili: native refresh failed", t);
+        }
+        switchTo(0);
     }
 
     private static void switchTo(int appIndex) {

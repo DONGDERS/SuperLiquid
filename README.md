@@ -31,3 +31,16 @@ LSPosed 模块（libxposed API 102）：iOS 26 风格液态玻璃底部导航栏
 ## License
 
 MIT（原项目）— 致谢 [sjtt2/HeyBox-LiquidGlass](https://github.com/sjtt2/HeyBox-LiquidGlass)、[tiann/KernelSU](https://github.com/tiann/KernelSU)
+
+## v0.4.0 — 管理器 GUI
+
+- 内置设置面板（KernelSU 管理器风格，**Mat / Miuix 双主题**可切换）
+- 三页：主页 / App 配置器 / 设置
+- per-app 参数：启用、宽度、底部偏移、模糊强度、反射色调强度
+- Bilibili 专属：隐藏原生底栏、＋号玻璃大小 / 离底 / 离右
+- 修复：已在主页时再点主页按钮 → 触发原生刷新
+- 配置通道：LSPosed RemotePreferences + XSharedPreferences 双写
+- **包名变更**：`io.github.liuran001.mmliquidglass` → `dongder.super.liquid`，
+  旧版需在 LSPosed 停用后卸载，再安装本版并重新勾选作用域
+
+UI 骨架参考 LSPosed / KernelSU 管理器（GPL-3.0），致谢原项目。

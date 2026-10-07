@@ -145,6 +145,14 @@ public class LiquidGlassModule extends XposedModule {
         sApp = app;
         log(android.util.Log.INFO, "target package loaded: " + app
                 + " classLoader=" + param.getDefaultClassLoader());
+        // Manager-side config (remote prefs → XSharedPreferences), keyed to
+        // this app. Must run before any install path consumes the values.
+        GlassConfig.setModule(this, param.getPackageName());
+        if (!GlassConfig.enabled) {
+            log(android.util.Log.INFO,
+                    "manager config: disabled for " + app + ", skipping install");
+            return;
+        }
         // The tab bar bridge needs the app's own classes, so it can only be
         // wired once the app class loader exists.
         if (app == HostApp.BILIBILI) {

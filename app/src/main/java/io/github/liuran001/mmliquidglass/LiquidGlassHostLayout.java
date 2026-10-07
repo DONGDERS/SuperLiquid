@@ -374,13 +374,22 @@ final class LiquidGlassHostLayout extends FrameLayout {
         }
     }
 
+    /** Manager tint-strength knob: scale the tint paint's alpha channel. */
+    private static int scaleTintAlpha(int color) {
+        float s = GlassConfig.tintStrength;
+        int a = Math.round(((color >>> 24) / 255f) * s * 255f);
+        if (a < 0) a = 0;
+        if (a > 255) a = 255;
+        return (a << 24) | (color & 0x00FFFFFF);
+    }
+
     private void setupPaints() {
         if (mDarkMode) {
-            mTintPaint.setColor(0x33000000);
+            mTintPaint.setColor(scaleTintAlpha(0x33000000));
             mBorderPaint.setColor(0x1FFFFFFF);
             mBackdropPaint.setColor(0x40000000);
         } else {
-            mTintPaint.setColor(0x4DFFFFFF);
+            mTintPaint.setColor(scaleTintAlpha(0x4DFFFFFF));
             mBorderPaint.setColor(0x2EFFFFFF);
             mBackdropPaint.setColor(0x8CFFFFFF);
         }
@@ -495,7 +504,7 @@ final class LiquidGlassHostLayout extends FrameLayout {
             }
 
             applySaturationBoost(mRegionBuf);
-            StackBlur.blur(mRegionBuf, BLUR_RADIUS_LEGACY);
+            StackBlur.blur(mRegionBuf, GlassConfig.blurRadius);
             invalidate();
         } catch (Throwable t) {
             LiquidGlassModule.logErr("capture failed", t);

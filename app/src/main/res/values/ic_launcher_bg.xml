@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">底栏液态玻璃</string>
+    <color name="ic_launcher_bg">#3482FF</color>
 </resources>

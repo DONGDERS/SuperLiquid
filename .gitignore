@@ -5,3 +5,5 @@ tools
 *.idsig
 *.keystore
 *.jks
+local.properties
+build/

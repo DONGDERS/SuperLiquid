@@ -1,0 +1,142 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders
+> Task :app:mergeReleaseNativeLibs
+
+> Task :app:stripReleaseDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so. Run with --info option to learn more.
+
+> Task :app:extractReleaseNativeSymbolTables
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:generateReleaseBuildConfig
+> Task :app:generateReleaseResources
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:packageReleaseResources
+> Task :app:processReleaseNavigationResources
+> Task :app:javaPreCompileRelease FROM-CACHE
+> Task :app:parseReleaseLocalResources
+> Task :app:checkReleaseAarMetadata
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:compileReleaseNavigationResources FROM-CACHE
+> Task :app:generateReleaseRFile
+> Task :app:mergeReleaseResources
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:processReleaseManifestForPackage
+> Task :app:processReleaseResources
+> Task :app:desugarReleaseFileDependencies
+> Task :app:mergeReleaseStartupProfile
+> Task :app:compileReleaseKotlin
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:28:42 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:47:78 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:49:34 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:52:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:53:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:55:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:56:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:58:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:59:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:61:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:62:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:77:78 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:79:34 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:82:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:83:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:85:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:86:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:88:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:89:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:91:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:92:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:95:40 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:97:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:100:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:102:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:103:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:105:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:106:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:108:13 No value passed for parameter 'format'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:109:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/Components.kt:10:43 Cannot access 'val RowColumnParentData?.weight: Float': it is internal in file.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/Config.kt:76:50 Argument type mismatch: actual type is '<anonymous>', but 'XposedServiceHelper.OnServiceListener!' was expected.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/Config.kt:77:37 Unresolved reference 'XposedServiceListener'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:21:42 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:23:40 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:25:44 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:27:29 Unresolved reference 'BuildConfig'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:30:44 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:32:44 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:38:71 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:39:47 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:44:40 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:45:40 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:48:72 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:48:93 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:51:42 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:33:35 Unresolved reference 'extended'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:34:35 Unresolved reference 'extended'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:35:35 Unresolved reference 'extended'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:54:14 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:54:84 None of the following candidates is applicable:
+
+val Icons.Filled.Home: ImageVector:
+  Candidate 'val Icons.Filled.Home: ImageVector' is inapplicable because of a receiver type mismatch.
+
+val Icons.Outlined.Home: ImageVector:
+  Candidate 'val Icons.Outlined.Home: ImageVector' is inapplicable because of a receiver type mismatch.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:55:14 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:55:84 None of the following candidates is applicable:
+
+val Icons.Filled.Apps: ImageVector:
+  Candidate 'val Icons.Filled.Apps: ImageVector' is inapplicable because of a receiver type mismatch.
+
+val Icons.Outlined.Apps: ImageVector:
+  Candidate 'val Icons.Outlined.Apps: ImageVector' is inapplicable because of a receiver type mismatch.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:56:14 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:56:96 None of the following candidates is applicable:
+
+val Icons.Filled.Settings: ImageVector:
+  Candidate 'val Icons.Filled.Settings: ImageVector' is inapplicable because of a receiver type mismatch.
+
+val Icons.Outlined.Settings: ImageVector:
+  Candidate 'val Icons.Outlined.Settings: ImageVector' is inapplicable because of a receiver type mismatch.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:11:42 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:13:40 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:15:40 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:16:17 Unresolved reference 'Modifier'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:20:57 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:25:57 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:29:40 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:30:17 Unresolved reference 'Modifier'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:34:57 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:39:57 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:44:57 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/SettingsScreen.kt:50:38 Unresolved reference 'R'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/Theme.kt:15:26 Unresolved reference 'LocalActivity'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/Theme.kt:57:20 Unresolved reference 'LocalActivity'.
+
+> Task :app:compileReleaseKotlin FAILED
+> Task :app:mergeExtDexRelease
+
+[Incubating] Problems report is available at: file:///home/z/work/superliquid/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin' (registered by plugin 'com.android.internal.application').
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Kotlin compiler: UNRESOLVED_REFERENCE
+       Kotlin compiler error
+         Unresolved reference 'R'.
+         Location: /home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt line 28
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 5m 4s
+26 actionable tasks: 24 executed, 2 from cache
