@@ -900,6 +900,10 @@ final class BiliHomeBar {
             tab.addView(label, labelLp);
 
             final int index = i;
+            // Long-press is an unused gesture on the pill: consume it so a
+            // held press can't fire the tab click on release (the refresh
+            // re-tap path must trigger on a clean tap only).
+            tab.setOnLongClickListener(v -> true);
             tab.setOnClickListener(v -> {
                 int appIndex = SLOT_TO_APP[index];
                 View real = sRealBar.get();

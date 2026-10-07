@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +44,22 @@ fun HomeScreen() {
             }
         }
         LCard {
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_logo),
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 12.dp).then(
+                        Modifier
+                    ).size(40.dp)
+                )
+                androidx.compose.material3.Text(
+                    "SuperLiquid",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (LocalUiMode.current == UiMode.MAT) MaterialTheme.colorScheme.onSurface
+                    else top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onBackground
+                )
+            }
             LText(stringResourceCompat(R.string.home_about_title), subtitle = true)
             LText(stringResourceCompat(R.string.home_about_body), subtitle = true)
             val ctx = LocalContext.current

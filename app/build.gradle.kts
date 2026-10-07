@@ -13,8 +13,8 @@ android {
         applicationId = "dongder.super.liquid"
         minSdk = 26
         targetSdk = 37
-        versionCode = 17
-        versionName = "0.4.0"
+        versionCode = 18
+        versionName = "0.4.1"
     }
 
     // Release stays unsigned here: scripts/package.sh injects META-INF/xposed
