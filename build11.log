@@ -1,0 +1,81 @@
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs UP-TO-DATE
+> Task :app:stripReleaseDebugSymbols UP-TO-DATE
+> Task :app:extractReleaseNativeSymbolTables UP-TO-DATE
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:generateReleaseBuildConfig UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:processReleaseNavigationResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:generateReleaseRFile
+> Task :app:checkReleaseAarMetadata
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:compileReleaseNavigationResources UP-TO-DATE
+> Task :app:mergeReleaseResources
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+
+> Task :app:processReleaseMainManifest FAILED
+/home/z/work/superliquid/app/src/main/AndroidManifest.xml Error:
+	uses-sdk:minSdkVersion 26 cannot be smaller than version 33 declared in library [top.yukonga.miuix.kmp:miuix-blur-android:0.9.4] /home/z/.gradle/caches/9.7.1/transforms/fca05264f4a16613dc9607d79ba2a539/transformed/miuix-blur/AndroidManifest.xml as the library might be using APIs not available in 26
+	Suggestion: use a compatible library with a minSdk of at most 26,
+		or increase this project's minSdk version to at least 33,
+		or use tools:overrideLibrary="top.yukonga.miuix.kmp.blur" to force usage (may lead to runtime failures)
+
+See https://developer.android.com/r/studio-ui/build/manifest-merger for more information about the manifest merger.
+
+
+> Task :app:compileReleaseKotlin FAILED
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/Components.kt:100:49 Unresolved reference 'onSurfaceVariant' on receiver of type 'Colors'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/about/AboutMaterial.kt:36:64 Unresolved reference 'SegmentedColumn'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/about/AboutMaterial.kt:37:64 Unresolved reference 'SegmentedListItem'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/about/AboutMaterial.kt:100:17 Unresolved reference 'SegmentedColumn'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/about/AboutMaterial.kt:102:43 Cannot infer type for type parameter 'R'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/about/AboutMaterial.kt:102:47 Cannot infer type for type parameter 'R'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/about/AboutMaterial.kt:104:29 Unresolved reference 'SegmentedListItem'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/about/AboutMaterial.kt:106:53 @Composable invocations can only happen from the context of a @Composable function
+
+[Incubating] Problems report is available at: file:///home/z/work/superliquid/build/reports/problems/problems-report.html
+
+FAILURE: Build completed with 2 failures.
+
+1: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:processReleaseMainManifest' (registered by plugin 'com.android.internal.application').
+> Manifest merger failed : uses-sdk:minSdkVersion 26 cannot be smaller than version 33 declared in library [top.yukonga.miuix.kmp:miuix-blur-android:0.9.4] /home/z/.gradle/caches/9.7.1/transforms/fca05264f4a16613dc9607d79ba2a539/transformed/miuix-blur/AndroidManifest.xml as the library might be using APIs not available in 26
+  	Suggestion: use a compatible library with a minSdk of at most 26,
+  		or increase this project's minSdk version to at least 33,
+  		or use tools:overrideLibrary="top.yukonga.miuix.kmp.blur" to force usage (may lead to runtime failures)
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+2: Task failed with an exception.
+-----------
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin' (registered by plugin 'com.android.internal.application').
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Kotlin compiler: UNRESOLVED_REFERENCE
+       Kotlin compiler error
+         Unresolved reference 'onSurfaceVariant' on receiver of type 'Colors'.
+         Location: /home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/Components.kt line 100
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+==============================================================================
+
+BUILD FAILED in 40s
+20 actionable tasks: 6 executed, 14 up-to-date

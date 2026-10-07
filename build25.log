@@ -1,0 +1,82 @@
+Starting a Gradle Daemon, 2 stopped Daemons could not be reused, use --status for details
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs UP-TO-DATE
+> Task :app:stripReleaseDebugSymbols UP-TO-DATE
+> Task :app:extractReleaseNativeSymbolTables UP-TO-DATE
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :app:generateReleaseBuildConfig UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:processReleaseNavigationResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:generateReleaseRFile UP-TO-DATE
+> Task :app:compileReleaseKotlin UP-TO-DATE
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:compileReleaseJavaWithJavac UP-TO-DATE
+> Task :app:mergeReleaseArtProfile UP-TO-DATE
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:compileReleaseNavigationResources UP-TO-DATE
+> Task :app:mergeReleaseResources UP-TO-DATE
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest UP-TO-DATE
+> Task :app:processReleaseManifest UP-TO-DATE
+> Task :app:processReleaseManifestForPackage UP-TO-DATE
+> Task :app:processReleaseResources UP-TO-DATE
+> Task :app:expandReleaseArtProfileWildcards UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:mergeReleaseGeneratedProguardFiles UP-TO-DATE
+> Task :app:processReleaseJavaRes UP-TO-DATE
+> Task :app:mergeReleaseJavaResource UP-TO-DATE
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:produceReleaseComposeMapping UP-TO-DATE
+> Task :app:reportReleaseComposeMappingErrors
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets UP-TO-DATE
+> Task :app:compressReleaseAssets UP-TO-DATE
+> Task :app:generateReleaseLintVitalReportModel UP-TO-DATE
+> Task :app:minifyReleaseWithR8
+> Task :app:lintVitalAnalyzeRelease
+
+The message received from the daemon indicates that the daemon has disappeared.
+Build request sent: Build{id=ee64a68d-292f-4be5-aa73-80e6a33ad462, currentDir=/home/z/work/superliquid}
+Attempting to read last messages from the daemon log...
+Daemon pid: 1381
+  log file: /home/z/.gradle/daemon/9.7.1/daemon-1381.out.log
+----- Last 20 lines from daemon log file - daemon-1381.out.log -----
+2026-10-07T17:56:53.389+0800 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 26: received class org.gradle.launcher.daemon.protocol.Build
+2026-10-07T17:56:53.390+0800 [DEBUG] [org.gradle.launcher.daemon.server.DefaultDaemonConnection] thread 26: Received non-IO message from client: Build{id=ee64a68d-292f-4be5-aa73-80e6a33ad462, currentDir=/home/z/work/superliquid}
+2026-10-07T17:56:53.391+0800 [INFO] [org.gradle.launcher.daemon.server.DefaultIncomingConnectionHandler] Received command: Build{id=ee64a68d-292f-4be5-aa73-80e6a33ad462, currentDir=/home/z/work/superliquid}.
+2026-10-07T17:56:53.391+0800 [DEBUG] [org.gradle.launcher.daemon.server.DefaultIncomingConnectionHandler] Starting executing command: Build{id=ee64a68d-292f-4be5-aa73-80e6a33ad462, currentDir=/home/z/work/superliquid} with connection: socket connection from /127.0.0.1:35299 to /127.0.0.1:54752.
+2026-10-07T17:56:53.395+0800 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] Command execution: started DaemonCommandExecution[command = Build{id=ee64a68d-292f-4be5-aa73-80e6a33ad462, currentDir=/home/z/work/superliquid}, connection = DefaultDaemonConnection: socket connection from /127.0.0.1:35299 to /127.0.0.1:54752] after 0.0021333333333333334 minutes of idle
+2026-10-07T17:56:53.396+0800 [INFO] [org.gradle.launcher.daemon.server.DaemonRegistryUpdater] Marking the daemon as busy, address: [008e9adc-3ae4-4feb-9396-f4bc9c996d45 port:35299, addresses:[localhost/127.0.0.1]]
+2026-10-07T17:56:53.396+0800 [DEBUG] [org.gradle.launcher.daemon.registry.PersistentDaemonRegistry] Marking busy by address: [008e9adc-3ae4-4feb-9396-f4bc9c996d45 port:35299, addresses:[localhost/127.0.0.1]]
+2026-10-07T17:56:53.397+0800 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on daemon addresses registry.
+2026-10-07T17:56:53.398+0800 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on daemon addresses registry.
+2026-10-07T17:56:53.399+0800 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on daemon addresses registry.
+2026-10-07T17:56:53.399+0800 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] resetting idle timer
+2026-10-07T17:56:53.403+0800 [DEBUG] [org.gradle.launcher.daemon.server.DaemonStateCoordinator] daemon is running. Sleeping until state changes.
+2026-10-07T17:56:53.404+0800 [INFO] [org.gradle.launcher.daemon.server.exec.StartBuildOrRespondWithBusy] Daemon is about to start building Build{id=ee64a68d-292f-4be5-aa73-80e6a33ad462, currentDir=/home/z/work/superliquid}. Dispatching build started information...
+2026-10-07T17:56:53.404+0800 [DEBUG] [org.gradle.launcher.daemon.server.SynchronizedDispatchConnection] thread 28: dispatching org.gradle.launcher.daemon.protocol.BuildStarted@5b4dfd1a
+2026-10-07T17:56:53.406+0800 [DEBUG] [org.gradle.launcher.daemon.server.exec.LogToClient] About to start relaying all logs to the client via the connection.
+2026-10-07T17:56:53.407+0800 [INFO] [org.gradle.launcher.daemon.server.exec.LogToClient] The client will now receive all logging from the daemon (pid: 1381). The daemon log file: /home/z/.gradle/daemon/9.7.1/daemon-1381.out.log
+2026-10-07T17:56:53.410+0800 [DEBUG] [org.gradle.launcher.daemon.server.exec.ApplyClientEnvironmentVariables] Configuring env variables: [PATH, TZ, KUBERNETES_PORT, ENVD_DIR, BUN_INSTALL_BIN, JAVA_HOME, CLICOLOR_FORCE, TERM, GODEBUG, KUBERNETES_SERVICE_HOST, UV_CACHE_DIR, BUN_RUNTIME_TRANSPILER_CACHE_PATH, DATABASE_URL, MAIL, CLAWHUB_WORKDIR, aliyun_log_crd_user_defined_id, LOGNAME, NO_COLOR, PWD, GATEWAY_TOKEN, CLAWHUB_DISABLE_TELEMETRY, _, KUBERNETES_PORT_443_TCP, SHELL, KUBERNETES_PORT_443_TCP_ADDR, UV_PYTHON, KUBERNETES_PORT_443_TCP_PROTO, OLDPWD, BUN_INSTALL, CLICOLOR, USER, KUBERNETES_SERVICE_PORT, PYTHONDONTWRITEBYTECODE, PYTHONUNBUFFERED, DEBIAN_FRONTEND, HOSTNAME, POD_NAME, ECI_CONTAINER_TYPE, KUBERNETES_PORT_443_TCP_PORT, POD_UID, LC_CTYPE, KUBERNETES_SERVICE_PORT_HTTPS, SHLVL, HOME]
+2026-10-07T17:56:53.416+0800 [INFO] [org.gradle.launcher.daemon.server.exec.LogAndCheckHealth] Starting build in new daemon [memory: 1.5 GiB]
+2026-10-07T17:56:53.423+0800 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] The daemon has started executing the build.
+2026-10-07T17:56:53.423+0800 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] Executing build with daemon context: DefaultDaemonContext[uid=30af99a9-7214-44d9-bd42-368a3c6fc780,javaHome=/home/z/work/env/jdk-21.0.12.1+1,javaVersion=21,javaVendor=Eclipse Adoptium,daemonRegistryDir=/home/z/.gradle/daemon,pid=1381,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=512m,-Xmx1536m,-Dfile.encoding=UTF-8,-Duser.country=US,-Duser.language=en,-Duser.variant]----- End of the daemon log -----
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Gradle build daemon disappeared unexpectedly (it may have been killed or may have crashed)
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.

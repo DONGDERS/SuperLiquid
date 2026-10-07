@@ -1,77 +1,86 @@
 package io.github.liuran001.mmliquidglass.ui
 
-import android.content.Intent
-import android.net.Uri
-import io.github.liuran001.mmliquidglass.BuildConfig
-import io.github.liuran001.mmliquidglass.R
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.liuran001.mmliquidglass.R
+import io.github.liuran001.mmliquidglass.ui.component.material.SegmentedColumn
+import io.github.liuran001.mmliquidglass.ui.component.material.SegmentedListItem
+import top.yukonga.miuix.kmp.basic.Card as MiuixCard
+import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 
+/**
+ * Home: one big "running" status card (KSU's home hero card) + an About entry
+ * (button, per request — the old about text card is gone).
+ */
 @Composable
-fun HomeScreen() {
-    LScreen(title = stringResourceCompat(R.string.nav_home)) {
+fun HomeScreen(onOpenAbout: () -> Unit) {
+    LScreen(title = stringResource(R.string.nav_home)) {
+        // hero status card
         LCard {
-            LText(stringResourceCompat(R.string.home_status_title), subtitle = true)
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                LText(stringResourceCompat(R.string.home_version))
-                Spacer(Modifier.weight(1f))
-                LText("v" + BuildConfig.VERSION_NAME)
-            }
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                LText(stringResourceCompat(R.string.home_scope))
-                Spacer(Modifier.weight(1f))
-                LText(stringResourceCompat(R.string.home_scope_value))
-            }
-            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                LText("LSPosed")
-                Spacer(Modifier.weight(1f))
-                LText(
-                    if (Config.serviceConnected) stringResourceCompat(R.string.home_service_ok)
-                    else stringResourceCompat(R.string.home_service_no)
-                )
-            }
-        }
-        LCard {
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(R.drawable.ic_logo),
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = painterResource(R.drawable.ic_logo),
                     contentDescription = null,
-                    modifier = Modifier.padding(end = 12.dp).then(
-                        Modifier
-                    ).size(40.dp)
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .padding(end = 14.dp)
+                        .size(52.dp)
                 )
-                androidx.compose.material3.Text(
-                    "SuperLiquid",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (LocalUiMode.current == UiMode.MAT) MaterialTheme.colorScheme.onSurface
-                    else top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onBackground
-                )
+                Column {
+                    LText(stringResource(R.string.home_status_title))
+                    LText(
+                        if (Config.serviceConnected)
+                            stringResource(R.string.home_service_ok)
+                        else
+                            stringResource(R.string.home_service_no),
+                        subtitle = true
+                    )
+                }
             }
-            LText(stringResourceCompat(R.string.home_about_title), subtitle = true)
-            LText(stringResourceCompat(R.string.home_about_body), subtitle = true)
-            val ctx = LocalContext.current
-            val repoUrl = stringResourceCompat(R.string.settings_repo_url)
-            TextButton(onClick = {
-                ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(repoUrl)))
-            }) {
-                Text(
-                    stringResourceCompat(R.string.home_repo),
-                    color = if (LocalUiMode.current == UiMode.MAT) MaterialTheme.colorScheme.primary
-                    else top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.primary,
-                    fontSize = 14.sp, fontWeight = FontWeight.Medium
+            Spacer12()
+            LText(stringResource(R.string.home_scope), subtitle = true)
+            LText(stringResource(R.string.home_scope_value), subtitle = true)
+        }
+
+        // About entry — a button, both skins
+        when (LocalUiMode.current) {
+            UiMode.Material -> SegmentedColumn(
+                content = listOf {
+                    SegmentedListItem(
+                        onClick = onOpenAbout,
+                        headlineContent = { Text(stringResource(R.string.about_title)) },
+                        supportingContent = {
+                            Text(
+                                stringResource(R.string.settings_repo_url),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        },
+                    )
+                }
+            )
+
+            UiMode.Miuix -> MiuixCard(modifier = Modifier.fillMaxWidth()) {
+                ArrowPreference(
+                    title = stringResource(R.string.about_title),
+                    summary = stringResource(R.string.settings_repo_url),
+                    onClick = onOpenAbout,
                 )
             }
         }
@@ -79,4 +88,6 @@ fun HomeScreen() {
 }
 
 @Composable
-fun stringResourceCompat(res: Int): String = androidx.compose.ui.res.stringResource(res)
+private fun Spacer12() {
+    androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(12.dp))
+}

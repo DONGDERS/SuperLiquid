@@ -1,0 +1,217 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs UP-TO-DATE
+> Task :app:stripReleaseDebugSymbols UP-TO-DATE
+> Task :app:extractReleaseNativeSymbolTables UP-TO-DATE
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:generateReleaseBuildConfig UP-TO-DATE
+> Task :app:generateReleaseResources UP-TO-DATE
+> Task :app:packageReleaseResources UP-TO-DATE
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:processReleaseNavigationResources UP-TO-DATE
+> Task :app:parseReleaseLocalResources UP-TO-DATE
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:mergeReleaseArtProfile UP-TO-DATE
+> Task :app:generateReleaseRFile
+> Task :app:checkReleaseAarMetadata
+> Task :app:mapReleaseSourceSetPaths UP-TO-DATE
+> Task :app:compileReleaseNavigationResources UP-TO-DATE
+> Task :app:mergeReleaseResources
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest UP-TO-DATE
+> Task :app:processReleaseManifestForPackage UP-TO-DATE
+
+> Task :app:compileReleaseKotlin
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:12:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:13:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:14:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:15:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:16:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:20:44 Conflicting import: imported name 'ImageVector' is ambiguous.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:41:44 Conflicting import: imported name 'ImageVector' is ambiguous.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:5 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:13 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:14 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:15 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:16 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:22 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:23 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:31 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:33 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:41 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:43 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:51 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:83:52 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:84:5 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:84:16 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:84:17 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:84:24 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:85:9 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:85:14 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:85:16 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:85:17 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:85:21 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:85:22 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:9 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:22 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:24 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:26 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:27 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:29 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:31 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:45 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:47 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:49 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:50 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:86:52 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:87:9 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:87:23 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:87:25 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:87:28 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:87:30 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:87:45 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:87:47 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:87:50 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:88:5 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:88:6 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:88:7 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:88:13 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:88:13 Function declaration must have a name.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:89:9 Unresolved reference 'path'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:93:13 Unresolved reference 'moveTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:93:29 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:93:46 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:93:64 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:93:81 Unresolved reference 'close'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:94:13 Unresolved reference 'moveTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:94:30 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:94:47 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:94:65 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:94:83 Unresolved reference 'close'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:95:13 Unresolved reference 'moveTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:95:30 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:95:48 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:95:66 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:95:83 Unresolved reference 'close'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:96:13 Unresolved reference 'moveTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:96:31 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:96:49 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:96:67 Unresolved reference 'lineTo'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:96:85 Unresolved reference 'close'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:98:6 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:98:7 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:98:12 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:98:13 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:99:1 Syntax error: Expecting a top level declaration.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:102:33 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:102:52 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:103:33 Unresolved reference 'AppsIcon'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:103:43 Unresolved reference 'AppsIcon'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:104:37 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:104:60 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/ExpressiveSwitch.kt:5:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/ExpressiveSwitch.kt:6:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/ExpressiveSwitch.kt:7:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/ExpressiveSwitch.kt:36:48 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/ExpressiveSwitch.kt:36:72 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/SegmentedList.kt:19:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/SegmentedList.kt:20:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/SegmentedList.kt:484:29 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/TopBarBackButton.kt:4:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/TopBarBackButton.kt:5:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/material/TopBarBackButton.kt:29:27 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:44:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:45:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:46:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:47:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:48:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:49:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:50:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:51:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:52:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:53:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:54:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:55:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:56:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:57:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:58:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:226:65 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:227:64 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:228:63 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:229:70 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:230:53 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:248:40 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:260:40 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:279:40 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:297:44 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:315:40 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:324:40 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:355:33 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:407:33 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:548:34 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:570:38 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:650:47 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:35:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:36:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:37:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:38:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:39:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:40:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:41:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:42:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:43:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:44:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:45:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:46:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:47:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:48:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:191:37 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:231:45 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:252:53 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:270:53 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:299:41 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:316:37 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:333:41 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:350:37 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:374:41 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:391:37 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:409:37 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:425:37 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:477:37 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:5:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:6:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:7:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:8:34 Unresolved reference 'icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:85:40 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:103:41 Unresolved reference 'Icons'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:116:41 Unresolved reference 'Icons'.
+
+> Task :app:compileReleaseKotlin FAILED
+> Task :app:processReleaseResources
+w: Detected multiple Kotlin daemon sessions at 
+
+[Incubating] Problems report is available at: file:///home/z/work/superliquid/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin' (registered by plugin 'com.android.internal.application').
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Kotlin compiler: UNRESOLVED_IMPORT
+       Kotlin compiler error
+         Unresolved reference 'icons'.
+         Location: /home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt line 12
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 52s
+24 actionable tasks: 7 executed, 17 up-to-date

@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -15,25 +15,27 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Card as MiuixCard
+import top.yukonga.miuix.kmp.basic.Text as MiuixText
+import top.yukonga.miuix.kmp.basic.Switch as MiuixSwitch
+import top.yukonga.miuix.kmp.basic.Slider as MiuixSlider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-/**
- * Skin-agnostic building blocks. Every page is a scrolled column of cards;
- * the Mat/Miuix split only swaps the card/switch/text styling.
- */
+@Composable
+private fun miuixColors() = MiuixTheme.colorScheme
+
+@Composable
+fun stringResourceCompat(res: Int): String = androidx.compose.ui.res.stringResource(res)
 
 @Composable
 fun LScreen(title: String, content: @Composable ColumnScope.() -> Unit) {
-    val mat = LocalUiMode.current == UiMode.MAT
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
             .padding(bottom = 24.dp)
@@ -41,7 +43,7 @@ fun LScreen(title: String, content: @Composable ColumnScope.() -> Unit) {
         Text(
             text = title,
             style = TextStyle(
-                fontSize = if (mat) 32.sp else 36.sp,
+                fontSize = if (LocalUiMode.current == UiMode.Material) 32.sp else 36.sp,
                 fontWeight = FontWeight.Bold,
             ),
             modifier = Modifier.padding(top = 48.dp, bottom = 12.dp)
@@ -52,39 +54,51 @@ fun LScreen(title: String, content: @Composable ColumnScope.() -> Unit) {
 
 @Composable
 fun LCard(content: @Composable ColumnScope.() -> Unit) {
-    if (LocalUiMode.current == UiMode.MAT) {
-        androidx.compose.material3.Card(
+    when (LocalUiMode.current) {
+        UiMode.Material -> androidx.compose.material3.Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 12.dp)
-        ) { Column(Modifier.padding(16.dp), content = content) }
-    } else {
-        Card(
+                .padding(vertical = 6.dp)
+        ) { Column(Modifier.padding(16.dp)) { content() } }
+
+        UiMode.Miuix -> MiuixCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 12.dp)
-        ) { Column(Modifier.padding(16.dp), content = content) }
+                .padding(vertical = 6.dp)
+        ) { Column(Modifier.padding(16.dp)) { content() } }
     }
 }
 
 @Composable
 fun LText(text: String, subtitle: Boolean = false) {
-    val mat = LocalUiMode.current == UiMode.MAT
-    val color = if (mat) {
-        androidx.compose.material3.MaterialTheme.colorScheme.onSurface
-    } else MiuixTheme.colorScheme.onSurface
-    Text(
-        text = text,
-        style = TextStyle(
-            fontSize = if (subtitle) 13.sp else 16.sp,
-            color = if (subtitle) color.copy(alpha = 0.6f) else color,
-        ),
-        modifier = Modifier.padding(vertical = if (subtitle) 0.dp else 2.dp)
-    )
+    when (LocalUiMode.current) {
+        UiMode.Material -> Text(
+            text,
+            fontSize = if (subtitle) 14.sp else 16.sp,
+            color = if (subtitle) {
+                androidx.compose.material3.MaterialTheme.colorScheme.onBackground
+            } else {
+                androidx.compose.material3.MaterialTheme.colorScheme.onSurface
+            },
+            modifier = Modifier.padding(vertical = 2.dp)
+        )
+
+        UiMode.Miuix -> MiuixText(
+            text,
+            fontSize = if (subtitle) 14.sp else 16.sp,
+            color = if (subtitle) miuixColors().onBackground else miuixColors().onSurface,
+            modifier = Modifier.padding(vertical = 2.dp)
+        )
+    }
 }
 
 @Composable
-fun LSwitchRow(title: String, subtitle: String? = null, checked: Boolean, onChange: (Boolean) -> Unit) {
+fun LSwitchRow(
+    title: String,
+    subtitle: String?,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -95,7 +109,10 @@ fun LSwitchRow(title: String, subtitle: String? = null, checked: Boolean, onChan
             LText(title)
             if (subtitle != null) LText(subtitle, subtitle = true)
         }
-        Switch(checked = checked, onCheckedChange = onChange)
+        when (LocalUiMode.current) {
+            UiMode.Material -> Switch(checked = checked, onCheckedChange = onChange)
+            UiMode.Miuix -> MiuixSwitch(checked = checked, onCheckedChange = onChange)
+        }
     }
 }
 
@@ -118,12 +135,21 @@ fun LSliderRow(
             LText(title)
             LText(format(value))
         }
-        Slider(
-            value = value,
-            onValueChange = onChange,
-            valueRange = range,
-            steps = steps,
-            modifier = Modifier.fillMaxWidth()
-        )
+        when (LocalUiMode.current) {
+            UiMode.Material -> Slider(
+                value = value,
+                onValueChange = onChange,
+                valueRange = range,
+                steps = steps,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            UiMode.Miuix -> MiuixSlider(
+                value = value,
+                onValueChange = onChange,
+                valueRange = range,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }

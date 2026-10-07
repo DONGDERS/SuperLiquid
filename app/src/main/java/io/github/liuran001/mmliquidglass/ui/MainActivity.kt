@@ -4,39 +4,70 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.liuran001.mmliquidglass.R
+import io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsState
+import io.github.liuran001.mmliquidglass.ui.theme.LocalColorMode
+import io.github.liuran001.mmliquidglass.ui.theme.LocalEnableBlur
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.NavigationBar as MiuixNavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem as MiuixNavigationBarItem
-import top.yukonga.miuix.kmp.basic.NavigationItem
 import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
         Config.init(applicationContext)
-        setContent { SuperLiquidTheme { MainRoot() } }
+        SettingsState.refresh()
+        setContent {
+            val appSettings = AppSettingsStore.state
+            val settings by SettingsState.flow.collectAsStateWithLifecycle()
+            val uiMode = Config.uiModeEnum
+            // Pager state lives OUTSIDE the theme-switched subtree: the Mat/
+            // Miuix swap re-parents everything below KernelSUTheme, and a
+            // pager remembered inside it would reset to page 0 on each flip.
+            val pagerState = rememberPagerState(initialPage = 0) { NAV.size }
+            CompositionLocalProvider(
+                LocalUiMode provides uiMode,
+                LocalColorMode provides appSettings.colorMode.value,
+                LocalEnableBlur provides settings.enableBlur,
+            ) {
+                io.github.liuran001.mmliquidglass.ui.theme.KernelSUTheme(appSettings = appSettings) {
+                    MainRoot(pagerState)
+                }
+            }
+        }
     }
 }
 
@@ -44,71 +75,132 @@ private data class NavEntry(
     val labelRes: Int,
     val filled: ImageVector,
     val outlined: ImageVector,
-    val miuix: ImageVector,
 )
 
+// 2×2 grid "Apps" glyph — avoids pulling material-icons-extended (tens of
+// thousands of vector classes) into R8 just for one icon.
+private val AppsIcon: ImageVector by lazy {
+    ImageVector.Builder(
+        name = "Apps",
+        defaultWidth = 24.dp, defaultHeight = 24.dp,
+        viewportWidth = 24f, viewportHeight = 24f,
+    ).apply {
+        path(
+            fill = androidx.compose.ui.graphics.SolidColor(androidx.compose.ui.graphics.Color.Black)
+        ) {
+            moveTo(4f, 4f); lineTo(10f, 4f); lineTo(10f, 10f); lineTo(4f, 10f); close()
+            moveTo(14f, 4f); lineTo(20f, 4f); lineTo(20f, 10f); lineTo(14f, 10f); close()
+            moveTo(4f, 14f); lineTo(10f, 14f); lineTo(10f, 20f); lineTo(4f, 20f); close()
+            moveTo(14f, 14f); lineTo(20f, 14f); lineTo(20f, 20f); lineTo(14f, 20f); close()
+        }
+    }.build()
+}
+
 private val NAV = listOf(
-    NavEntry(R.string.nav_home, Icons.Filled.Home, Icons.Outlined.Home, Icons.Filled.Home),
-    NavEntry(R.string.nav_apps, Icons.Filled.Apps, Icons.Outlined.Apps, Icons.Filled.Apps),
-    NavEntry(R.string.nav_settings, Icons.Filled.Settings, Icons.Outlined.Settings, Icons.Filled.Settings),
+    NavEntry(R.string.nav_home, Icons.Filled.Home, Icons.Outlined.Home),
+    NavEntry(R.string.nav_apps, AppsIcon, AppsIcon),
+    NavEntry(R.string.nav_settings, Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 
 @Composable
-fun MainRoot() {
-    val pager = rememberPagerState { NAV.size }
+fun MainRoot(pager: PagerState) {
     val scope = rememberCoroutineScope()
-    val goto: (Int) -> Unit = { i -> scope.launch { pager.animateScrollToPage(i) } }
+    var showAbout by rememberSaveable { mutableStateOf(false) }
+    var showColorPalette by rememberSaveable { mutableStateOf(false) }
 
-    if (LocalUiMode.current == UiMode.MAT) {
-        Scaffold(
-            bottomBar = {
-                NavigationBar {
-                    NAV.forEachIndexed { i, e ->
-                        NavigationBarItem(
-                            selected = pager.currentPage == i,
-                            onClick = { goto(i) },
-                            icon = {
-                                Icon(
-                                    if (pager.currentPage == i) e.filled else e.outlined,
-                                    contentDescription = null
-                                )
-                            },
-                            label = { Text(stringResource(e.labelRes)) }
-                        )
-                    }
-                }
-            }
-        ) { pad ->
-            HorizontalPager(pager, modifier = Modifier.padding(pad)) { page ->
-                when (page) {
-                    0 -> HomeScreen()
-                    1 -> AppsScreen()
-                    else -> SettingsScreen()
-                }
-            }
+    when {
+        showAbout -> {
+            val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+            val state = io.github.liuran001.mmliquidglass.ui.screen.about.AboutUiState(
+                title = stringResource(R.string.about_title),
+                appName = stringResource(R.string.app_name),
+                versionName = io.github.liuran001.mmliquidglass.BuildConfig.VERSION_NAME,
+                links = listOf(
+                    io.github.liuran001.mmliquidglass.ui.screen.about.LinkInfo(
+                        "GitHub · DONGDERS/SuperLiquid",
+                        stringResource(R.string.settings_repo_url)
+                    ),
+                    io.github.liuran001.mmliquidglass.ui.screen.about.LinkInfo(
+                        "原项目 · liuran001/WeChat-LiquidGlass",
+                        "https://github.com/liuran001/WeChat-LiquidGlass"
+                    ),
+                ),
+            )
+            val actions = io.github.liuran001.mmliquidglass.ui.screen.about.AboutScreenActions(
+                onBack = { showAbout = false },
+                onOpenLink = { uriHandler.openUri(it) },
+            )
+            io.github.liuran001.mmliquidglass.ui.screen.about.AboutScreenMaterial(state, actions)
         }
-    } else {
-        MiuixScaffold(
-            bottomBar = {
-                MiuixNavigationBar { 
-                    NAV.forEachIndexed { i, e ->
-                        MiuixNavigationBarItem(
-                            modifier = Modifier.weight(1f),
-                            selected = pager.currentPage == i,
-                            onClick = { goto(i) },
-                            icon = e.miuix,
-                            label = stringResource(e.labelRes),
+
+        showColorPalette -> {
+            io.github.liuran001.mmliquidglass.ui.screen.colorpalette.ColorPaletteScreen(
+                onBack = { showColorPalette = false }
+            )
+        }
+
+        else -> {
+            // One shared pager for both skins: the theme switch swaps only the
+            // Scaffold wrapper, the pager never leaves composition.
+            val pagerContent: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit = { pad ->
+                HorizontalPager(
+                    pager,
+                    beyondViewportPageCount = 2,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(pad)
+                ) { page ->
+                    when (page) {
+                        0 -> HomeScreen(onOpenAbout = { showAbout = true })
+                        1 -> AppsScreen()
+                        else -> io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsPage(
+                            onOpenTheme = { showColorPalette = true },
+                            onResetDefaults = { Config.resetDefaults() },
                         )
                     }
                 }
             }
-        ) { pad ->
-            HorizontalPager(pager, modifier = Modifier.padding(pad)) { page ->
-                when (page) {
-                    0 -> HomeScreen()
-                    1 -> AppsScreen()
-                    else -> SettingsScreen()
-                }
+
+            fun goto(i: Int) {
+                scope.launch { pager.animateScrollToPage(i) }
+            }
+
+            when (LocalUiMode.current) {
+                UiMode.Material -> Scaffold(
+                    bottomBar = {
+                        NavigationBar {
+                            NAV.forEachIndexed { i, e ->
+                                NavigationBarItem(
+                                    selected = pager.currentPage == i,
+                                    onClick = { goto(i) },
+                                    icon = {
+                                        Icon(
+                                            if (pager.currentPage == i) e.filled else e.outlined,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    label = { Text(stringResource(e.labelRes)) },
+                                )
+                            }
+                        }
+                    }
+                ) { pad -> pagerContent(pad) }
+
+                UiMode.Miuix -> MiuixScaffold(
+                    bottomBar = {
+                        MiuixNavigationBar {
+                            NAV.forEachIndexed { i, e ->
+                                MiuixNavigationBarItem(
+                                    modifier = Modifier.weight(1f),
+                                    selected = pager.currentPage == i,
+                                    onClick = { goto(i) },
+                                    icon = e.filled,
+                                    label = stringResource(e.labelRes),
+                                )
+                            }
+                        }
+                    }
+                ) { pad -> pagerContent(pad) }
             }
         }
     }

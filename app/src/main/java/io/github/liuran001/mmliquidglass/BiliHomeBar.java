@@ -100,7 +100,7 @@ final class BiliHomeBar {
     private static final String ROUTER_CLASS = "com.bilibili.lib.blrouter.BLRouter";
     private static final String ROUTE_REQ_KT = "com.bilibili.lib.blrouter.RouteRequestKt";
     private static final String HOST_PKG = "tv.danmaku.bili";
-    private static final String MODULE_PKG = "io.github.liuran001.mmliquidglass";
+    private static final String MODULE_PKG = BuildConfig.APPLICATION_ID;
     private static final String PUBLISH_FALLBACK = "bilibili://uper/center_plus";
 
     private static final int GRAY = 0xFF61666D;
@@ -924,15 +924,24 @@ final class BiliHomeBar {
         return row;
     }
 
+    /**
+     * Tab glyphs ship in the module APK's assets/ — resource-shrink-proof.
+     * res/drawable copies were stripped by shrinkResources (they are only
+     * referenced via getIdentifier, invisible to the shrinker), which is how
+     * 0.4.2 lost every pill icon.
+     */
     private static android.graphics.drawable.Drawable moduleDrawable(Context ctx, String name) {
         try {
             Context moduleCtx = ctx.createPackageContext(MODULE_PKG,
                     Context.CONTEXT_IGNORE_SECURITY);
-            int id = moduleCtx.getResources().getIdentifier(name, "drawable", MODULE_PKG);
-            if (id == 0) {
+            java.io.InputStream is = moduleCtx.getAssets().open(name + ".png");
+            android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(is);
+            is.close();
+            if (bmp == null) {
                 return null;
             }
-            return moduleCtx.getResources().getDrawable(id);
+            return new android.graphics.drawable.BitmapDrawable(
+                    moduleCtx.getResources(), bmp);
         } catch (Throwable t) {
             LiquidGlassModule.logErr("bili: glyph " + name + " load failed", t);
             return null;
@@ -1002,23 +1011,43 @@ final class BiliHomeBar {
     }
 
     /**
-     * Home re-tap: forward the click to the native bar's own home tab view so
+     * Home re-tap: forward the click to the native bar's own home tab so
      * Bilibili runs its stock re-select refresh (scroll to top + feed reload).
-     * Falls back to a plain page switch when the native path is unavailable.
+     *
+     * The native bar's tab items are usually wrapped: the clickable view is a
+     * leaf (or the item view itself), not necessarily child(0) of the bar.
+     * A held press must not reach here — the pill consumes long-press.
      */
     private static void refreshHomeFeed(View real) {
         try {
-            if (real instanceof ViewGroup && ((ViewGroup) real).getChildCount() > 0) {
-                View home = ((ViewGroup) real).getChildAt(0);
-                home.performClick();
+            View tab = firstClickableChild(real);
+            if (tab != null) {
+                tab.performClick();
                 LiquidGlassModule.log(android.util.Log.INFO,
-                        "bili: home re-tap -> native refresh dispatched");
+                        "bili: home re-tap -> native click on "
+                                + tab.getClass().getName());
                 return;
             }
         } catch (Throwable t) {
             LiquidGlassModule.logErr("bili: native refresh failed", t);
         }
+        LiquidGlassModule.log(android.util.Log.WARN,
+                "bili: no clickable home tab found, falling back to page switch");
         switchTo(0);
+    }
+
+    /** Depth-first search for the first clickable view inside the native bar. */
+    private static View firstClickableChild(View root) {
+        if (root instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) root;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                View hit = firstClickableChild(g.getChildAt(i));
+                if (hit != null) {
+                    return hit;
+                }
+            }
+        }
+        return root.isClickable() ? root : null;
     }
 
     private static void switchTo(int appIndex) {

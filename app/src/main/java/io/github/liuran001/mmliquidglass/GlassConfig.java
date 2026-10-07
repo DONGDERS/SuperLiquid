@@ -101,10 +101,12 @@ final class GlassConfig {
             Constructor<?> ctor = cls.getConstructor(String.class, String.class);
             Object xsp = ctor.newInstance(BuildConfig.APPLICATION_ID, REMOTE_NAME);
             xsp.getClass().getMethod("reload").invoke(xsp);
-            java.io.File f = (java.io.File) xsp.getClass().getMethod("getFile").invoke(xsp);
-            if (f != null && f.canRead()) {
-                apply((SharedPreferences) xsp);
-            }
+            // No canRead() gate here: the module's prefs dir is not visible to
+            // the host process, but LSPosed's XSharedPreferences reads it
+            // daemon-side. canRead() from the host was always false, which
+            // silently disabled this channel. Defaults are returned when the
+            // file genuinely can't be read.
+            apply((SharedPreferences) xsp);
         } catch (Throwable t) {
             // XSharedPreferences channel is optional; remote prefs or the
             // legacy host file still cover it.

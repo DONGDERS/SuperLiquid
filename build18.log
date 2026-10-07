@@ -1,0 +1,115 @@
+Starting a Gradle Daemon, 1 incompatible and 1 stopped Daemons could not be reused, use --status for details
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs UP-TO-DATE
+> Task :app:stripReleaseDebugSymbols UP-TO-DATE
+> Task :app:extractReleaseNativeSymbolTables UP-TO-DATE
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :app:generateReleaseBuildConfig
+> Task :app:generateReleaseResources
+> Task :app:packageReleaseResources
+> Task :app:processReleaseNavigationResources
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:parseReleaseLocalResources
+> Task :app:mergeReleaseArtProfile UP-TO-DATE
+> Task :app:generateReleaseRFile
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:compileReleaseNavigationResources UP-TO-DATE
+> Task :app:mergeReleaseResources
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:processReleaseManifestForPackage
+> Task :app:processReleaseResources
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets UP-TO-DATE
+> Task :app:compressReleaseAssets UP-TO-DATE
+> Task :app:collectReleaseDependencies UP-TO-DATE
+> Task :app:sdkReleaseDependencyData UP-TO-DATE
+> Task :app:writeReleaseAppMetadata UP-TO-DATE
+> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
+
+> Task :app:compileReleaseKotlin
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:29:21 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:48:57 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:50:13 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:54:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:57:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:60:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:63:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:78:57 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:80:13 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:84:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:87:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:90:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:93:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:96:19 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:98:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:101:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:104:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:107:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:110:17 Unresolved reference 'stringResourceCompat'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/Components.kt:28:13 Functions which invoke @Composable functions must be marked with the @Composable annotation
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/Components.kt:28:40 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:31:21 Unresolved reference 'stringResource'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:44:27 Unresolved reference 'stringResource'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:47:29 Unresolved reference 'stringResource'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:49:29 Unresolved reference 'stringResource'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:55:19 Unresolved reference 'stringResource'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:56:19 Unresolved reference 'stringResource'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:65:50 Unresolved reference 'stringResource'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:68:33 Unresolved reference 'stringResource'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:76:29 Unresolved reference 'MiuixCard'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:77:17 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:78:29 Unresolved reference 'stringResource'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:79:31 Unresolved reference 'stringResource'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:54:43 Argument type mismatch: actual type is 'UiMode', but 'String' was expected.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreen.kt:46:48 Unresolved reference 'name' on receiver of type 'String'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:88:55 Unresolved reference 'bottombar'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:90:64 Unresolved reference 'ExpressiveToggleButton'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:207:33 Unresolved reference 'ExpressiveToggleButton'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:210:45 Unresolved reference 'it'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:224:37 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMaterial.kt:464:19 Unresolved reference 'useNavigationRail'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:74:55 Unresolved reference 'bottombar'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:75:55 Unresolved reference 'miuix'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:93:35 Unresolved reference 'extended'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:130:58 Unresolved reference 'Back'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:456:25 Unresolved reference 'ScaleDialog'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:461:56 Unresolved reference 'it'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/colorpalette/ColorPaletteScreenMiuix.kt:537:19 Unresolved reference 'useNavigationRail'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:62:55 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:87:72 Unresolved reference 'settings_ui_mode_summary'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:100:84 Unresolved reference 'settings_theme_summary'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:150:59 Unresolved reference 'settings_ui_mode_summary'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:160:59 Unresolved reference 'settings_theme_summary'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsUiState.kt:10:33 Unresolved reference 'DEFAULT_VALUE'.
+
+> Task :app:compileReleaseKotlin FAILED
+
+[Incubating] Problems report is available at: file:///home/z/work/superliquid/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin' (registered by plugin 'com.android.internal.application').
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Kotlin compiler: UNRESOLVED_REFERENCE
+       Kotlin compiler error
+         Unresolved reference 'stringResourceCompat'.
+         Location: /home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt line 29
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 1m
+32 actionable tasks: 14 executed, 18 up-to-date

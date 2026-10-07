@@ -40,7 +40,7 @@ object Config {
 
     const val REMOTE_NAME = "superliquid"
 
-    private lateinit var uiPrefs: SharedPreferences
+    lateinit var uiPrefs: SharedPreferences
     private var hookPrefs: SharedPreferences? = null
 
     @Volatile
@@ -98,11 +98,13 @@ object Config {
     fun setUiMode(v: String) {
         _uiMode.value = v
         uiPrefs.edit().putString("ui_mode", v).apply()
+        AppSettingsStore.reload()
     }
 
     fun setColorMode(v: Int) {
         _colorMode.value = v
         uiPrefs.edit().putInt("color_mode", v).apply()
+        AppSettingsStore.reload()
     }
 
     // ------------------------------------------------------------ hook params
