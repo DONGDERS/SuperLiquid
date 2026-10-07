@@ -39,8 +39,16 @@ final class GlassConfig {
     static volatile float widthScale = 1f;
     /** Region-buffer stack-blur radius for the glass sampling. */
     static volatile int blurRadius = 3;
+    /** Whole-tab-bar scale (height+width+glyphs), applied to the host view. */
+    static volatile float pillScale = 1f;
     /** Multiplier over the built-in glass tint alphas (0.2 – 2.0). */
     static volatile float tintStrength = 1f;
+    /** Extra saturation on the sampled backdrop (refraction feel, 1.0 – 1.3). */
+    static volatile float saturationBoost = 1f;
+    /** Gloss highlight strength multiplier (0 – 2). */
+    static volatile float glossStrength = 1f;
+    /** Border stroke width multiplier (0.5 – 2). */
+    static volatile float borderWidthScale = 1f;
     /** Whether the real Bilibili bottom bar is kept hidden under the glass. */
     static volatile boolean biliHideNative = true;
     /** Publish-pill size multiplier and bottom/right margins, dp. */
@@ -137,8 +145,12 @@ final class GlassConfig {
         enabled = p.getBoolean(k("enabled"), enabled);
         barOffsetDp = p.getInt(k("offset_dp"), barOffsetDp);
         widthScale = p.getFloat(k("width_scale"), widthScale);
+        pillScale = p.getFloat(k("pill_scale"), pillScale);
         blurRadius = p.getInt(k("blur"), blurRadius);
         tintStrength = p.getFloat(k("tint"), tintStrength);
+        saturationBoost = p.getFloat(k("saturation"), saturationBoost);
+        glossStrength = p.getFloat(k("gloss"), glossStrength);
+        borderWidthScale = p.getFloat(k("border"), borderWidthScale);
         if ("bili".equals(keyPrefix)) {
             biliHideNative = p.getBoolean("bili_hide_native", biliHideNative);
             biliPubScale = p.getFloat("bili_pub_scale", biliPubScale);

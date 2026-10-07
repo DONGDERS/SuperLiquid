@@ -503,6 +503,20 @@ final class BiliHomeBar {
             sRealIdx = idx;
             sRealLp = originalLp;
             applyNativeBarVisibility();
+            // Whole-tab-bar size knob, pivot bottom-centre.
+            final float lps = GlassConfig.pillScale;
+            if (lps != 1f) {
+                leftHost.post(() -> {
+                    try {
+                        leftHost.setPivotY(leftHost.getHeight());
+                        leftHost.setPivotX(leftHost.getWidth() / 2f);
+                        leftHost.setScaleX(lps);
+                        leftHost.setScaleY(lps);
+                    } catch (Throwable t) {
+                        LiquidGlassModule.logErr("bili pill scale failed", t);
+                    }
+                });
+            }
 
             // Width is owned by the installer's hug (hugContentWidth → per-tab
             // column rewrite). Pinning it again here from row.getMeasuredWidth()

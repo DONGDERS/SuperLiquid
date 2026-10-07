@@ -335,6 +335,20 @@ final class LiquidGlassInstaller {
             parent.removeView(tabView);
             parent.addView(host, index, hostLp);
             host.addView(tabView, tabLp);
+            // Whole-tab-bar size knob: uniform view scale, pivot bottom-centre.
+            final float ps = GlassConfig.pillScale;
+            if (ps != 1f) {
+                host.post(() -> {
+                    try {
+                        host.setPivotY(host.getHeight());
+                        host.setPivotX(host.getWidth() / 2f);
+                        host.setScaleX(ps);
+                        host.setScaleY(ps);
+                    } catch (Throwable t) {
+                        LiquidGlassModule.logErr("pill scale failed", t);
+                    }
+                });
+            }
         } catch (Throwable t) {
             restoreAfterFailedReparent(parent, tabView, host, index, originalLp);
             LiquidGlassModule.logErr("could not reparent the stock tab bar", t);

@@ -26,7 +26,7 @@ import top.yukonga.miuix.kmp.basic.Slider as MiuixSlider
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-private fun miuixColors() = MiuixTheme.colorScheme
+internal fun miuixColors() = MiuixTheme.colorScheme
 
 @Composable
 fun stringResourceCompat(res: Int): String = androidx.compose.ui.res.stringResource(res)

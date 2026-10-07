@@ -4,8 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -14,7 +20,13 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import io.github.liuran001.mmliquidglass.ui.component.FloatingBottomBar
+import io.github.liuran001.mmliquidglass.ui.component.FloatingBottomBarItem
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -37,6 +49,10 @@ import io.github.liuran001.mmliquidglass.R
 import io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsState
 import io.github.liuran001.mmliquidglass.ui.theme.LocalColorMode
 import io.github.liuran001.mmliquidglass.ui.theme.LocalEnableBlur
+import io.github.liuran001.mmliquidglass.ui.theme.LocalEnableFloatingBottomBar
+import io.github.liuran001.mmliquidglass.ui.theme.LocalEnableFloatingBottomBarBlur
+import io.github.liuran001.mmliquidglass.ui.theme.LocalEnableNavigationBadge
+import io.github.liuran001.mmliquidglass.ui.theme.LocalModuleDescriptionMaxLines
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
@@ -62,6 +78,10 @@ class MainActivity : ComponentActivity() {
                 LocalUiMode provides uiMode,
                 LocalColorMode provides appSettings.colorMode.value,
                 LocalEnableBlur provides settings.enableBlur,
+                LocalEnableFloatingBottomBar provides settings.enableFloatingBottomBar,
+                LocalEnableFloatingBottomBarBlur provides settings.enableFloatingBottomBarBlur,
+                LocalEnableNavigationBadge provides settings.enableNavigationBadge,
+                LocalModuleDescriptionMaxLines provides settings.moduleDescriptionMaxLines,
             ) {
                 io.github.liuran001.mmliquidglass.ui.theme.KernelSUTheme(appSettings = appSettings) {
                     MainRoot(pagerState)
@@ -140,6 +160,12 @@ fun MainRoot(pager: PagerState) {
         }
 
         else -> {
+            val settings = SettingsState.flow.collectAsStateWithLifecycle().value
+            val enableFloating = settings.enableFloatingBottomBar
+            // Liquid-glass floating bar needs a backdrop of the page content.
+            val pageBackdrop =
+                top.yukonga.miuix.kmp.blur.rememberLayerBackdrop()
+
             // One shared pager for both skins: the theme switch swaps only the
             // Scaffold wrapper, the pager never leaves composition.
             val pagerContent: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit = { pad ->
@@ -149,6 +175,10 @@ fun MainRoot(pager: PagerState) {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(pad)
+                        .then(
+                            if (enableFloating) Modifier.layerBackdrop(pageBackdrop)
+                            else Modifier
+                        )
                 ) { page ->
                     when (page) {
                         0 -> HomeScreen(onOpenAbout = { showAbout = true })
@@ -165,22 +195,49 @@ fun MainRoot(pager: PagerState) {
                 scope.launch { pager.animateScrollToPage(i) }
             }
 
+            val floatingBar: @Composable () -> Unit = {
+                Box(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                    FloatingBottomBar(
+                        selectedIndex = pager.currentPage,
+                        onSelected = { goto(it) },
+                        backdrop = pageBackdrop,
+                        tabsCount = NAV.size,
+                        isBlurEnabled = settings.enableFloatingBottomBarBlur || settings.enableBlur,
+                    ) { activateTab ->
+                        NAV.forEachIndexed { i, e ->
+                            FloatingBottomBarItem(
+                                selected = pager.currentPage == i,
+                                onClick = { activateTab(i) },
+                                modifier = Modifier.defaultMinSize(minWidth = 76.dp),
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(e.filled, contentDescription = null, modifier = Modifier.size(22.dp))
+                                    Text(stringResource(e.labelRes), fontSize = 10.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             when (LocalUiMode.current) {
                 UiMode.Material -> Scaffold(
                     bottomBar = {
-                        NavigationBar {
-                            NAV.forEachIndexed { i, e ->
-                                NavigationBarItem(
-                                    selected = pager.currentPage == i,
-                                    onClick = { goto(i) },
-                                    icon = {
-                                        Icon(
-                                            if (pager.currentPage == i) e.filled else e.outlined,
-                                            contentDescription = null
-                                        )
-                                    },
-                                    label = { Text(stringResource(e.labelRes)) },
-                                )
+                        if (enableFloating) floatingBar() else {
+                            NavigationBar {
+                                NAV.forEachIndexed { i, e ->
+                                    NavigationBarItem(
+                                        selected = pager.currentPage == i,
+                                        onClick = { goto(i) },
+                                        icon = {
+                                            Icon(
+                                                if (pager.currentPage == i) e.filled else e.outlined,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        label = { Text(stringResource(e.labelRes)) },
+                                    )
+                                }
                             }
                         }
                     }
@@ -188,15 +245,17 @@ fun MainRoot(pager: PagerState) {
 
                 UiMode.Miuix -> MiuixScaffold(
                     bottomBar = {
-                        MiuixNavigationBar {
-                            NAV.forEachIndexed { i, e ->
-                                MiuixNavigationBarItem(
-                                    modifier = Modifier.weight(1f),
-                                    selected = pager.currentPage == i,
-                                    onClick = { goto(i) },
-                                    icon = e.filled,
-                                    label = stringResource(e.labelRes),
-                                )
+                        if (enableFloating) floatingBar() else {
+                            MiuixNavigationBar {
+                                NAV.forEachIndexed { i, e ->
+                                    MiuixNavigationBarItem(
+                                        modifier = Modifier.weight(1f),
+                                        selected = pager.currentPage == i,
+                                        onClick = { goto(i) },
+                                        icon = e.filled,
+                                        label = stringResource(e.labelRes),
+                                    )
+                                }
                             }
                         }
                     }

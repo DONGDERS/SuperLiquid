@@ -383,6 +383,15 @@ final class LiquidGlassHostLayout extends FrameLayout {
         return (a << 24) | (color & 0x00FFFFFF);
     }
 
+    /** Manager gloss knob: scale the gradient highlight's alpha channel. */
+    private static int scaleGlossAlpha(int color) {
+        float s = GlassConfig.glossStrength;
+        int a = Math.round(((color >>> 24) / 255f) * s * 255f);
+        if (a < 0) a = 0;
+        if (a > 255) a = 255;
+        return (a << 24) | (color & 0x00FFFFFF);
+    }
+
     private void setupPaints() {
         if (mDarkMode) {
             mTintPaint.setColor(scaleTintAlpha(0x33000000));
@@ -394,11 +403,12 @@ final class LiquidGlassHostLayout extends FrameLayout {
             mBackdropPaint.setColor(0x8CFFFFFF);
         }
         mBorderPaint.setStyle(Paint.Style.STROKE);
-        mBorderPaint.setStrokeWidth(Math.max(mDensity * 0.8f, 0.75f));
+        mBorderPaint.setStrokeWidth(Math.max(mDensity * 0.8f, 0.75f)
+                * GlassConfig.borderWidthScale);
         if (getWidth() > 0 && getHeight() > 0) {
             mGlossPaint.setShader(new LinearGradient(
                     0f, 0f, 0f, getHeight() * 0.45f,
-                    mDarkMode ? 0x14FFFFFF : 0x30FFFFFF,
+                    mDarkMode ? scaleGlossAlpha(0x14FFFFFF) : scaleGlossAlpha(0x30FFFFFF),
                     0x00FFFFFF, Shader.TileMode.CLAMP));
         }
     }
@@ -444,7 +454,7 @@ final class LiquidGlassHostLayout extends FrameLayout {
         }
         mGlossPaint.setShader(new LinearGradient(
                 0f, 0f, 0f, h * 0.45f,
-                mDarkMode ? 0x1FFFFFFF : 0x40FFFFFF,
+                mDarkMode ? scaleGlossAlpha(0x1FFFFFFF) : scaleGlossAlpha(0x40FFFFFF),
                 0x00FFFFFF, Shader.TileMode.CLAMP));
     }
 
@@ -558,7 +568,7 @@ final class LiquidGlassHostLayout extends FrameLayout {
 
     private void applySaturationBoost(Bitmap bmp) {
         ColorMatrix cm = new ColorMatrix();
-        cm.setSaturation(SATURATION_BOOST);
+        cm.setSaturation(SATURATION_BOOST * GlassConfig.saturationBoost);
         Paint p = new Paint();
         p.setColorFilter(new ColorMatrixColorFilter(cm));
         new Canvas(bmp).drawBitmap(bmp, 0f, 0f, p);

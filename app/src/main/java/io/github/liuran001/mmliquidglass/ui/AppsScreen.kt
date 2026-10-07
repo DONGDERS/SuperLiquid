@@ -3,6 +3,10 @@ package io.github.liuran001.mmliquidglass.ui
 import android.content.pm.PackageManager
 import io.github.liuran001.mmliquidglass.R
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 
 private data class Target(val key: String, val label: String, val pkg: String)
@@ -26,12 +30,15 @@ private fun installed(key: String): Boolean {
 
 @Composable
 fun AppsScreen() {
+    val collapsed = Config.appParamsCollapsedState.value
+    var expandedOverride by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    val showParams = !collapsed || expandedOverride
     LScreen(title = stringResourceCompat(R.string.apps_title)) {
         TARGETS.forEach { t ->
             when (t.key) {
-                "mm" -> AppCard(t, Config.mm, installed("mm")) { Config.setApp("mm", it) }
-                "qq" -> AppCard(t, Config.qq, installed("qq")) { Config.setApp("qq", it) }
-                else -> BiliCard(t, Config.bili, installed("bili")) { Config.setBili(it) }
+                "mm" -> AppCard(t, Config.mm, installed("mm"), collapsed, showParams, { expandedOverride = it }) { Config.setApp("mm", it) }
+                "qq" -> AppCard(t, Config.qq, installed("qq"), collapsed, showParams, { expandedOverride = it }) { Config.setApp("qq", it) }
+                else -> BiliCard(t, Config.bili, installed("bili"), collapsed, showParams, { expandedOverride = it }) { Config.setBili(it) }
             }
         }
     }
@@ -42,6 +49,9 @@ private fun AppCard(
     t: Target,
     cfg: Config.AppCfg,
     installed: Boolean,
+    collapsed: Boolean,
+    showParams: Boolean,
+    onToggleParams: (Boolean) -> Unit,
     set: (Config.AppCfg) -> Unit
 ) {
     LCard {
@@ -49,7 +59,13 @@ private fun AppCard(
         LSwitchRow(
             stringResourceCompat(R.string.apps_enable), null, cfg.enabled
         ) { set(cfg.copy(enabled = it)) }
-        if (cfg.enabled) {
+        if (collapsed) {
+            LSwitchRow(
+                if (showParams) "收起参数" else stringResourceCompat(R.string.apps_params_collapse),
+                null, showParams
+            ) { onToggleParams(it) }
+        }
+        if (cfg.enabled && showParams) {
             LSliderRow(
                 stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, 0.5f..1.2f
             ) { set(cfg.copy(widthScale = (it * 100).toInt() / 100f)) }
@@ -62,6 +78,18 @@ private fun AppCard(
             LSliderRow(
                 stringResourceCompat(R.string.apps_tint), cfg.tint, 0.2f..2f
             ) { set(cfg.copy(tint = (it * 100).toInt() / 100f)) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_pill_scale), cfg.pillScale, 0.7f..1.3f
+            ) { set(cfg.copy(pillScale = (it * 100).toInt() / 100f)) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_saturation), cfg.saturation, 1.0f..1.3f
+            ) { set(cfg.copy(saturation = (it * 100).toInt() / 100f)) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_gloss), cfg.gloss, 0f..2f
+            ) { set(cfg.copy(gloss = (it * 100).toInt() / 100f)) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_border), cfg.border, 0.5f..2f
+            ) { set(cfg.copy(border = (it * 100).toInt() / 100f)) }
         }
     }
 }
@@ -71,6 +99,9 @@ private fun BiliCard(
     t: Target,
     cfg: Config.BiliCfg,
     installed: Boolean,
+    collapsed: Boolean,
+    showParams: Boolean,
+    onToggleParams: (Boolean) -> Unit,
     set: (Config.BiliCfg) -> Unit
 ) {
     val base = cfg.base
@@ -79,7 +110,13 @@ private fun BiliCard(
         LSwitchRow(
             stringResourceCompat(R.string.apps_enable), null, base.enabled
         ) { set(cfg.copy(base = base.copy(enabled = it))) }
-        if (base.enabled) {
+        if (collapsed) {
+            LSwitchRow(
+                if (showParams) "收起参数" else stringResourceCompat(R.string.apps_params_collapse),
+                null, showParams
+            ) { onToggleParams(it) }
+        }
+        if (base.enabled && showParams) {
             LSliderRow(
                 stringResourceCompat(R.string.apps_width_scale), base.widthScale, 0.5f..1.2f
             ) { set(cfg.copy(base = base.copy(widthScale = (it * 100).toInt() / 100f))) }
@@ -92,6 +129,18 @@ private fun BiliCard(
             LSliderRow(
                 stringResourceCompat(R.string.apps_tint), base.tint, 0.2f..2f
             ) { set(cfg.copy(base = base.copy(tint = (it * 100).toInt() / 100f))) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_pill_scale), base.pillScale, 0.7f..1.3f
+            ) { set(cfg.copy(base = base.copy(pillScale = (it * 100).toInt() / 100f))) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_saturation), base.saturation, 1.0f..1.3f
+            ) { set(cfg.copy(base = base.copy(saturation = (it * 100).toInt() / 100f))) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_gloss), base.gloss, 0f..2f
+            ) { set(cfg.copy(base = base.copy(gloss = (it * 100).toInt() / 100f))) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_border), base.border, 0.5f..2f
+            ) { set(cfg.copy(base = base.copy(border = (it * 100).toInt() / 100f))) }
 
             LText(stringResourceCompat(R.string.apps_bili_section), subtitle = true)
             LSwitchRow(

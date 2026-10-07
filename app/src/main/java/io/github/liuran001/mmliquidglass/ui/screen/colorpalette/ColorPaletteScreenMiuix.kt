@@ -292,73 +292,13 @@ fun ColorPaletteScreenMiuix(
                             .fillMaxWidth(),
                     ) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            SwitchPreference(
-                                title = stringResource(id = R.string.settings_enable_blur),
-                                summary = stringResource(id = R.string.settings_enable_blur_summary),
-                                startAction = {
-                                    Icon(
-                                        Icons.Filled.BlurOn,
-                                        modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_enable_blur),
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
-                                checked = uiState.enableBlur,
-                                onCheckedChange = {
-                                    actions.onSetEnableBlur(it)
-                                }
-                            )
+
                         }
-                        SwitchPreference(
-                            title = stringResource(id = R.string.settings_floating_bottom_bar),
-                            summary = stringResource(id = R.string.settings_floating_bottom_bar_summary),
-                            startAction = {
-                                Icon(
-                                    Icons.Filled.CallToAction,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_floating_bottom_bar),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            checked = uiState.enableFloatingBottomBar,
-                            onCheckedChange = {
-                                actions.onSetEnableFloatingBottomBar(it)
-                            }
-                        )
+
                         AnimatedVisibility(visible = uiState.enableFloatingBottomBar && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            SwitchPreference(
-                                title = stringResource(id = R.string.settings_enable_glass),
-                                summary = stringResource(id = R.string.settings_enable_glass_summary),
-                                startAction = {
-                                    Icon(
-                                        Icons.Filled.WaterDrop,
-                                        modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_enable_glass),
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
-                                checked = uiState.enableFloatingBottomBarBlur,
-                                onCheckedChange = {
-                                    actions.onSetEnableFloatingBottomBarBlur(it)
-                                }
-                            )
+
                         }
-                        SwitchPreference(
-                            title = stringResource(id = R.string.settings_navigation_badge),
-                            summary = stringResource(id = R.string.settings_navigation_badge_summary),
-                            startAction = {
-                                Icon(
-                                    Icons.Filled.Pin,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_navigation_badge),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            checked = uiState.enableNavigationBadge,
-                            onCheckedChange = {
-                                actions.onSetEnableNavigationBadge(it)
-                            }
-                        )
+
                     }
 
                     Card(
@@ -367,22 +307,7 @@ fun ColorPaletteScreenMiuix(
                             .fillMaxWidth(),
                     ) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                            SwitchPreference(
-                                title = stringResource(id = R.string.settings_enable_predictive_back),
-                                summary = stringResource(id = R.string.settings_enable_predictive_back_summary),
-                                startAction = {
-                                    Icon(
-                                        Icons.Filled.Menu,
-                                        modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_enable_predictive_back),
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
-                                checked = uiState.enablePredictiveBack,
-                                onCheckedChange = {
-                                    actions.onSetEnablePredictiveBack(it)
-                                }
-                            )
+
                         }
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_enable_swipe_dismiss),
@@ -464,47 +389,6 @@ fun ColorPaletteScreenMiuix(
                         )
                     }
 
-                    Card(
-                        modifier = Modifier
-                            .padding(top = 12.dp)
-                            .fillMaxWidth(),
-                    ) {
-                        var linesValue by remember(uiState.moduleDescriptionMaxLines) { mutableIntStateOf(uiState.moduleDescriptionMaxLines) }
-                        BasicComponent(
-                            title = stringResource(id = R.string.settings_module_description_max_lines),
-                            summary = stringResource(id = R.string.settings_module_description_max_lines_summary),
-                            startAction = {
-                                Icon(
-                                    Icons.Filled.Description,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_module_description_max_lines),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            endActions = {
-                                Text(
-                                    text = "$linesValue " + stringResource(R.string.unit_lines),
-                                    color = colorScheme.onSurfaceVariantActions,
-                                )
-                            },
-                            bottomAction = {
-                                Slider(
-                                    value = linesValue.toFloat(),
-                                    onValueChange = {
-                                        linesValue = it.roundToInt()
-                                    },
-                                    onValueChangeFinished = {
-                                        actions.onSetModuleDescriptionMaxLines(linesValue)
-                                    },
-                                    valueRange = 1f..5f,
-                                    showKeyPoints = true,
-                                    keyPoints = listOf(1f, 2f, 3f, 4f, 5f),
-                                    magnetThreshold = 0.25f,
-                                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                )
-                            },
-                        )
-                    }
                 }
                 item {
                     Spacer(

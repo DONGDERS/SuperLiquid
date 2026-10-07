@@ -3,6 +3,7 @@ package io.github.liuran001.mmliquidglass.ui.screen.settings
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ import io.github.liuran001.mmliquidglass.ui.UiMode
 import io.github.liuran001.mmliquidglass.ui.component.material.SegmentedColumn
 import io.github.liuran001.mmliquidglass.ui.component.material.SegmentedDropdownItem
 import io.github.liuran001.mmliquidglass.ui.component.material.SegmentedListItem
+import io.github.liuran001.mmliquidglass.ui.component.material.SegmentedSwitchItem
 import io.github.liuran001.mmliquidglass.ui.theme.KernelSUTheme
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -105,6 +107,14 @@ private fun SettingsPageMaterial(
                                         stringResource(R.string.settings_theme)
                                     )
                                 },
+                            )
+                        }
+                        add {
+                            SegmentedSwitchItem(
+                                icon = Icons.Filled.Check,
+                                title = stringResource(R.string.apps_params_collapse),
+                                checked = Config.appParamsCollapsed,
+                                onCheckedChange = { Config.appParamsCollapsed = it }
                             )
                         }
                         add {

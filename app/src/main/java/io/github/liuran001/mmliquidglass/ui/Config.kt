@@ -27,6 +27,10 @@ object Config {
         val offsetDp: Int = 12,
         val blur: Int = 3,
         val tint: Float = 1.0f,
+        val pillScale: Float = 1.0f,
+        val saturation: Float = 1.0f,
+        val gloss: Float = 1.0f,
+        val border: Float = 1.0f,
     )
 
     data class BiliCfg(
@@ -49,6 +53,16 @@ object Config {
     private val _uiMode = mutableStateOf(UiMode.DEFAULT)
     val uiMode: String get() = _uiMode.value
     val uiModeEnum: UiMode get() = UiMode.fromValue(_uiMode.value)
+
+    var appParamsCollapsed: Boolean
+        get() = uiPrefs.getBoolean("apps_params_collapsed", false)
+        set(v) {
+            uiPrefs.edit().putBoolean("apps_params_collapsed", v).apply()
+            appParamsCollapsedState.value = v
+        }
+    val appParamsCollapsedState by lazy { mutableStateOf(appParamsCollapsedField()) }
+    private fun appParamsCollapsedField(): Boolean =
+        runCatching { uiPrefs.getBoolean("apps_params_collapsed", false) }.getOrDefault(false)
 
     private val _colorMode = mutableStateOf(0) // 0 system / 1 light / 2 dark
     val colorMode: Int get() = _colorMode.value
@@ -132,21 +146,22 @@ object Config {
 
     private fun write(key: String, cfg: AppCfg) {
         val editor = (remotePrefs ?: hookPrefs)?.edit() ?: return
-        editor.putBoolean("${key}_enabled", cfg.enabled)
-        editor.putFloat("${key}_width_scale", cfg.widthScale)
-        editor.putInt("${key}_offset_dp", cfg.offsetDp)
-        editor.putInt("${key}_blur", cfg.blur)
-        editor.putFloat("${key}_tint", cfg.tint)
+        fun android.content.SharedPreferences.Editor.putApp(k: String, c: AppCfg) {
+            putBoolean("${k}_enabled", c.enabled)
+            putFloat("${k}_width_scale", c.widthScale)
+            putInt("${k}_offset_dp", c.offsetDp)
+            putInt("${k}_blur", c.blur)
+            putFloat("${k}_tint", c.tint)
+            putFloat("${k}_pill_scale", c.pillScale)
+            putFloat("${k}_saturation", c.saturation)
+            putFloat("${k}_gloss", c.gloss)
+            putFloat("${k}_border", c.border)
+        }
+        editor.putApp(key, cfg)
         editor.apply()
         // Mirror into the other store so both channels always agree.
         val mirror = if (remotePrefs != null) hookPrefs else null
-        mirror?.edit()?.apply {
-            putBoolean("${key}_enabled", cfg.enabled)
-            putFloat("${key}_width_scale", cfg.widthScale)
-            putInt("${key}_offset_dp", cfg.offsetDp)
-            putInt("${key}_blur", cfg.blur)
-            putFloat("${key}_tint", cfg.tint)
-        }?.apply()
+        mirror?.edit()?.apply { putApp(key, cfg) }?.apply()
     }
 
     private fun writeBiliExtras(cfg: BiliCfg) {
@@ -174,6 +189,10 @@ object Config {
             offsetDp = p.getInt("${key}_offset_dp", def.offsetDp),
             blur = p.getInt("${key}_blur", def.blur),
             tint = p.getFloat("${key}_tint", def.tint),
+            pillScale = p.getFloat("${key}_pill_scale", def.pillScale),
+            saturation = p.getFloat("${key}_saturation", def.saturation),
+            gloss = p.getFloat("${key}_gloss", def.gloss),
+            border = p.getFloat("${key}_border", def.border),
         )
         _mm.value = app("mm", AppCfg())
         _qq.value = app("qq", AppCfg())

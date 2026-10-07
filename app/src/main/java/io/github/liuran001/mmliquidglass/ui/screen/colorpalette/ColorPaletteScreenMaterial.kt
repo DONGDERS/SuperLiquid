@@ -270,41 +270,7 @@ fun ColorPaletteScreenMaterial(
                 )
             }
 
-            item {
-                SegmentedColumn(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    content = listOf(
-                        {
-                            SegmentedSwitchItem(
-                                icon = Icons.Filled.Pin,
-                                title = stringResource(id = R.string.settings_navigation_badge),
-                                summary = stringResource(id = R.string.settings_navigation_badge_summary),
-                                checked = uiState.enableNavigationBadge,
-                                onCheckedChange = actions.onSetEnableNavigationBadge
-                            )
-                        }
-                    )
-                )
-            }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                item {
-                    SegmentedColumn(
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        content = listOf(
-                            {
-                                SegmentedSwitchItem(
-                                    icon = Icons.Filled.Menu,
-                                    title = stringResource(id = R.string.settings_enable_predictive_back),
-                                    summary = stringResource(id = R.string.settings_enable_predictive_back_summary),
-                                    checked = uiState.enablePredictiveBack,
-                                    onCheckedChange = actions.onSetEnablePredictiveBack
-                                )
-                            }
-                        )
-                    )
-                }
-            }
 
             item {
                 SegmentedColumn(
@@ -381,60 +347,6 @@ fun ColorPaletteScreenMaterial(
                         Slider(
                             state = sliderState,
                             onValueChangeFinished = { actions.onSetPageScale(sliderState.value) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            }
-
-            item {
-                TonalCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    val sliderState = rememberSliderState(
-                        value = uiState.moduleDescriptionMaxLines.toFloat(),
-                        steps = 3,
-                        trackRange = 1f..5f
-                    )
-
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Filled.Description,
-                                contentDescription = stringResource(id = R.string.settings_module_description_max_lines),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.settings_module_description_max_lines),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = stringResource(id = R.string.settings_module_description_max_lines_summary),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Text(
-                                text = "${sliderState.value.roundToInt()} " + stringResource(R.string.unit_lines),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Slider(
-                            state = sliderState,
-                            onValueChangeFinished = {
-                                actions.onSetModuleDescriptionMaxLines(sliderState.value.roundToInt())
-                            },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }

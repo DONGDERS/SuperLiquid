@@ -1,0 +1,114 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.7.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders UP-TO-DATE
+> Task :app:mergeReleaseNativeLibs UP-TO-DATE
+> Task :app:stripReleaseDebugSymbols UP-TO-DATE
+> Task :app:extractReleaseNativeSymbolTables UP-TO-DATE
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:checkReleaseDuplicateClasses UP-TO-DATE
+> Task :app:generateReleaseBuildConfig UP-TO-DATE
+> Task :app:generateReleaseResources
+> Task :app:packageReleaseResources
+> Task :app:processReleaseNavigationResources
+> Task :app:javaPreCompileRelease UP-TO-DATE
+> Task :app:parseReleaseLocalResources
+> Task :app:mergeReleaseArtProfile UP-TO-DATE
+> Task :app:generateReleaseRFile
+> Task :app:checkReleaseAarMetadata UP-TO-DATE
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:compileReleaseNavigationResources UP-TO-DATE
+> Task :app:mergeReleaseResources
+> Task :app:createReleaseCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksRelease UP-TO-DATE
+> Task :app:processReleaseMainManifest UP-TO-DATE
+> Task :app:processReleaseManifest UP-TO-DATE
+> Task :app:processReleaseManifestForPackage UP-TO-DATE
+> Task :app:processReleaseResources
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets UP-TO-DATE
+> Task :app:compressReleaseAssets UP-TO-DATE
+> Task :app:collectReleaseDependencies UP-TO-DATE
+> Task :app:sdkReleaseDependencyData UP-TO-DATE
+> Task :app:writeReleaseAppMetadata UP-TO-DATE
+> Task :app:writeReleaseSigningConfigVersions UP-TO-DATE
+
+> Task :app:compileReleaseKotlin
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:30:26 Type 'MutableState<Boolean>' has no method 'setValue(Nothing?, KMutableProperty0<*>, ??? (Ambiguity: getValue, [kotlin/getValue, kotlin/getValue, kotlin/getValue, kotlin/collections/getValue, kotlin/collections/getValue, kotlin/collections/getValue]))', so it cannot serve as a delegate for var (read-write property).
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:30:26 Property delegate must have a 'getValue(Nothing?, KMutableProperty0<*>)' method. None of the following functions is applicable:
+fun <T> Lazy<T>.getValue(thisRef: Any?, property: KProperty<*>): T
+fun <V> KProperty0<V>.getValue(thisRef: Any?, property: KProperty<*>): V
+fun <T, V> KProperty1<T, V>.getValue(thisRef: T, property: KProperty<*>): V
+fun <K, V> Map<K, V>.getValue(key: K): V
+fun <V, V1 : V> Map<in String, V>.getValue(thisRef: Any?, property: KProperty<*>): V1
+fun <V, V1 : V> MutableMap<in String, out V>.getValue(thisRef: Any?, property: KProperty<*>): V1
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:55:13 Unresolved reference 'collapsed'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:57:21 Unresolved reference 'showParams'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:58:23 Unresolved reference 'showParams'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:59:17 Unresolved reference 'expandedOverride'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:61:28 Unresolved reference 'showParams'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:103:13 Unresolved reference 'collapsed'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:105:21 Unresolved reference 'showParams'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:106:23 Unresolved reference 'showParams'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:107:17 Unresolved reference 'expandedOverride'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt:109:29 Unresolved reference 'showParams'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/HomeScreen.kt:51:54 Unresolved reference 'contentColorFor' on receiver of type 'ColorScheme'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:195:30 Unresolved reference 'fillMaxWidth'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:204:36 Too many arguments for 'fun invoke(p1: Int): Unit'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/MainActivity.kt:205:33 @Composable invocations can only happen from the context of a @Composable function
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/InteractiveHighlight.kt:21:61 Unresolved reference 'modifier'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/InteractiveHighlight.kt:25:7 Redeclaration:
+class InteractiveHighlight : Any
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/InteractiveHighlight.kt:89:13 Unresolved reference 'inspectDragGestures'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/InteractiveHighlight.kt:90:33 Cannot infer type for value parameter 'down'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/InteractiveHighlight.kt:91:42 Unresolved reference 'position'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/InteractiveHighlight.kt:109:17 Cannot infer type for value parameter 'change'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/InteractiveHighlight.kt:109:25 Cannot infer type for implicit value parameter 'it'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/InteractiveHighlight.kt:110:73 Unresolved reference 'position'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/DampedDragAnimation.kt:18:61 Unresolved reference 'modifier'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/DampedDragAnimation.kt:74:9 Unresolved reference 'inspectDragGestures'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/DampedDragAnimation.kt:75:29 Cannot infer type for value parameter 'down'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/DampedDragAnimation.kt:76:36 Unresolved reference 'position'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/DampedDragAnimation.kt:87:13 Cannot infer type for value parameter 'change'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/DampedDragAnimation.kt:87:21 Cannot infer type for value parameter 'dragAmount'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/DampedDragAnimation.kt:88:35 Unresolved reference 'position'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/DampedDragAnimation.kt:89:43 Unresolved reference 'previousPosition'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/InteractiveHighlight.kt:21:61 Unresolved reference 'modifier'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/InteractiveHighlight.kt:25:7 Redeclaration:
+class InteractiveHighlight : Any
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/InteractiveHighlight.kt:89:13 Unresolved reference 'inspectDragGestures'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/InteractiveHighlight.kt:90:33 Cannot infer type for value parameter 'down'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/InteractiveHighlight.kt:91:42 Unresolved reference 'position'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/InteractiveHighlight.kt:109:17 Cannot infer type for value parameter 'change'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/InteractiveHighlight.kt:109:25 Cannot infer type for implicit value parameter 'it'. Specify it explicitly.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/component/miuix/animation/InteractiveHighlight.kt:110:73 Unresolved reference 'position'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:111:29 Unresolved reference 'SegmentedSwitchItem'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:112:53 Unresolved reference 'Check'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:115:60 Unresolved reference 'setAppParamsCollapsed'.
+e: file:///home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/screen/settings/SettingsPage.kt:115:82 Unresolved reference 'it'.
+
+> Task :app:compileReleaseKotlin FAILED
+
+[Incubating] Problems report is available at: file:///home/z/work/superliquid/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileReleaseKotlin' (registered by plugin 'com.android.internal.application').
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Kotlin compiler: DELEGATE_SPECIAL_FUNCTION_MISSING
+       Kotlin compiler error
+         Type 'MutableState<Boolean>' has no method 'setValue(Nothing?, KMutableProperty0<*>, ??? (Ambiguity: getValue, [kotlin/getValue, kotlin/getValue, kotlin/getValue, kotlin/collections/getValue, kotlin/collections/getValue, kotlin/collections/getValue]))', so it cannot serve as a delegate for var (read-write property).
+         Location: /home/z/work/superliquid/app/src/main/java/io/github/liuran001/mmliquidglass/ui/AppsScreen.kt line 30
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 52s
+32 actionable tasks: 9 executed, 23 up-to-date
