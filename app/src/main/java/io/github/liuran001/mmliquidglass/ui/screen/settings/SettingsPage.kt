@@ -110,14 +110,6 @@ private fun SettingsPageMaterial(
                             )
                         }
                         add {
-                            SegmentedSwitchItem(
-                                icon = Icons.Filled.Check,
-                                title = stringResource(R.string.apps_params_collapse),
-                                checked = Config.appParamsCollapsed,
-                                onCheckedChange = { Config.appParamsCollapsed = it }
-                            )
-                        }
-                        add {
                             SegmentedListItem(
                                 onClick = onResetDefaults,
                                 headlineContent = { Text(stringResource(R.string.settings_reset)) },

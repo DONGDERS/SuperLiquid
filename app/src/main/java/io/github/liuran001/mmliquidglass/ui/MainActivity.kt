@@ -196,7 +196,13 @@ fun MainRoot(pager: PagerState) {
             }
 
             val floatingBar: @Composable () -> Unit = {
-                Box(Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+                // Centre the hugging pill on screen; FloatingBottomBar hugs
+                // its tabs (IntrinsicSize.Min) and would otherwise sit at
+                // the container's start edge.
+                Box(
+                    Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
                     FloatingBottomBar(
                         selectedIndex = pager.currentPage,
                         onSelected = { goto(it) },
@@ -221,23 +227,23 @@ fun MainRoot(pager: PagerState) {
             }
 
             when (LocalUiMode.current) {
+                // The floating glass bar is a Miuix-skin feature (KSU parity):
+                // it reads MiuixTheme, which the Mat branch does not provide.
                 UiMode.Material -> Scaffold(
                     bottomBar = {
-                        if (enableFloating) floatingBar() else {
-                            NavigationBar {
-                                NAV.forEachIndexed { i, e ->
-                                    NavigationBarItem(
-                                        selected = pager.currentPage == i,
-                                        onClick = { goto(i) },
-                                        icon = {
-                                            Icon(
-                                                if (pager.currentPage == i) e.filled else e.outlined,
-                                                contentDescription = null
-                                            )
-                                        },
-                                        label = { Text(stringResource(e.labelRes)) },
-                                    )
-                                }
+                        NavigationBar {
+                            NAV.forEachIndexed { i, e ->
+                                NavigationBarItem(
+                                    selected = pager.currentPage == i,
+                                    onClick = { goto(i) },
+                                    icon = {
+                                        Icon(
+                                            if (pager.currentPage == i) e.filled else e.outlined,
+                                            contentDescription = null
+                                        )
+                                    },
+                                    label = { Text(stringResource(e.labelRes)) },
+                                )
                             }
                         }
                     }

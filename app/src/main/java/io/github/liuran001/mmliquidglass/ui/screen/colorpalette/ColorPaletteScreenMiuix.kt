@@ -292,11 +292,50 @@ fun ColorPaletteScreenMiuix(
                             .fillMaxWidth(),
                     ) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-
+                            SwitchPreference(
+                                title = stringResource(id = R.string.settings_enable_blur),
+                                summary = stringResource(id = R.string.settings_enable_blur_summary),
+                                startAction = {
+                                    Icon(
+                                        Icons.Filled.BlurOn,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = stringResource(id = R.string.settings_enable_blur),
+                                        tint = colorScheme.onBackground,
+                                    )
+                                },
+                                checked = uiState.enableBlur,
+                                onCheckedChange = actions.onSetEnableBlur,
+                            )
                         }
-
+                        SwitchPreference(
+                            title = stringResource(id = R.string.settings_floating_bottom_bar),
+                            summary = stringResource(id = R.string.settings_floating_bottom_bar_summary),
+                            startAction = {
+                                Icon(
+                                    Icons.Filled.ViewCarousel,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = stringResource(id = R.string.settings_floating_bottom_bar),
+                                    tint = colorScheme.onBackground,
+                                )
+                            },
+                            checked = uiState.enableFloatingBottomBar,
+                            onCheckedChange = actions.onSetEnableFloatingBottomBar,
+                        )
                         AnimatedVisibility(visible = uiState.enableFloatingBottomBar && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-
+                            SwitchPreference(
+                                title = stringResource(id = R.string.settings_enable_glass),
+                                summary = stringResource(id = R.string.settings_enable_glass_summary),
+                                startAction = {
+                                    Icon(
+                                        Icons.Filled.Colorize,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = stringResource(id = R.string.settings_enable_glass),
+                                        tint = colorScheme.onBackground,
+                                    )
+                                },
+                                checked = uiState.enableFloatingBottomBarBlur,
+                                onCheckedChange = actions.onSetEnableFloatingBottomBarBlur,
+                            )
                         }
 
                     }

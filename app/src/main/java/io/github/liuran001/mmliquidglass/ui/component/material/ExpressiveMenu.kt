@@ -24,6 +24,8 @@ fun OffsetAnchoredExpressiveMenu(
     anchorOffset: IntOffset = IntOffset.Zero,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    android.util.Log.println(android.util.Log.INFO, "SuperLiquid",
+        "menu expand=$expanded anchor=$anchorOffset")
     Box(
         modifier = Modifier.layout { measurable, constraints ->
             val placeable = measurable.measure(Constraints())

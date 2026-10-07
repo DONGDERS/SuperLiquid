@@ -1,12 +1,16 @@
 package io.github.liuran001.mmliquidglass.ui
 
 import android.content.pm.PackageManager
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
 import io.github.liuran001.mmliquidglass.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 
 private data class Target(val key: String, val label: String, val pkg: String)
@@ -30,15 +34,12 @@ private fun installed(key: String): Boolean {
 
 @Composable
 fun AppsScreen() {
-    val collapsed = Config.appParamsCollapsedState.value
-    var expandedOverride by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-    val showParams = !collapsed || expandedOverride
     LScreen(title = stringResourceCompat(R.string.apps_title)) {
         TARGETS.forEach { t ->
             when (t.key) {
-                "mm" -> AppCard(t, Config.mm, installed("mm"), collapsed, showParams, { expandedOverride = it }) { Config.setApp("mm", it) }
-                "qq" -> AppCard(t, Config.qq, installed("qq"), collapsed, showParams, { expandedOverride = it }) { Config.setApp("qq", it) }
-                else -> BiliCard(t, Config.bili, installed("bili"), collapsed, showParams, { expandedOverride = it }) { Config.setBili(it) }
+                "mm" -> AppCard(t, Config.mm, installed("mm")) { Config.setApp("mm", it) }
+                "qq" -> AppCard(t, Config.qq, installed("qq")) { Config.setApp("qq", it) }
+                else -> BiliCard(t, Config.bili, installed("bili")) { Config.setBili(it) }
             }
         }
     }
@@ -49,23 +50,22 @@ private fun AppCard(
     t: Target,
     cfg: Config.AppCfg,
     installed: Boolean,
-    collapsed: Boolean,
-    showParams: Boolean,
-    onToggleParams: (Boolean) -> Unit,
     set: (Config.AppCfg) -> Unit
 ) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
     LCard {
-        LText(t.label + (if (installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed)), subtitle = true)
+        Row(
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+        ) {
+            LText(t.label + (if (installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed)), subtitle = true)
+        }
         LSwitchRow(
             stringResourceCompat(R.string.apps_enable), null, cfg.enabled
         ) { set(cfg.copy(enabled = it)) }
-        if (collapsed) {
-            LSwitchRow(
-                if (showParams) "收起参数" else stringResourceCompat(R.string.apps_params_collapse),
-                null, showParams
-            ) { onToggleParams(it) }
-        }
-        if (cfg.enabled && showParams) {
+        if (cfg.enabled && expanded) {
             LSliderRow(
                 stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, 0.5f..1.2f
             ) { set(cfg.copy(widthScale = (it * 100).toInt() / 100f)) }
@@ -99,24 +99,21 @@ private fun BiliCard(
     t: Target,
     cfg: Config.BiliCfg,
     installed: Boolean,
-    collapsed: Boolean,
-    showParams: Boolean,
-    onToggleParams: (Boolean) -> Unit,
     set: (Config.BiliCfg) -> Unit
 ) {
     val base = cfg.base
+    var expanded by rememberSaveable { mutableStateOf(false) }
     LCard {
-        LText(t.label + (if (installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed)), subtitle = true)
+        Row(
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+        ) {
+            LText(t.label + (if (installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed)), subtitle = true)
+        }
         LSwitchRow(
             stringResourceCompat(R.string.apps_enable), null, base.enabled
         ) { set(cfg.copy(base = base.copy(enabled = it))) }
-        if (collapsed) {
-            LSwitchRow(
-                if (showParams) "收起参数" else stringResourceCompat(R.string.apps_params_collapse),
-                null, showParams
-            ) { onToggleParams(it) }
-        }
-        if (base.enabled && showParams) {
+        if (base.enabled && expanded) {
             LSliderRow(
                 stringResourceCompat(R.string.apps_width_scale), base.widthScale, 0.5f..1.2f
             ) { set(cfg.copy(base = base.copy(widthScale = (it * 100).toInt() / 100f))) }

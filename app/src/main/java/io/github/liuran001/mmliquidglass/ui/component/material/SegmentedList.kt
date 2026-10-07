@@ -443,6 +443,8 @@ fun SegmentedDropdownItem(
         SegmentedListItem(
             onClick = if (enabled) {
                 {
+                    android.util.Log.println(android.util.Log.INFO, "SuperLiquid",
+                        "dropdown row clicked, expanding")
                     onClick?.invoke()
                     haptic.performHapticFeedback(HapticFeedbackType.VirtualKey)
                     expanded = true

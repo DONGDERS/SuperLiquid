@@ -64,7 +64,7 @@ class SettingsRepositoryImpl : SettingsRepository {
         set(value) { p.edit().putInt("pager_interception_mode", value).apply() }
 
     override var enableBlur: Boolean
-        get() = p.getBoolean("enable_blur", false)
+        get() = p.getBoolean("enable_blur", true)
         set(value) { p.edit().putBoolean("enable_blur", value).apply() }
 
     override var enableFloatingBottomBar: Boolean

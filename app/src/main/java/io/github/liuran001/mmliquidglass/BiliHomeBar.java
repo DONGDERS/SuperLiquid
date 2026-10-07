@@ -546,11 +546,9 @@ final class BiliHomeBar {
     }
 
     /**
-     * The iOS-26 layout wants the tab pill bottom-start. The installer anchors
-     * bottom-centre by design; nudge it after the fact, only when the host's
-     * parent kept the params as FrameLayout's (anything else is a layout class
-     * we have no contract with — leave the centred pill alone instead of
-     * guessing at its params).
+     * Centre the tab pill horizontally (user preference over the iOS-26
+     * bottom-start look). Only touches parents whose params we have a
+     * contract with; anything else keeps the installer's own centring.
      */
     private static void nudgeStart(LiquidGlassHostLayout host, Activity act) {
         try {
