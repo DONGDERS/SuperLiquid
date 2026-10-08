@@ -162,9 +162,22 @@ fun MainRoot(pager: PagerState) {
         else -> {
             val settings = SettingsState.flow.collectAsStateWithLifecycle().value
             val enableFloating = settings.enableFloatingBottomBar
-            // Liquid-glass floating bar needs a backdrop of the page content.
+            // KSU MainScreen: the backdrop carries a surface base fill so an
+            // uncaptured/empty layer reads as the theme surface, NOT black —
+            // the bare rememberLayerBackdrop() was the grey-glass root cause.
+            val backdropSurface = when (LocalUiMode.current) {
+                UiMode.Miuix -> top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.surface
+                UiMode.Material -> androidx.compose.material3.MaterialTheme.colorScheme.surface
+            }
             val pageBackdrop =
-                top.yukonga.miuix.kmp.blur.rememberLayerBackdrop()
+                top.yukonga.miuix.kmp.blur.rememberLayerBackdrop {
+                    drawRect(backdropSurface)
+                    drawContent()
+                }
+            // KSU: capture only when the floating glass bar actually blurs.
+            val captureGlass = enableFloating && settings.enableFloatingBottomBarBlur
+            val blurBackdrop =
+                io.github.liuran001.mmliquidglass.ui.util.rememberBlurBackdrop(settings.enableBlur)
 
             // One shared pager for both skins: the theme switch swaps only the
             // Scaffold wrapper, the pager never leaves composition.
@@ -176,7 +189,11 @@ fun MainRoot(pager: PagerState) {
                         .fillMaxSize()
                         .padding(pad)
                         .then(
-                            if (enableFloating) Modifier.layerBackdrop(pageBackdrop)
+                            if (captureGlass) Modifier.layerBackdrop(pageBackdrop)
+                            else Modifier
+                        )
+                        .then(
+                            if (blurBackdrop != null) Modifier.layerBackdrop(blurBackdrop)
                             else Modifier
                         )
                 ) { page ->
@@ -208,7 +225,7 @@ fun MainRoot(pager: PagerState) {
                         onSelected = { goto(it) },
                         backdrop = pageBackdrop,
                         tabsCount = NAV.size,
-                        isBlurEnabled = settings.enableFloatingBottomBarBlur || settings.enableBlur,
+                        isBlurEnabled = settings.enableFloatingBottomBarBlur,
                     ) { activateTab ->
                         NAV.forEachIndexed { i, e ->
                             FloatingBottomBarItem(
@@ -252,15 +269,22 @@ fun MainRoot(pager: PagerState) {
                 UiMode.Miuix -> MiuixScaffold(
                     bottomBar = {
                         if (enableFloating) floatingBar() else {
-                            MiuixNavigationBar {
-                                NAV.forEachIndexed { i, e ->
-                                    MiuixNavigationBarItem(
-                                        modifier = Modifier.weight(1f),
-                                        selected = pager.currentPage == i,
-                                        onClick = { goto(i) },
-                                        icon = e.filled,
-                                        label = stringResource(e.labelRes),
-                                    )
+                            // KSU BottomBarMiuix non-floating branch: the bar
+                            // blurs the content behind it via BlurredBar.
+                            io.github.liuran001.mmliquidglass.ui.util.BlurredBar(backdrop = blurBackdrop) {
+                                MiuixNavigationBar(
+                                    color = if (blurBackdrop != null) androidx.compose.ui.graphics.Color.Transparent
+                                    else top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.surface,
+                                ) {
+                                    NAV.forEachIndexed { i, e ->
+                                        MiuixNavigationBarItem(
+                                            modifier = Modifier.weight(1f),
+                                            selected = pager.currentPage == i,
+                                            onClick = { goto(i) },
+                                            icon = e.filled,
+                                            label = stringResource(e.labelRes),
+                                        )
+                                    }
                                 }
                             }
                         }
