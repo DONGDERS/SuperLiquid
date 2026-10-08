@@ -320,7 +320,10 @@ final class LiquidGlassInstaller {
         // would silently drop the correction and let the bar sink onto the
         // gesture pill.
         if (hostLp instanceof ViewGroup.MarginLayoutParams) {
-            ((ViewGroup.MarginLayoutParams) hostLp).bottomMargin = bottomOffset - shadowPad;
+            // Never let the shadow compensation sink the glass onto the
+            // gesture bar: keep a visible floor of 4dp.
+            ((ViewGroup.MarginLayoutParams) hostLp).bottomMargin =
+                    Math.max(bottomOffset - shadowPad, Math.round(4 * density));
         }
         FrameLayout.LayoutParams tabLp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,

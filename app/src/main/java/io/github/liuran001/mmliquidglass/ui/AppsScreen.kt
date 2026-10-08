@@ -1,17 +1,24 @@
 package io.github.liuran001.mmliquidglass.ui
 
 import android.content.pm.PackageManager
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import io.github.liuran001.mmliquidglass.R
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import io.github.liuran001.mmliquidglass.R
+import top.yukonga.miuix.kmp.basic.Card as MiuixCard
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 private data class Target(val key: String, val label: String, val pkg: String)
 
@@ -45,6 +52,11 @@ fun AppsScreen() {
     }
 }
 
+/**
+ * One app = one expandable card. Params are auto-collapsed; tapping the
+ * header expands them. Miuix skin uses the official idiom (ArrowPreference
+ * + AnimatedVisibility), Mat uses a clickable header row.
+ */
 @Composable
 private fun AppCard(
     t: Target,
@@ -53,43 +65,64 @@ private fun AppCard(
     set: (Config.AppCfg) -> Unit
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    LCard {
-        Row(
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded }
-        ) {
-            LText(t.label + (if (installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed)), subtitle = true)
+    val title = t.label + (if (installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed))
+    when (LocalUiMode.current) {
+        UiMode.Miuix -> MiuixCard(modifier = Modifier.fillMaxWidth()) {
+            ArrowPreference(
+                title = title,
+                summary = stringResourceCompat(R.string.apps_params),
+                onClick = { expanded = !expanded },
+            )
+            AnimatedVisibility(visible = expanded) {
+                Column { AppParams(cfg, set) }
+            }
         }
+
+        UiMode.Material -> LCard {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+            ) {
+                LText(title, subtitle = true)
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column { AppParams(cfg, set) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppParams(cfg: Config.AppCfg, set: (Config.AppCfg) -> Unit) {
+    Column {
         LSwitchRow(
             stringResourceCompat(R.string.apps_enable), null, cfg.enabled
         ) { set(cfg.copy(enabled = it)) }
-        if (cfg.enabled && expanded) {
-            LSliderRow(
-                stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, 0.5f..1.2f
-            ) { set(cfg.copy(widthScale = (it * 100).toInt() / 100f)) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_bar_offset), cfg.offsetDp.toFloat(), 0f..24f, steps = 23
-            ) { set(cfg.copy(offsetDp = it.toInt())) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_blur), cfg.blur.toFloat(), 1f..8f, steps = 6
-            ) { set(cfg.copy(blur = it.toInt())) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_tint), cfg.tint, 0.2f..2f
-            ) { set(cfg.copy(tint = (it * 100).toInt() / 100f)) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_pill_scale), cfg.pillScale, 0.7f..1.3f
-            ) { set(cfg.copy(pillScale = (it * 100).toInt() / 100f)) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_saturation), cfg.saturation, 1.0f..1.3f
-            ) { set(cfg.copy(saturation = (it * 100).toInt() / 100f)) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_gloss), cfg.gloss, 0f..2f
-            ) { set(cfg.copy(gloss = (it * 100).toInt() / 100f)) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_border), cfg.border, 0.5f..2f
-            ) { set(cfg.copy(border = (it * 100).toInt() / 100f)) }
+        if (cfg.enabled) {
+            LSliderRow(stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, 0.5f..1.2f) {
+                set(cfg.copy(widthScale = (it * 100).toInt() / 100f))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_pill_scale), cfg.pillScale, 0.7f..1.3f) {
+                set(cfg.copy(pillScale = (it * 100).toInt() / 100f))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_bar_offset), cfg.offsetDp.toFloat(), 0f..24f, steps = 23) {
+                set(cfg.copy(offsetDp = it.toInt()))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_blur), cfg.blur.toFloat(), 1f..8f, steps = 6) {
+                set(cfg.copy(blur = it.toInt()))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_tint), cfg.tint, 0.2f..2f) {
+                set(cfg.copy(tint = (it * 100).toInt() / 100f))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_saturation), cfg.saturation, 1.0f..1.3f) {
+                set(cfg.copy(saturation = (it * 100).toInt() / 100f))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_gloss), cfg.gloss, 0f..2f) {
+                set(cfg.copy(gloss = (it * 100).toInt() / 100f))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_border), cfg.border, 0.5f..2f) {
+                set(cfg.copy(border = (it * 100).toInt() / 100f))
+            }
         }
     }
 }
@@ -103,46 +136,67 @@ private fun BiliCard(
 ) {
     val base = cfg.base
     var expanded by rememberSaveable { mutableStateOf(false) }
-    LCard {
-        Row(
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
-        ) {
-            LText(t.label + (if (installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed)), subtitle = true)
+    val title = t.label + (if (installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed))
+    when (LocalUiMode.current) {
+        UiMode.Miuix -> MiuixCard(modifier = Modifier.fillMaxWidth()) {
+            ArrowPreference(
+                title = title,
+                summary = stringResourceCompat(R.string.apps_params),
+                onClick = { expanded = !expanded },
+            )
+            AnimatedVisibility(visible = expanded) {
+                Column { BiliParams(cfg, set) }
+            }
         }
+
+        UiMode.Material -> LCard {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+            ) {
+                LText(title, subtitle = true)
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column { BiliParams(cfg, set) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BiliParams(cfg: Config.BiliCfg, set: (Config.BiliCfg) -> Unit) {
+    val base = cfg.base
+    Column {
         LSwitchRow(
             stringResourceCompat(R.string.apps_enable), null, base.enabled
         ) { set(cfg.copy(base = base.copy(enabled = it))) }
-        if (base.enabled && expanded) {
-            LSliderRow(
-                stringResourceCompat(R.string.apps_width_scale), base.widthScale, 0.5f..1.2f
-            ) { set(cfg.copy(base = base.copy(widthScale = (it * 100).toInt() / 100f))) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_bar_offset), base.offsetDp.toFloat(), 0f..24f, steps = 23
-            ) { set(cfg.copy(base = base.copy(offsetDp = it.toInt()))) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_blur), base.blur.toFloat(), 1f..8f, steps = 6
-            ) { set(cfg.copy(base = base.copy(blur = it.toInt()))) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_tint), base.tint, 0.2f..2f
-            ) { set(cfg.copy(base = base.copy(tint = (it * 100).toInt() / 100f))) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_pill_scale), base.pillScale, 0.7f..1.3f
-            ) { set(cfg.copy(base = base.copy(pillScale = (it * 100).toInt() / 100f))) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_saturation), base.saturation, 1.0f..1.3f
-            ) { set(cfg.copy(base = base.copy(saturation = (it * 100).toInt() / 100f))) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_gloss), base.gloss, 0f..2f
-            ) { set(cfg.copy(base = base.copy(gloss = (it * 100).toInt() / 100f))) }
-            LSliderRow(
-                stringResourceCompat(R.string.apps_border), base.border, 0.5f..2f
-            ) { set(cfg.copy(base = base.copy(border = (it * 100).toInt() / 100f))) }
+        if (base.enabled) {
+            LSliderRow(stringResourceCompat(R.string.apps_width_scale), base.widthScale, 0.5f..1.2f) {
+                set(cfg.copy(base = base.copy(widthScale = (it * 100).toInt() / 100f)))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_pill_scale), base.pillScale, 0.7f..1.3f) {
+                set(cfg.copy(base = base.copy(pillScale = (it * 100).toInt() / 100f)))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_bar_offset), base.offsetDp.toFloat(), 0f..24f, steps = 23) {
+                set(cfg.copy(base = base.copy(offsetDp = it.toInt())))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_blur), base.blur.toFloat(), 1f..8f, steps = 6) {
+                set(cfg.copy(base = base.copy(blur = it.toInt())))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_tint), base.tint, 0.2f..2f) {
+                set(cfg.copy(base = base.copy(tint = (it * 100).toInt() / 100f)))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_saturation), base.saturation, 1.0f..1.3f) {
+                set(cfg.copy(base = base.copy(saturation = (it * 100).toInt() / 100f)))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_gloss), base.gloss, 0f..2f) {
+                set(cfg.copy(base = base.copy(gloss = (it * 100).toInt() / 100f)))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_border), base.border, 0.5f..2f) {
+                set(cfg.copy(base = base.copy(border = (it * 100).toInt() / 100f)))
+            }
 
             LText(stringResourceCompat(R.string.apps_bili_section), subtitle = true)
-            LSwitchRow(
-                stringResourceCompat(R.string.apps_bili_hover_tint), null, cfg.hoverTint
-            ) { set(cfg.copy(hoverTint = it)) }
             LSwitchRow(
                 stringResourceCompat(R.string.apps_bili_hide_native), null, cfg.hideNative
             ) { set(cfg.copy(hideNative = it)) }

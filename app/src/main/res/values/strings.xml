@@ -28,6 +28,7 @@
     <string name="apps_bar_offset">底部位置</string>
     <string name="apps_blur">模糊强度</string>
     <string name="apps_tint">反射色调强度</string>
+    <string name="apps_params">液态玻璃参数</string>
     <string name="apps_pill_scale">整个Tab栏大小</string>
     <string name="apps_saturation">折射饱和度</string>
     <string name="apps_gloss">高光强度</string>
