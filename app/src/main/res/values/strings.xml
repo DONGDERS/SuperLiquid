@@ -55,6 +55,8 @@
     <string name="settings_reset_summary">清除所有 Tab 栏玻璃参数，回到内置默认值</string>
     <string name="settings_ui_mode_summary">选择应用的界面风格</string>
     <string name="settings_theme_summary">自定义更多主题选项</string>
+    <string name="settings_export_log">导出App日志</string>
+    <string name="settings_export_log_summary">导出最近的运行日志用于问题诊断</string>
     <string name="about_title">关于</string>
     <string name="settings_repo_url">https://github.com/DONGDERS/SuperLiquid</string>
 

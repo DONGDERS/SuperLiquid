@@ -138,7 +138,6 @@ fun ColorPaletteScreenMiuix(
                 )
             }
         },
-        popupHost = { },
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
     ) { innerPadding ->
         val showScaleDialog = rememberSaveable { mutableStateOf(false) }

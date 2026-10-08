@@ -20,7 +20,11 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.liuran001.mmliquidglass.ui.component.FloatingBottomBar
@@ -154,6 +158,7 @@ fun MainRoot(pager: PagerState) {
         }
 
         showColorPalette -> {
+            androidx.activity.compose.BackHandler { showColorPalette = false }
             io.github.liuran001.mmliquidglass.ui.screen.colorpalette.ColorPaletteScreen(
                 onBack = { showColorPalette = false }
             )
@@ -243,8 +248,17 @@ fun MainRoot(pager: PagerState) {
                 // Centre the hugging pill on screen; FloatingBottomBar hugs
                 // its tabs (IntrinsicSize.Min) and would otherwise sit at
                 // the container's start edge.
+                // Bottom spacing = navigation-bar inset (KSU BottomBarMiuix
+                // floating branch: bottom = navigationBars padding).
+                val density = LocalDensity.current
+                val bottomPad = with(density) {
+                    androidx.compose.foundation.layout.WindowInsets.navigationBars
+                        .getBottom(this).toDp()
+                }
                 Box(
-                    Modifier.fillMaxWidth(),
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = bottomPad),
                     contentAlignment = Alignment.Center
                 ) {
                     FloatingBottomBar(
@@ -316,7 +330,17 @@ fun MainRoot(pager: PagerState) {
                             }
                         }
                     }
-                ) { pad -> pagerContent(pad) }
+                ) { pad ->
+                    // Floating glass: the page content must extend UNDER the
+                    // pill (edge to edge) — the glass samples the backdrop at
+                    // its own screen position, so a padded content area ends
+                    // above the pill and the sample falls out of the captured
+                    // layer (grey/black glass + a dead strip behind it).
+                    pagerContent(
+                        if (enableFloating) androidx.compose.foundation.layout.PaddingValues(0.dp)
+                        else pad
+                    )
+                }
             }
         }
     }

@@ -35,7 +35,7 @@ import java.lang.ref.WeakReference;
 final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
 
     /** KernelSU: pressedScale = 78dp / 56dp. */
-    private static final float PRESSED_SCALE = 1.04f;
+    private static final float PRESSED_SCALE = 1.39f;
     /** KernelSU: LocalFloatingBottomBarTabScale = lerp(1f, 1.2f, pressProgress). */
     private static final float FOCUS_SCALE = 1.2f;
     private static final float STRETCH_LIMIT = 0.2f;
