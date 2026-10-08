@@ -134,27 +134,8 @@ fun MainRoot(pager: PagerState) {
 
     when {
         showAbout -> {
-            val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
-            val state = io.github.liuran001.mmliquidglass.ui.screen.about.AboutUiState(
-                title = stringResource(R.string.about_title),
-                appName = stringResource(R.string.app_name),
-                versionName = io.github.liuran001.mmliquidglass.BuildConfig.VERSION_NAME,
-                links = listOf(
-                    io.github.liuran001.mmliquidglass.ui.screen.about.LinkInfo(
-                        "GitHub · DONGDERS/SuperLiquid",
-                        stringResource(R.string.settings_repo_url)
-                    ),
-                    io.github.liuran001.mmliquidglass.ui.screen.about.LinkInfo(
-                        "原项目 · liuran001/WeChat-LiquidGlass",
-                        "https://github.com/liuran001/WeChat-LiquidGlass"
-                    ),
-                ),
-            )
-            val actions = io.github.liuran001.mmliquidglass.ui.screen.about.AboutScreenActions(
-                onBack = { showAbout = false },
-                onOpenLink = { uriHandler.openUri(it) },
-            )
-            io.github.liuran001.mmliquidglass.ui.screen.about.AboutScreenMaterial(state, actions)
+            androidx.activity.compose.BackHandler { showAbout = false }
+            io.github.liuran001.mmliquidglass.ui.screen.about.AboutScreen(onBack = { showAbout = false })
         }
 
         showColorPalette -> {
@@ -251,10 +232,16 @@ fun MainRoot(pager: PagerState) {
                 // Bottom spacing = navigation-bar inset (KSU BottomBarMiuix
                 // floating branch: bottom = navigationBars padding).
                 val density = LocalDensity.current
-                val bottomPad = with(density) {
+                val navInset = with(density) {
                     androidx.compose.foundation.layout.WindowInsets.navigationBars
                         .getBottom(this).toDp()
                 }
+                // Some devices (hidden gesture pill) report a zero nav-bar
+                // inset — always add a fixed floating margin on top.
+                val bottomPad = navInset + 12.dp
+                io.github.liuran001.mmliquidglass.ui.util.Diag.log(
+                    "floating bar bottomPad=$bottomPad (navInset=$navInset)"
+                )
                 Box(
                     Modifier
                         .fillMaxWidth()
