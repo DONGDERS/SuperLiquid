@@ -154,6 +154,10 @@ private fun HomeScreenMiuix(connected: Boolean, onOpenAbout: () -> Unit) {
                     MiuixCard(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.defaultColors(color = bg),
+                        // KSU StatusCard press feedback; no navigation wired.
+                        onClick = {},
+                        pressFeedbackType = top.yukonga.miuix.kmp.utils.PressFeedbackType.Tilt,
+                        showIndication = true,
                     ) {
                         Box {
                             Box(

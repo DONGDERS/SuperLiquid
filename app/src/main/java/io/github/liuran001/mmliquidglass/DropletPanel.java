@@ -419,8 +419,10 @@ final class DropletPanel extends View {
         mNight = night;
         // Same 40% surface-container wash used by LiquidGlassPanel. The old
         // 90% fill hid nearly all of the blur as soon as the droplet appeared.
-        mPillSurface.setColor(night ? 0x662C2C2E : 0x66F2F2F7);
-        mWash.setColor(night ? 0x1AFFFFFF : 0x1A000000);
+        // Night glass: lighter veil + stronger white sheen so the blur reads
+        // frosted-luminous instead of dimmed.
+        mPillSurface.setColor(night ? 0x40464648 : 0x66F2F2F7);
+        mWash.setColor(night ? 0x26FFFFFF : 0x1A000000);
         invalidate();
     }
 

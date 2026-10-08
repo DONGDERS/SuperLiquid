@@ -223,7 +223,7 @@ final class LiquidGlassPanel extends View {
     /** KernelSU: containerColor = surfaceContainer.copy(0.4f). */
     void setTheme(boolean night) {
         mNight = night;
-        mSurfacePaint.setColor(night ? 0x662C2C2E : 0x66F2F2F7);
+        mSurfacePaint.setColor(night ? 0x40464648 : 0x66F2F2F7);
         // iosIndicatorSpecular: BloomStroke(white @ 0.12), width 1.dp, alpha 0.75.
         mHighlightPaint.setStyle(Paint.Style.STROKE);
         mHighlightPaint.setStrokeWidth(mDensity);

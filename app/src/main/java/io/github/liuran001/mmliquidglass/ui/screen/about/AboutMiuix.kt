@@ -280,8 +280,10 @@ private fun AboutContent(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(100.dp)
-                    .clipToBounds()
+                    // PNG logo has no transparent margins like KSU's vector —
+                    // size the container to the full image so nothing clips,
+                    // and the text below simply flows lower.
+                    .requiredSize(245.dp)
                     .graphicsLayer {
                         alpha = 1 - iconProgress
                         scaleX = 1 - (iconProgress * 0.05f)
