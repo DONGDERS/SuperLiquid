@@ -409,8 +409,11 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
             float grow = 1f + (PILL_GROWTH_DP * mDensity / pill.getWidth()) * p;
             View host = mHostRef.get();
             View grown = host != null ? host : pill;
-            grown.setScaleX(grow);
-            grown.setScaleY(grow);
+            // Base pill-scale must ride on EVERY frame — a bare grow reset the
+            // user's "whole tab bar size" transform on first touch.
+            float base = GlassConfig.pillScale;
+            grown.setScaleX(base * grow);
+            grown.setScaleY(base * grow);
             if (grown != pill && pill.getScaleX() != 1f) {
                 pill.setScaleX(1f);
                 pill.setScaleY(1f);

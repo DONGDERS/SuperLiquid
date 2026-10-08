@@ -506,7 +506,7 @@ final class BiliHomeBar {
             // Whole-tab-bar size knob, pivot bottom-centre.
             final float lps = GlassConfig.pillScale;
             if (lps != 1f) {
-                leftHost.post(() -> {
+                leftHost.post(() -> leftHost.post(() -> {
                     try {
                         leftHost.setPivotY(leftHost.getHeight());
                         leftHost.setPivotX(leftHost.getWidth() / 2f);
@@ -515,7 +515,7 @@ final class BiliHomeBar {
                     } catch (Throwable t) {
                         LiquidGlassModule.logErr("bili pill scale failed", t);
                     }
-                });
+                }));
             }
 
             // Width is owned by the installer's hug (hugContentWidth → per-tab

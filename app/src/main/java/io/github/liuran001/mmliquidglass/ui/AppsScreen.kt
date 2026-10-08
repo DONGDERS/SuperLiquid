@@ -108,7 +108,7 @@ private fun AppParams(cfg: Config.AppCfg, set: (Config.AppCfg) -> Unit) {
             LSliderRow(stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, 0.5f..1.2f) {
                 set(cfg.copy(widthScale = (it * 100).toInt() / 100f))
             }
-            LSliderRow(stringResourceCompat(R.string.apps_pill_scale), cfg.pillScale, 0.7f..1.3f) {
+            LSliderRow(stringResourceCompat(R.string.apps_pill_scale), cfg.pillScale, 0.1f..3f) {
                 set(cfg.copy(pillScale = (it * 100).toInt() / 100f))
             }
             LSliderRow(stringResourceCompat(R.string.apps_bar_offset), cfg.offsetDp.toFloat(), 0f..24f, steps = 23) {
@@ -183,7 +183,7 @@ private fun BiliParams(cfg: Config.BiliCfg, set: (Config.BiliCfg) -> Unit) {
             LSliderRow(stringResourceCompat(R.string.apps_width_scale), base.widthScale, 0.5f..1.2f) {
                 set(cfg.copy(base = base.copy(widthScale = (it * 100).toInt() / 100f)))
             }
-            LSliderRow(stringResourceCompat(R.string.apps_pill_scale), base.pillScale, 0.7f..1.3f) {
+            LSliderRow(stringResourceCompat(R.string.apps_pill_scale), base.pillScale, 0.1f..3f) {
                 set(cfg.copy(base = base.copy(pillScale = (it * 100).toInt() / 100f)))
             }
             LSliderRow(stringResourceCompat(R.string.apps_bar_offset), base.offsetDp.toFloat(), 0f..24f, steps = 23) {

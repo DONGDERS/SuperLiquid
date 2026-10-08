@@ -353,7 +353,10 @@ final class LiquidGlassInstaller {
             // Whole-tab-bar size knob: uniform view scale, pivot bottom-centre.
             final float ps = GlassConfig.pillScale;
             if (ps != 1f) {
-                host.post(() -> {
+                // Wait for the first layout pass: reading height before layout
+                // yields pivotY=0 and the scale unfolds from the top-left
+                // corner, which read as "only the width changed".
+                host.post(() -> host.post(() -> {
                     try {
                         host.setPivotY(host.getHeight());
                         host.setPivotX(host.getWidth() / 2f);
@@ -362,7 +365,7 @@ final class LiquidGlassInstaller {
                     } catch (Throwable t) {
                         LiquidGlassModule.logErr("pill scale failed", t);
                     }
-                });
+                }));
             }
         } catch (Throwable t) {
             restoreAfterFailedReparent(parent, tabView, host, index, originalLp);
