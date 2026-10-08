@@ -353,19 +353,27 @@ final class LiquidGlassInstaller {
             // Whole-tab-bar size knob: uniform view scale, pivot bottom-centre.
             final float ps = GlassConfig.pillScale;
             if (ps != 1f) {
-                // Wait for the first layout pass: reading height before layout
-                // yields pivotY=0 and the scale unfolds from the top-left
-                // corner, which read as "only the width changed".
-                host.post(() -> host.post(() -> {
-                    try {
-                        host.setPivotY(host.getHeight());
-                        host.setPivotX(host.getWidth() / 2f);
-                        host.setScaleX(ps);
-                        host.setScaleY(ps);
-                    } catch (Throwable t) {
-                        LiquidGlassModule.logErr("pill scale failed", t);
+                // Apply only after a REAL layout pass: pre-layout dims give
+                // pivot 0/0 (scale unfolds from the top-left = squashed and
+                // skewed until the first touch re-applied it per-frame).
+                final android.view.ViewTreeObserver vto = host.getViewTreeObserver();
+                vto.addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        if (host.getWidth() == 0 || host.getHeight() == 0) {
+                            return; // still waiting for real dimensions
+                        }
+                        host.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        try {
+                            host.setPivotY(host.getHeight());
+                            host.setPivotX(host.getWidth() / 2f);
+                            host.setScaleX(ps);
+                            host.setScaleY(ps);
+                        } catch (Throwable t) {
+                            LiquidGlassModule.logErr("pill scale failed", t);
+                        }
                     }
-                }));
+                });
             }
         } catch (Throwable t) {
             restoreAfterFailedReparent(parent, tabView, host, index, originalLp);

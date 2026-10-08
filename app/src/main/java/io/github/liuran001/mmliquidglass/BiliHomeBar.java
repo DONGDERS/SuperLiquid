@@ -506,16 +506,24 @@ final class BiliHomeBar {
             // Whole-tab-bar size knob, pivot bottom-centre.
             final float lps = GlassConfig.pillScale;
             if (lps != 1f) {
-                leftHost.post(() -> leftHost.post(() -> {
-                    try {
-                        leftHost.setPivotY(leftHost.getHeight());
+                final android.view.View leftHostF = leftHost;
+                leftHost.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        if (leftHostF.getWidth() == 0 || leftHostF.getHeight() == 0) {
+                            return;
+                        }
+                        leftHostF.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        try {
+                        leftHostF.setPivotY(leftHostF.getHeight());
                         leftHost.setPivotX(leftHost.getWidth() / 2f);
-                        leftHost.setScaleX(lps);
-                        leftHost.setScaleY(lps);
-                    } catch (Throwable t) {
-                        LiquidGlassModule.logErr("bili pill scale failed", t);
+                        leftHostF.setScaleX(lps);
+                        leftHostF.setScaleY(lps);
+                        } catch (Throwable t) {
+                            LiquidGlassModule.logErr("bili pill scale failed", t);
+                        }
                     }
-                }));
+                });
             }
 
             // Width is owned by the installer's hug (hugContentWidth → per-tab

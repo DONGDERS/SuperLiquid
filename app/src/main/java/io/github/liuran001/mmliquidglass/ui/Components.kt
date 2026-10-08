@@ -102,7 +102,7 @@ fun LSwitchRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp, horizontal = if (LocalUiMode.current == UiMode.Miuix) 12.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
@@ -129,7 +129,9 @@ fun LSliderRow(
 ) {
     Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = if (LocalUiMode.current == UiMode.Miuix) 12.dp else 0.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             LText(title)

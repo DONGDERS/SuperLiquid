@@ -53,7 +53,10 @@ final class Backdrop {
         // not cover — which happens as soon as WeChat slides the bar past the
         // bottom of the content — is otherwise never drawn, and transparent
         // black turns into solid black once it goes through the blur.
-        c.drawColor(night ? 0xFF111111 : 0xFFF7F7F7);
+        // Night base = dark surface-container tone (KSU uses the themed surface):
+    // #111111 sampled through the lens read as "dim glass" — the base IS
+    // most of what the shader shows when content is sparse.
+    c.drawColor(night ? 0xFF2C2C2E : 0xFFF7F7F7);
         Method drawChild = drawChild();
         boolean recorded = false;
         boolean sawPage = false;

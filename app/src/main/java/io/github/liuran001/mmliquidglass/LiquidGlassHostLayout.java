@@ -604,7 +604,7 @@ final class LiquidGlassHostLayout extends FrameLayout {
             mBackdropPaint.setShader(shader);
         } else {
             mBackdropPaint.setShader(null);
-            mBackdropPaint.setColor(mDarkMode ? 0x50000000 : 0x8CFFFFFF);
+            mBackdropPaint.setColor(mDarkMode ? 0x50FFFFFF : 0x8CFFFFFF);
         }
         canvas.drawRoundRect(mBounds, r, r, mBackdropPaint);
 
