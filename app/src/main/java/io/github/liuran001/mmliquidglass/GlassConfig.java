@@ -160,5 +160,15 @@ final class GlassConfig {
                     "bili_publish_fallback", biliPublishFallback);
         }
         moduleLayerRead = true;
+        // Full applied-config snapshot: one log line answers "why does the
+        // glass look wrong" without guessing (adb logcat -s SuperLiquid).
+        LiquidGlassModule.log(android.util.Log.INFO,
+                "glass config applied: app=" + keyPrefix
+                        + " enabled=" + enabled
+                        + " width=" + widthScale + " pill=" + pillScale
+                        + " offset=" + barOffsetDp + " blur=" + blurRadius
+                        + " tint=" + tintStrength + " sat=" + saturationBoost
+                        + " gloss=" + glossStrength + " border=" + borderWidthScale
+                        + " hideNative=" + biliHideNative);
     }
 }

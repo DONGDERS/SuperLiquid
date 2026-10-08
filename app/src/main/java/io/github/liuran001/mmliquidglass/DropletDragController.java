@@ -107,10 +107,10 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
 
         float visibility = 0.001f;
         mValue = new Spring(1f, 1000f, visibility, 0f);
-        mVelocity = new Spring(0.5f, 300f, visibility * 10f, 0f);
+        mVelocity = new Spring(1f, 300f, visibility * 10f, 0f);
         mPress = new Spring(1f, 1000f, 0.001f, 0f);
-        mScaleX = new Spring(0.6f, 250f, 0.001f, 1f);
-        mScaleY = new Spring(0.7f, 250f, 0.001f, 1f);
+        mScaleX = new Spring(1f, 250f, 0.001f, 1f);
+        mScaleY = new Spring(1f, 250f, 0.001f, 1f);
     }
 
     /**

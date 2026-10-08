@@ -178,13 +178,20 @@ fun MainRoot(pager: PagerState) {
             val captureGlass = enableFloating && settings.enableFloatingBottomBarBlur
             val blurBackdrop =
                 io.github.liuran001.mmliquidglass.ui.util.rememberBlurBackdrop(settings.enableBlur)
+            android.util.Log.println(android.util.Log.INFO, "SuperLiquid",
+                "glass wiring: uiMode=" + LocalUiMode.current
+                        + " floating=" + enableFloating
+                        + " glassToggle=" + settings.enableFloatingBottomBarBlur
+                        + " capture=" + captureGlass
+                        + " shaderSupported=" + top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported())
 
             // One shared pager for both skins: the theme switch swaps only the
             // Scaffold wrapper, the pager never leaves composition.
             val pagerContent: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit = { pad ->
-                HorizontalPager(
-                    pager,
-                    beyondViewportPageCount = 2,
+                // KSU-exact capture structure: the backdrop modifier lives on
+                // a wrapping Box, NOT on the pager itself — a scroll container
+                // as the record node captures empty layers on some pipelines.
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(pad)
@@ -196,14 +203,20 @@ fun MainRoot(pager: PagerState) {
                             if (blurBackdrop != null) Modifier.layerBackdrop(blurBackdrop)
                             else Modifier
                         )
-                ) { page ->
-                    when (page) {
-                        0 -> HomeScreen(onOpenAbout = { showAbout = true })
-                        1 -> AppsScreen()
-                        else -> io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsPage(
-                            onOpenTheme = { showColorPalette = true },
-                            onResetDefaults = { Config.resetDefaults() },
-                        )
+                ) {
+                    HorizontalPager(
+                        pager,
+                        beyondViewportPageCount = 2,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        when (page) {
+                            0 -> HomeScreen(onOpenAbout = { showAbout = true })
+                            1 -> AppsScreen()
+                            else -> io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsPage(
+                                onOpenTheme = { showColorPalette = true },
+                                onResetDefaults = { Config.resetDefaults() },
+                            )
+                        }
                     }
                 }
             }
