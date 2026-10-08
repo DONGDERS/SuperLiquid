@@ -338,6 +338,18 @@ final class LiquidGlassInstaller {
             parent.removeView(tabView);
             parent.addView(host, index, hostLp);
             host.addView(tabView, tabLp);
+            // Horizontal position knob: shift the whole glass (pill + bar)
+            // sideways; 0 keeps the stock centre alignment.
+            final int xo = GlassConfig.barOffsetXDp;
+            if (xo != 0) {
+                host.post(() -> {
+                    try {
+                        host.setTranslationX(Math.round(xo * density));
+                    } catch (Throwable t) {
+                        LiquidGlassModule.logErr("offset x failed", t);
+                    }
+                });
+            }
             // Whole-tab-bar size knob: uniform view scale, pivot bottom-centre.
             final float ps = GlassConfig.pillScale;
             if (ps != 1f) {

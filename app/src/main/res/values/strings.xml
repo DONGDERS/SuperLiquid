@@ -25,7 +25,8 @@
     <string name="apps_enable">启用 Tab 栏液态玻璃</string>
     <string name="apps_glass_section">液态玻璃</string>
     <string name="apps_width_scale">宽度</string>
-    <string name="apps_bar_offset">底部位置</string>
+    <string name="apps_bar_offset">高度</string>
+    <string name="apps_bar_offset_x">底部横轴坐标</string>
     <string name="apps_blur">模糊强度</string>
     <string name="apps_tint">反射色调强度</string>
     <string name="apps_params">液态玻璃参数</string>

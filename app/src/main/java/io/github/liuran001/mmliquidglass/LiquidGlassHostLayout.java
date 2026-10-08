@@ -394,9 +394,11 @@ final class LiquidGlassHostLayout extends FrameLayout {
 
     private void setupPaints() {
         if (mDarkMode) {
-            mTintPaint.setColor(scaleTintAlpha(0x33000000));
+            // KSU-style night glass: WHITE veils (frosted-luminous), never
+            // black-on-dark which is what read as "dim" before.
+            mTintPaint.setColor(scaleTintAlpha(0x24FFFFFF));
             mBorderPaint.setColor(0x1FFFFFFF);
-            mBackdropPaint.setColor(0x40000000);
+            mBackdropPaint.setColor(0x40FFFFFF);
         } else {
             mTintPaint.setColor(scaleTintAlpha(0x4DFFFFFF));
             mBorderPaint.setColor(0x2EFFFFFF);

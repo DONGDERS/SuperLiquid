@@ -148,7 +148,9 @@ fun LSliderRow(
                 value = value,
                 onValueChange = onChange,
                 valueRange = range,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp, bottom = 10.dp, start = 4.dp, end = 4.dp)
             )
         }
     }

@@ -5,9 +5,12 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +50,9 @@ fun AppsScreen() {
                 "mm" -> AppCard(t, Config.mm, installed("mm")) { Config.setApp("mm", it) }
                 "qq" -> AppCard(t, Config.qq, installed("qq")) { Config.setApp("qq", it) }
                 else -> BiliCard(t, Config.bili, installed("bili")) { Config.setBili(it) }
+            }
+            if (LocalUiMode.current == UiMode.Miuix) {
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
@@ -107,6 +113,9 @@ private fun AppParams(cfg: Config.AppCfg, set: (Config.AppCfg) -> Unit) {
             }
             LSliderRow(stringResourceCompat(R.string.apps_bar_offset), cfg.offsetDp.toFloat(), 0f..24f, steps = 23) {
                 set(cfg.copy(offsetDp = it.toInt()))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_bar_offset_x), cfg.offsetXdp.toFloat(), -120f..120f) {
+                set(cfg.copy(offsetXdp = it.toInt()))
             }
             LSliderRow(stringResourceCompat(R.string.apps_blur), cfg.blur.toFloat(), 1f..8f, steps = 6) {
                 set(cfg.copy(blur = it.toInt()))
@@ -179,6 +188,9 @@ private fun BiliParams(cfg: Config.BiliCfg, set: (Config.BiliCfg) -> Unit) {
             }
             LSliderRow(stringResourceCompat(R.string.apps_bar_offset), base.offsetDp.toFloat(), 0f..24f, steps = 23) {
                 set(cfg.copy(base = base.copy(offsetDp = it.toInt())))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_bar_offset_x), base.offsetXdp.toFloat(), -120f..120f) {
+                set(cfg.copy(base = base.copy(offsetXdp = it.toInt())))
             }
             LSliderRow(stringResourceCompat(R.string.apps_blur), base.blur.toFloat(), 1f..8f, steps = 6) {
                 set(cfg.copy(base = base.copy(blur = it.toInt())))

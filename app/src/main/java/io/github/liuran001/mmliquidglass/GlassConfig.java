@@ -35,6 +35,8 @@ final class GlassConfig {
 
     /** Distance between the bottom of the glass pill and the screen edge, dp. */
     static volatile int barOffsetDp = 12;
+    /** Horizontal offset of the glass pill from screen centre, dp (negative = left). */
+    static volatile int barOffsetXDp = 0;
     /** Pill width multiplier, per app (bili default 0.7, others 1.0). */
     static volatile float widthScale = 1f;
     /** Region-buffer stack-blur radius for the glass sampling. */
@@ -89,6 +91,7 @@ final class GlassConfig {
         // long-lived process cannot inherit another app's values.
         enabled = true;
         barOffsetDp = 12;
+        barOffsetXDp = 0;
         widthScale = "bili".equals(keyPrefix) ? 0.7f : 1f;
         blurRadius = 3;
         tintStrength = 1f;
@@ -144,6 +147,7 @@ final class GlassConfig {
     private static void apply(SharedPreferences p) {
         enabled = p.getBoolean(k("enabled"), enabled);
         barOffsetDp = p.getInt(k("offset_dp"), barOffsetDp);
+        barOffsetXDp = p.getInt(k("offsetx_dp"), barOffsetXDp);
         widthScale = p.getFloat(k("width_scale"), widthScale);
         pillScale = p.getFloat(k("pill_scale"), pillScale);
         blurRadius = p.getInt(k("blur"), blurRadius);
@@ -166,7 +170,7 @@ final class GlassConfig {
                 "glass config applied: app=" + keyPrefix
                         + " enabled=" + enabled
                         + " width=" + widthScale + " pill=" + pillScale
-                        + " offset=" + barOffsetDp + " blur=" + blurRadius
+                        + " offset=" + barOffsetDp + " offsetX=" + barOffsetXDp + " blur=" + blurRadius
                         + " tint=" + tintStrength + " sat=" + saturationBoost
                         + " gloss=" + glossStrength + " border=" + borderWidthScale
                         + " hideNative=" + biliHideNative);

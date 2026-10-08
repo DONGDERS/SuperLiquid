@@ -25,6 +25,7 @@ object Config {
         val enabled: Boolean = true,
         val widthScale: Float = 1.0f,
         val offsetDp: Int = 12,
+        val offsetXdp: Int = 0,
         val blur: Int = 3,
         val tint: Float = 1.0f,
         val pillScale: Float = 1.0f,
@@ -150,6 +151,7 @@ object Config {
             putBoolean("${k}_enabled", c.enabled)
             putFloat("${k}_width_scale", c.widthScale)
             putInt("${k}_offset_dp", c.offsetDp)
+            putInt("${k}_offsetx_dp", c.offsetXdp)
             putInt("${k}_blur", c.blur)
             putFloat("${k}_tint", c.tint)
             putFloat("${k}_pill_scale", c.pillScale)
@@ -187,6 +189,7 @@ object Config {
             enabled = p.getBoolean("${key}_enabled", def.enabled),
             widthScale = p.getFloat("${key}_width_scale", def.widthScale),
             offsetDp = p.getInt("${key}_offset_dp", def.offsetDp),
+            offsetXdp = p.getInt("${key}_offsetx_dp", def.offsetXdp),
             blur = p.getInt("${key}_blur", def.blur),
             tint = p.getFloat("${key}_tint", def.tint),
             pillScale = p.getFloat("${key}_pill_scale", def.pillScale),
