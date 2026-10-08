@@ -179,7 +179,7 @@ fun MainRoot(pager: PagerState) {
             val blurBackdrop =
                 io.github.liuran001.mmliquidglass.ui.util.rememberBlurBackdrop(settings.enableBlur)
             android.util.Log.println(android.util.Log.INFO, "SuperLiquid",
-                "glass wiring: uiMode=" + LocalUiMode.current
+                "dongder.super.liquid glass wiring: uiMode=" + LocalUiMode.current
                         + " floating=" + enableFloating
                         + " glassToggle=" + settings.enableFloatingBottomBarBlur
                         + " capture=" + captureGlass
@@ -221,7 +221,21 @@ fun MainRoot(pager: PagerState) {
                 }
             }
 
+            // KSU MainPagerState pattern: the pill position is set IMMEDIATELY
+            // on tap and re-synced from the pager only when it settles.
+            // Binding to pager.currentPage double-drove the pill (its own
+            // animation + the pager's halfway snap) — the "bounce" at the end
+            // of every move.
+            var selectedPage by androidx.compose.runtime.saveable.rememberSaveable {
+                androidx.compose.runtime.mutableIntStateOf(0)
+            }
+            androidx.compose.runtime.LaunchedEffect(pager) {
+                androidx.compose.runtime.snapshotFlow { pager.settledPage }
+                    .collect { selectedPage = it }
+            }
+
             fun goto(i: Int) {
+                selectedPage = i
                 scope.launch { pager.animateScrollToPage(i) }
             }
 
@@ -234,7 +248,7 @@ fun MainRoot(pager: PagerState) {
                     contentAlignment = Alignment.Center
                 ) {
                     FloatingBottomBar(
-                        selectedIndex = pager.currentPage,
+                        selectedIndex = selectedPage,
                         onSelected = { goto(it) },
                         backdrop = pageBackdrop,
                         tabsCount = NAV.size,
@@ -242,7 +256,7 @@ fun MainRoot(pager: PagerState) {
                     ) { activateTab ->
                         NAV.forEachIndexed { i, e ->
                             FloatingBottomBarItem(
-                                selected = pager.currentPage == i,
+                                selected = selectedPage == i,
                                 onClick = { activateTab(i) },
                                 modifier = Modifier.defaultMinSize(minWidth = 76.dp),
                             ) {

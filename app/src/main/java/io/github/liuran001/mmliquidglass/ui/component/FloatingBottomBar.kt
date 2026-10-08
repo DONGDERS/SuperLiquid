@@ -273,15 +273,13 @@ fun FloatingBottomBar(
                     onSelectedUpdated(targetIndex)
                 }
                 updateValue(targetIndex.toFloat())
-                animationScope.launch {
-                    offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
-                }
+                // Edge rubber-band offset snaps back instead of springing:
+                // the spring replay read as a bounce at the screen edges.
+                animationScope.launch { offsetAnimation.snapTo(0f) }
             },
             onDragCancelled = {
                 updateValue(currentIndex.toFloat())
-                animationScope.launch {
-                    offsetAnimation.animateTo(0f, spring(1f, 300f, 0.5f))
-                }
+                animationScope.launch { offsetAnimation.snapTo(0f) }
             },
             onDrag = { _, dragAmount ->
                 if (tabWidthPx > 0f && dragAmount.x != 0f) {
