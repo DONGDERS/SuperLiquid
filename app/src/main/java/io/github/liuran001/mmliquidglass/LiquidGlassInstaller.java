@@ -369,6 +369,10 @@ final class LiquidGlassInstaller {
                             host.setPivotX(host.getWidth() / 2f);
                             host.setScaleX(ps);
                             host.setScaleY(ps);
+                            LiquidGlassModule.log(android.util.Log.INFO,
+                                    "pill scale applied: ps=" + ps
+                                            + " w=" + host.getWidth() + " h=" + host.getHeight()
+                                            + " pivot=(" + host.getPivotX() + "," + host.getPivotY() + ")");
                         } catch (Throwable t) {
                             LiquidGlassModule.logErr("pill scale failed", t);
                         }

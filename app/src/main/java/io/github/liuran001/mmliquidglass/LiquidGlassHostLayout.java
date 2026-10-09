@@ -393,12 +393,13 @@ final class LiquidGlassHostLayout extends FrameLayout {
     }
 
     private void setupPaints() {
+        LiquidGlassModule.log(android.util.Log.INFO, "host setupPaints dark=" + mDarkMode);
         if (mDarkMode) {
             // KSU-style night glass: WHITE veils (frosted-luminous), never
             // black-on-dark which is what read as "dim" before.
-            mTintPaint.setColor(scaleTintAlpha(0x24FFFFFF));
+            mTintPaint.setColor(scaleTintAlpha(0x33000000));
             mBorderPaint.setColor(0x1FFFFFFF);
-            mBackdropPaint.setColor(0x40FFFFFF);
+            mBackdropPaint.setColor(0x40000000);
         } else {
             mTintPaint.setColor(scaleTintAlpha(0x4DFFFFFF));
             mBorderPaint.setColor(0x2EFFFFFF);
@@ -602,9 +603,14 @@ final class LiquidGlassHostLayout extends FrameLayout {
                     getHeight() / (float) mRegionBuf.getHeight());
             shader.setLocalMatrix(m);
             mBackdropPaint.setShader(shader);
+            LiquidGlassModule.log(android.util.Log.INFO,
+                    "host draw: SHADER path dark=" + mDarkMode);
         } else {
             mBackdropPaint.setShader(null);
-            mBackdropPaint.setColor(mDarkMode ? 0x50FFFFFF : 0x8CFFFFFF);
+            mBackdropPaint.setColor(mDarkMode ? 0x50000000 : 0x8CFFFFFF);
+            LiquidGlassModule.log(android.util.Log.INFO,
+                    "host draw: FALLBACK path dark=" + mDarkMode
+                            + " veil=0x" + Integer.toHexString(mBackdropPaint.getColor()));
         }
         canvas.drawRoundRect(mBounds, r, r, mBackdropPaint);
 
@@ -621,11 +627,15 @@ final class LiquidGlassHostLayout extends FrameLayout {
 
     private void playRevealAnimation() {
         try {
+            // This animates the HOST, whose scaleY carries pillScale. Ending
+            // the reveal at a hard 1f left a ps>1 bar stretched wide but
+            // squashed flat — the reveal must land on the configured scale.
+            float ps = Math.max(GlassConfig.pillScale, 0.05f);
             setPivotX(getWidth() * 0.5f);
             setPivotY(getHeight());
-            setScaleY(0.86f);
+            setScaleY(ps * 0.86f);
             setAlpha(0f);
-            animate().alpha(1f).scaleY(1f)
+            animate().alpha(1f).scaleY(ps)
                     .setDuration(380L)
                     .setInterpolator(new OvershootInterpolator(1.1f))
                     .start();

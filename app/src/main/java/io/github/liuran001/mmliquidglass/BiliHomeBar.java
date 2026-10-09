@@ -519,6 +519,10 @@ final class BiliHomeBar {
                         leftHost.setPivotX(leftHost.getWidth() / 2f);
                         leftHostF.setScaleX(lps);
                         leftHostF.setScaleY(lps);
+                        LiquidGlassModule.log(android.util.Log.INFO,
+                                "bili scale applied: ps=" + lps
+                                        + " w=" + leftHostF.getWidth() + " h=" + leftHostF.getHeight()
+                                        + " pivot=(" + leftHostF.getPivotX() + "," + leftHostF.getPivotY() + ")");
                         } catch (Throwable t) {
                             LiquidGlassModule.logErr("bili pill scale failed", t);
                         }

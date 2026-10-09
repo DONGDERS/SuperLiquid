@@ -49,6 +49,16 @@ final class Backdrop {
      */
     static void draw(RecordingCanvas c, ViewGroup pager, boolean night,
                      int left, int top, int width, int height) {
+        draw(c, pager, night, left, top, width, height, 1f);
+    }
+
+    /**
+     * @param contentScale extra minification of the captured page about the
+     *     capture centre, with the base fill kept full-size. &lt;1 shows more
+     *     background through the same refraction rim; the droplet passes 1.
+     */
+    static void draw(RecordingCanvas c, ViewGroup pager, boolean night,
+                     int left, int top, int width, int height, float contentScale) {
         // Lay down the page colour first. Any part of the capture the pages do
         // not cover — which happens as soon as WeChat slides the bar past the
         // bottom of the content — is otherwise never drawn, and transparent
@@ -56,7 +66,13 @@ final class Backdrop {
         // Night base = dark surface-container tone (KSU uses the themed surface):
     // #111111 sampled through the lens read as "dim glass" — the base IS
     // most of what the shader shows when content is sparse.
-    c.drawColor(night ? 0xFF2C2C2E : 0xFFF7F7F7);
+            c.drawColor(night ? 0xFF111111 : 0xFFF7F7F7);
+        // Minify the page content about the capture centre; the base fill above
+        // stays full-size so the outer band keeps a colour under the blur.
+        if (Math.abs(contentScale - 1f) > 0.001f) {
+            c.scale(contentScale, contentScale,
+                    width * 0.5f, height * 0.5f);
+        }
         Method drawChild = drawChild();
         boolean recorded = false;
         boolean sawPage = false;

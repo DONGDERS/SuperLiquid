@@ -79,6 +79,12 @@ fun MiuixKernelSUTheme(
             MonetColorsProvider.UpdateCss()
             CompositionLocalProvider(
                 LocalContentColor provides MiuixTheme.colorScheme.onBackground,
+                // Screens still render material3 Text/Icon in places (LScreen
+                // titles, stray labels). Those read material3's LocalContentColor,
+                // which the Miuix skin never provided — so they stayed default
+                // black in dark mode ("应用配置" invisible). Provide it too.
+                androidx.compose.material3.LocalContentColor provides
+                        MiuixTheme.colorScheme.onBackground,
             ) {
                 content()
             }

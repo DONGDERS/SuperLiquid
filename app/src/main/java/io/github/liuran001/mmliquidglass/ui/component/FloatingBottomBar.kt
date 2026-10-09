@@ -82,6 +82,11 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.sensor.rememberDeviceTilt
 import top.yukonga.miuix.kmp.theme.LocalContentColor
+// The bar's content lambda renders material3 Icons, which read material3's
+// LocalContentColor — a different CompositionLocal from Miuix's. Under the
+// Miuix skin nothing provided it, so icons kept their default black in dark
+// mode. Provide both everywhere the Miuix local is set.
+import androidx.compose.material3.LocalContentColor as M3ContentColor
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import kotlin.math.PI
 import kotlin.math.abs
@@ -217,7 +222,13 @@ fun FloatingBottomBar(
     val accentColor = MiuixTheme.colorScheme.primary
     val tabContentColor = MiuixTheme.colorScheme.onSurface
     val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
-    val containerColor = if (isBlurEnabled) surfaceContainer.copy(0.4f) else surfaceContainer
+    // Dark-theme surfaceContainer is near-black, so the 40% glass veil was
+    // invisible and the bar read as "dim" — use an explicit lighter grey.
+    val containerColor = when {
+        !isBlurEnabled -> surfaceContainer
+        isInDarkTheme() -> androidx.compose.ui.graphics.Color(0xFF48484A).copy(alpha = 0.4f)
+        else -> surfaceContainer.copy(0.4f)
+    }
 
     val tabsBackdrop = rememberLayerBackdrop()
     val density = LocalDensity.current
@@ -387,7 +398,10 @@ fun FloatingBottomBar(
                 .padding(4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            CompositionLocalProvider(LocalContentColor provides tabContentColor) {
+            CompositionLocalProvider(
+                LocalContentColor provides tabContentColor,
+                M3ContentColor provides tabContentColor,
+            ) {
                 content(::activateTab)
             }
         }
@@ -398,6 +412,7 @@ fun FloatingBottomBar(
                     lerp(1f, 1.2f, dampedDragAnimation.pressProgress)
                 },
                 LocalContentColor provides accentColor,
+                M3ContentColor provides accentColor,
             ) {
                 Row(
                     Modifier
@@ -490,7 +505,10 @@ fun FloatingBottomBar(
                         .width(tabWidthDp),
                     contentAlignment = Alignment.CenterStart,
                 ) {
-                    CompositionLocalProvider(LocalContentColor provides accentColor) {
+                    CompositionLocalProvider(
+                        LocalContentColor provides accentColor,
+                        M3ContentColor provides accentColor,
+                    ) {
                         Row(
                             Modifier
                                 .clearAndSetSemantics {}

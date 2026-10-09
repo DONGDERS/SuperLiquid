@@ -416,13 +416,13 @@ final class DropletPanel extends View {
 
     /** Updates the resting wash and lens fallback without stacking a background. */
     void setTheme(boolean night) {
+        LiquidGlassModule.log(android.util.Log.INFO,
+                "droplet setTheme night=" + night);
         mNight = night;
         // Same 40% surface-container wash used by LiquidGlassPanel. The old
         // 90% fill hid nearly all of the blur as soon as the droplet appeared.
-        // Night glass: lighter veil + stronger white sheen so the blur reads
-        // frosted-luminous instead of dimmed.
-        mPillSurface.setColor(night ? 0x40464648 : 0x66F2F2F7);
-        mWash.setColor(night ? 0x26FFFFFF : 0x1A000000);
+        mPillSurface.setColor(night ? 0x662C2C2E : 0x66F2F2F7);
+        mWash.setColor(night ? 0x1AFFFFFF : 0x1A000000);
         invalidate();
     }
 
@@ -569,6 +569,16 @@ final class DropletPanel extends View {
                                float p, float viewScale) {
         ViewGroup tabRow = mTabRowRef.get();
         int[] src = mSrc;
+        // The tab row and the pill live INSIDE the scaled host, so on screen
+        // they render at cumulativeScale(tabRow) (= pillScale × ancestors).
+        // The page lives OUTSIDE the host and never scales. Compensating both
+        // copies by the droplet's full cumulative scale pinned the tab/pill
+        // copies at a net 1× while the real bar rendered at pillScale — the
+        // "enlarge the bar and the lens reflection stops scaling" bug. The
+        // tab/pill copies must ride the shared host scale; only the page copy
+        // stays in fixed screen space.
+        float sharedScale = tabRow != null ? ViewGeom.cumulativeScale(tabRow) : 1f;
+        float copyScale = sharedScale / viewScale;
         // Apply the scale compensation while compositing the effected node, not
         // while recording its source. This keeps the 4dp blur at 4dp after the
         // outer droplet scale is applied instead of enlarging the blur radius.
@@ -591,8 +601,8 @@ final class DropletPanel extends View {
         View pill = mPillRef.get();
         if (tabRow != null && ViewGeom.unscaledScreenPos(tabRow, src)) {
             int save = c.save();
-            if (Math.abs(viewScale - 1f) > 0.001f) {
-                c.scale(1f / viewScale, 1f / viewScale,
+            if (Math.abs(copyScale - 1f) > 0.001f) {
+                c.scale(copyScale, copyScale,
                         nw * 0.5f, nh * 0.5f);
             }
             c.translate(mPad - (self[0] - src[0]), mPad - (self[1] - src[1]));
@@ -617,8 +627,8 @@ final class DropletPanel extends View {
             int save = c.save();
             // Keep app content in fixed screen space while the droplet itself
             // grows around it.
-            if (Math.abs(viewScale - 1f) > 0.001f) {
-                c.scale(1f / viewScale, 1f / viewScale,
+            if (Math.abs(copyScale - 1f) > 0.001f) {
+                c.scale(copyScale, copyScale,
                         nw * 0.5f, nh * 0.5f);
             }
             c.translate(mPad - (self[0] - src[0]), mPad - (self[1] - src[1]));
@@ -691,9 +701,13 @@ final class DropletPanel extends View {
         float band = REFRACTION_DP * mDensity;
         float half = contentHalfHeight(tabRow);
         if (half > 0f) {
-            float scale = ViewGeom.cumulativeScale(this);
+            // Same factor paintBackdrop draws the tab copy at: the copy lives
+            // in this node's local space, so its content occupies
+            // half * (1 + zoom*p) * copyScale here.
+            float copyScale = tabRow != null
+                    ? ViewGeom.cumulativeScale(tabRow) / viewScale : 1f;
             float contentSafe = Math.max(0f,
-                    h * 0.5f - half * (1f + TAB_ZOOM * p) / scale);
+                    h * 0.5f - half * (1f + TAB_ZOOM * p) * copyScale);
             // Let a small part of the wider rim overlap the content bounds. The
             // old strict clamp reduced WeChat back to roughly 14–15% and made the
             // edge deformation look too thin even though the centre stayed clear.

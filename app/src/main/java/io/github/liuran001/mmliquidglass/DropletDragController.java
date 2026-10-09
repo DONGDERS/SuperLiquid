@@ -54,6 +54,7 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
 
     private WeakReference<View> mPillRef = new WeakReference<>(null);
     private WeakReference<View> mHostRef = new WeakReference<>(null);
+    private int mFrameCount = 0;
     private final WeakReference<View> mDropletRef;
     private WeakReference<ViewGroup> mTabRowRef;
     private final int mTouchSlop;
@@ -414,6 +415,14 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
             float base = GlassConfig.pillScale;
             grown.setScaleX(base * grow);
             grown.setScaleY(base * grow);
+            if (mFrameCount < 3) {
+                mFrameCount++;
+                LiquidGlassModule.log(android.util.Log.INFO,
+                        "drag frame " + mFrameCount + ": base=" + base + " grow=" + grow
+                                + " scaleX=" + grown.getScaleX() + " scaleY=" + grown.getScaleY()
+                                + " w=" + grown.getWidth() + " h=" + grown.getHeight()
+                                + " pivot=(" + grown.getPivotX() + "," + grown.getPivotY() + ")");
+            }
             if (grown != pill && pill.getScaleX() != 1f) {
                 pill.setScaleX(1f);
                 pill.setScaleY(1f);
