@@ -610,7 +610,7 @@ final class DropletPanel extends View {
                     && ViewGeom.unscaledScreenPos(pill, mTmp)) {
                 int ps = c.save();
                 c.translate(mTmp[0] - src[0], mTmp[1] - src[1]);
-                ((LiquidGlassPanel) pill).drawEmbedded(c);
+                ((LiquidGlassPanel) pill).drawEmbedded(c, sharedScale);
                 c.restoreToCount(ps);
             }
             c.restoreToCount(save);

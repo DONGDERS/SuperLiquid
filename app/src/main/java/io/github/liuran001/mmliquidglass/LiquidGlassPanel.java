@@ -327,15 +327,24 @@ final class LiquidGlassPanel extends View {
         return stale;
     }
 
-    /** Draws the resting pill material into the droplet's combined backdrop. */
-    void drawEmbedded(Canvas canvas) {
+    /**
+     * Draws the resting pill material into the droplet's combined backdrop.
+     *
+     * @param captureScale the scale the droplet's node will composite this
+     *     copy at. The capture is recorded at {@code 1 / captureScale} so the
+     *     pill's content lands 1:1 on screen — recorded uncompensated it
+     *     inherits the droplet's press scale and the capsule centre shows the
+     *     page magnified ~1.25× at pillScale 1.2, snapping to 1:1 at the
+     *     lens-off handoff (the release jump).
+     */
+    void drawEmbedded(Canvas canvas, float captureScale) {
         int w = getWidth();
         int h = getHeight();
         if (w <= 0 || h <= 0) {
             return;
         }
         ViewGeom.unscaledScreenPos(this, mSelf);
-        drawPanel(canvas, w, h, h * 0.5f, mEmbeddedNode, mSelf, 1f);
+        drawPanel(canvas, w, h, h * 0.5f, mEmbeddedNode, mSelf, captureScale);
     }
 
     /**
@@ -431,9 +440,14 @@ final class LiquidGlassPanel extends View {
                 mLens.setFloatUniform("size", w, h);
                 mLens.setFloatUniform("offset", -mPad, -mPad);
                 mLens.setFloatUniform("cornerRadii", radius, radius, radius, radius);
-                mLens.setFloatUniform("refractionHeight", REFRACTION_DP * mDensity);
+                // KSU's 24dp band is tuned for its 64dp pill (25% flat centre).
+                // Our bars run 41-46dp: the same absolute band overlaps at the
+                // middle and bends the entire surface. Keep KSU's 0.375 ratio
+                // of the pill height instead — a flat centre always survives.
+                float band = Math.min(REFRACTION_DP * mDensity, h * 0.375f);
+                mLens.setFloatUniform("refractionHeight", band);
                 // KernelSU passes the amount negated.
-                mLens.setFloatUniform("refractionAmount", -REFRACTION_DP * mDensity);
+                mLens.setFloatUniform("refractionAmount", -band);
                 mLens.setFloatUniform("depthEffect", 0f);
                 mChain = RenderEffect.createChainEffect(
                         RenderEffect.createRuntimeShaderEffect(mLens, "content"), frost);
