@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.runtime.Composable
@@ -361,23 +362,19 @@ fun ColorPaletteScreenMiuix(
                             checked = uiState.enableSwipeDismiss,
                             onCheckedChange = actions.onSetEnableSwipeDismiss,
                         )
-                        OverlayDropdownPreference(
-                            title = stringResource(id = R.string.settings_pager_gesture_mode),
-                            items = listOf(
-                                stringResource(id = R.string.settings_pager_gesture_native),
-                                stringResource(id = R.string.settings_pager_gesture_cross_axis),
-                                stringResource(id = R.string.settings_pager_gesture_ios_like),
-                            ),
+                        SwitchPreference(
+                            title = stringResource(id = R.string.settings_predictive_back),
+                            summary = stringResource(id = R.string.settings_predictive_back_summary),
                             startAction = {
                                 Icon(
-                                    Icons.Filled.ViewCarousel,
+                                    Icons.AutoMirrored.Filled.ArrowBack,
                                     modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_pager_gesture_mode),
+                                    contentDescription = stringResource(id = R.string.settings_predictive_back),
                                     tint = colorScheme.onBackground,
                                 )
                             },
-                            selectedIndex = uiState.pagerInterceptionMode.coerceIn(0, 2),
-                            onSelectedIndexChange = actions.onSetPagerInterceptionMode,
+                            checked = uiState.enablePredictiveBack,
+                            onCheckedChange = actions.onSetEnablePredictiveBack,
                         )
 
                         var sliderValue by remember(uiState.pageScale) { mutableFloatStateOf(uiState.pageScale) }

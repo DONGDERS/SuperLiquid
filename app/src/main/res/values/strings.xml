@@ -101,6 +101,8 @@
     <string name="settings_pager_gesture_cross_axis">跨轴拦截</string>
     <string name="settings_pager_gesture_ios_like">iOS 风格</string>
     <string name="settings_pager_gesture_mode">页面切换手势</string>
+    <string name="settings_predictive_back">预测性返回手势</string>
+    <string name="settings_predictive_back_summary">在非首页使用返回手势时，页面跟手滑回首页</string>
     <string name="settings_pager_gesture_native">默认</string>
     <string name="settings_theme">主题设置</string>
     <string name="settings_theme_mode_dark">深色</string>

@@ -14,8 +14,8 @@ android {
         applicationId = "dongder.super.liquid"
         minSdk = 33
         targetSdk = 37
-        versionCode = 47
-        versionName = "0.4.7-r17"
+        versionCode = 48
+        versionName = "0.4.7-r18"
     }
 
     lint {
@@ -89,4 +89,5 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:0.9.4")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:0.9.4")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.11.0")
+    implementation("androidx.navigationevent:navigationevent-compose:1.1.2")
 }

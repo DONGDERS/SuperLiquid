@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlinx.serialization.Serializable
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavKey
@@ -153,6 +156,16 @@ fun MainRoot(pager: PagerState) {
         entry<RouteMain> {
             val settings = SettingsState.flow.collectAsStateWithLifecycle().value
             val enableFloating = settings.enableFloatingBottomBar
+
+            // KSU MainScreenBackHandler: with no sub-page on top and the
+            // toggle on, the back gesture snaps the pager back to page 0.
+            val navEventState = rememberNavigationEventState(NavigationEventInfo.None)
+            val isPagerBackEnabled = backStack.size == 1 && settings.enablePredictiveBack && pager.settledPage != 0
+            NavigationBackHandler(
+                state = navEventState,
+                isBackEnabled = isPagerBackEnabled,
+                onBackCompleted = { scope.launch { pager.animateScrollToPage(0) } },
+            )
             // KSU MainScreen: the backdrop carries a surface base fill so an
             // uncaptured/empty layer reads as the theme surface, NOT black —
             // the bare rememberLayerBackdrop() was the grey-glass root cause.

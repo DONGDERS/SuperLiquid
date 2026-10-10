@@ -42,6 +42,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Menu
@@ -286,16 +287,12 @@ fun ColorPaletteScreenMaterial(
                             )
                         },
                         {
-                            SegmentedDropdownItem(
-                                icon = Icons.Filled.ViewCarousel,
-                                title = stringResource(id = R.string.settings_pager_gesture_mode),
-                                items = listOf(
-                                    stringResource(id = R.string.settings_pager_gesture_native),
-                                    stringResource(id = R.string.settings_pager_gesture_cross_axis),
-                                    stringResource(id = R.string.settings_pager_gesture_ios_like),
-                                ),
-                                selectedIndex = uiState.pagerInterceptionMode.coerceIn(0, 2),
-                                onItemSelected = actions.onSetPagerInterceptionMode,
+                            SegmentedSwitchItem(
+                                icon = Icons.AutoMirrored.Filled.ArrowBack,
+                                title = stringResource(id = R.string.settings_predictive_back),
+                                summary = stringResource(id = R.string.settings_predictive_back_summary),
+                                checked = uiState.enablePredictiveBack,
+                                onCheckedChange = actions.onSetEnablePredictiveBack,
                             )
                         },
                     ),
