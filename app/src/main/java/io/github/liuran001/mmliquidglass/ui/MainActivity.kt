@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import top.yukonga.miuix.kmp.nav.core.NavDisplay
+import top.yukonga.miuix.kmp.nav.core.NavKey
+import top.yukonga.miuix.kmp.nav.core.rememberNavBackStack
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -126,26 +129,24 @@ private val NAV = listOf(
     NavEntry(R.string.nav_settings, Icons.Filled.Settings, Icons.Outlined.Settings),
 )
 
+// Sub-page routes. KSU renders its sub-screens with miuix-nav NavDisplay:
+// the slide transition + finger-following predictive back come from the
+// library. The old boolean toggle hard-swapped screens (no animation) and
+// its plain BackHandler swallowed the system back gesture entirely.
+private data object RouteMain : NavKey
+private data object RouteAbout : NavKey
+private data object RouteColorPalette : NavKey
+
 @Composable
 fun MainRoot(pager: PagerState) {
     val scope = rememberCoroutineScope()
-    var showAbout by rememberSaveable { mutableStateOf(false) }
-    var showColorPalette by rememberSaveable { mutableStateOf(false) }
+    val backStack = rememberNavBackStack(RouteMain)
 
-    when {
-        showAbout -> {
-            androidx.activity.compose.BackHandler { showAbout = false }
-            io.github.liuran001.mmliquidglass.ui.screen.about.AboutScreen(onBack = { showAbout = false })
-        }
-
-        showColorPalette -> {
-            androidx.activity.compose.BackHandler { showColorPalette = false }
-            io.github.liuran001.mmliquidglass.ui.screen.colorpalette.ColorPaletteScreen(
-                onBack = { showColorPalette = false }
-            )
-        }
-
-        else -> {
+    NavDisplay(
+        backStack = backStack,
+        onBack = { backStack.removeLastOrNull() },
+    ) {
+        entry<RouteMain> {
             val settings = SettingsState.flow.collectAsStateWithLifecycle().value
             val enableFloating = settings.enableFloatingBottomBar
             // KSU MainScreen: the backdrop carries a surface base fill so an
@@ -196,10 +197,10 @@ fun MainRoot(pager: PagerState) {
                         modifier = Modifier.fillMaxSize()
                     ) { page ->
                         when (page) {
-                            0 -> HomeScreen(onOpenAbout = { showAbout = true })
+                            0 -> HomeScreen(onOpenAbout = { backStack.add(RouteAbout) })
                             1 -> AppsScreen()
                             else -> io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsPage(
-                                onOpenTheme = { showColorPalette = true },
+                                onOpenTheme = { backStack.add(RouteColorPalette) },
                                 onResetDefaults = { Config.resetDefaults() },
                             )
                         }
@@ -329,6 +330,18 @@ fun MainRoot(pager: PagerState) {
                     )
                 }
             }
+        }
+
+        entry<RouteAbout> {
+            io.github.liuran001.mmliquidglass.ui.screen.about.AboutScreen(
+                onBack = { backStack.removeLastOrNull() }
+            )
+        }
+
+        entry<RouteColorPalette> {
+            io.github.liuran001.mmliquidglass.ui.screen.colorpalette.ColorPaletteScreen(
+                onBack = { backStack.removeLastOrNull() }
+            )
         }
     }
 }

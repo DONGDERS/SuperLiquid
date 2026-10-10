@@ -13,8 +13,8 @@ android {
         applicationId = "dongder.super.liquid"
         minSdk = 33
         targetSdk = 37
-        versionCode = 44
-        versionName = "0.4.7-r14"
+        versionCode = 47
+        versionName = "0.4.7-r17"
     }
 
     lint {
@@ -86,4 +86,5 @@ dependencies {
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:0.9.4")
     implementation("com.materialkolor:material-kolor:5.0.1")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:0.9.4")
+    implementation("top.yukonga.miuix.kmp:miuix-nav-android:0.9.4")
 }
