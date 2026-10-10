@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import kotlinx.serialization.Serializable
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavKey
 import top.yukonga.miuix.kmp.nav.core.rememberNavBackStack
@@ -133,8 +134,11 @@ private val NAV = listOf(
 // the slide transition + finger-following predictive back come from the
 // library. The old boolean toggle hard-swapped screens (no animation) and
 // its plain BackHandler swallowed the system back gesture entirely.
+@Serializable
 private data object RouteMain : NavKey
+@Serializable
 private data object RouteAbout : NavKey
+@Serializable
 private data object RouteColorPalette : NavKey
 
 @Composable

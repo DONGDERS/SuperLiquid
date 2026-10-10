@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 android {
@@ -87,4 +88,5 @@ dependencies {
     implementation("com.materialkolor:material-kolor:5.0.1")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:0.9.4")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:0.9.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.11.0")
 }
