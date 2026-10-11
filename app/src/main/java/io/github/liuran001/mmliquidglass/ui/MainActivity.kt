@@ -149,6 +149,19 @@ fun MainRoot(pager: PagerState) {
     val scope = rememberCoroutineScope()
     val backStack = rememberNavBackStack(RouteMain)
 
+    // KSU MainScreenBackHandler: with no sub-page on top and the toggle on,
+    // the back gesture snaps the pager back to page 0. Lives at the ROOT
+    // dispatcher (outside NavDisplay): miuix-nav disables the per-entry
+    // dispatcher at depth 0, an in-entry handler would never fire there.
+    val pagerBackSettings = SettingsState.flow.collectAsStateWithLifecycle().value
+    val navEventState = rememberNavigationEventState(NavigationEventInfo.None)
+    val isPagerBackEnabled = backStack.size == 1 && pagerBackSettings.enablePredictiveBack && pager.settledPage != 0
+    NavigationBackHandler(
+        state = navEventState,
+        isBackEnabled = isPagerBackEnabled,
+        onBackCompleted = { scope.launch { pager.animateScrollToPage(0) } },
+    )
+    
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
@@ -156,16 +169,6 @@ fun MainRoot(pager: PagerState) {
         entry<RouteMain> {
             val settings = SettingsState.flow.collectAsStateWithLifecycle().value
             val enableFloating = settings.enableFloatingBottomBar
-
-            // KSU MainScreenBackHandler: with no sub-page on top and the
-            // toggle on, the back gesture snaps the pager back to page 0.
-            val navEventState = rememberNavigationEventState(NavigationEventInfo.None)
-            val isPagerBackEnabled = backStack.size == 1 && settings.enablePredictiveBack && pager.settledPage != 0
-            NavigationBackHandler(
-                state = navEventState,
-                isBackEnabled = isPagerBackEnabled,
-                onBackCompleted = { scope.launch { pager.animateScrollToPage(0) } },
-            )
             // KSU MainScreen: the backdrop carries a surface base fill so an
             // uncaptured/empty layer reads as the theme surface, NOT black —
             // the bare rememberLayerBackdrop() was the grey-glass root cause.
