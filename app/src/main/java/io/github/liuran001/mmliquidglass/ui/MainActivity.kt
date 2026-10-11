@@ -211,10 +211,18 @@ fun MainRoot(pager: PagerState) {
                         modifier = Modifier.fillMaxSize()
                     ) { page ->
                         when (page) {
-                            0 -> HomeScreen(onOpenAbout = { backStack.add(RouteAbout) })
+                            0 -> HomeScreen(
+                                onOpenAbout = {
+                                    // Rapid double-tap guard: pushing the same NavKey twice
+                                    // crashes NavDisplay at reconcile (duplicate route key).
+                                    if (backStack.lastOrNull() !is RouteAbout) backStack.add(RouteAbout)
+                                },
+                            )
                             1 -> AppsScreen()
                             else -> io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsPage(
-                                onOpenTheme = { backStack.add(RouteColorPalette) },
+                                onOpenTheme = {
+                                    if (backStack.lastOrNull() !is RouteColorPalette) backStack.add(RouteColorPalette)
+                                },
                                 onResetDefaults = { Config.resetDefaults() },
                             )
                         }

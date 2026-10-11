@@ -7,3 +7,5 @@ tools
 *.jks
 local.properties
 build/
+.gradle/
+build_r22.log
