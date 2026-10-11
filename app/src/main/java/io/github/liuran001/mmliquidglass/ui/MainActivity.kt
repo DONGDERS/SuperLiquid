@@ -12,13 +12,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import android.util.Log
+import androidx.navigationevent.NavigationEvent
 import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import kotlinx.serialization.Serializable
 import top.yukonga.miuix.kmp.nav.core.NavDisplay
 import top.yukonga.miuix.kmp.nav.core.NavKey
 import top.yukonga.miuix.kmp.nav.core.rememberNavBackStack
+import top.yukonga.miuix.kmp.nav.transition.NavSwipeDirection
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
@@ -52,6 +56,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -341,13 +346,13 @@ fun MainRoot(pager: PagerState) {
             }
         }
 
-        entry<RouteAbout> {
+        entry<RouteAbout>(swipeDismiss = NavSwipeDirection.LeftToRight) {
             io.github.liuran001.mmliquidglass.ui.screen.about.AboutScreen(
                 onBack = { backStack.removeLastOrNull() }
             )
         }
 
-        entry<RouteColorPalette> {
+        entry<RouteColorPalette>(swipeDismiss = NavSwipeDirection.LeftToRight) {
             io.github.liuran001.mmliquidglass.ui.screen.colorpalette.ColorPaletteScreen(
                 onBack = { backStack.removeLastOrNull() }
             )
@@ -365,6 +370,25 @@ fun MainRoot(pager: PagerState) {
     NavigationBackHandler(
         state = gateState,
         isBackEnabled = backStack.size > 1 && !backGateSettings.enablePredictiveBack,
-        onBackCompleted = { backStack.removeLastOrNull() },
+        onBackCompleted = {
+            Log.i("SLBack", "gate: instant pop (toggle off), stack=${backStack.size}")
+            backStack.removeLastOrNull()
+        },
     )
+
+    // SLBack probe: dispatcher-LEVEL gesture state (input layer — fires whether
+    // or not any handler consumes, so it can neither eat the gesture nor be
+    // shadowed by one). Answers the predictive-back dead point:
+    // - "state=InProgress" lines while edge-swiping -> ROM DOES dispatch
+    //   progressive OnBackInvoked events; failure then lives in handler/render
+    // - total silence while swiping -> ROM sends nothing; finger-following
+    //   must come from navSwipeDismiss (touch-driven, always on)
+    val probeDispatcher = LocalNavigationEventDispatcherOwner.current?.navigationEventDispatcher
+    LaunchedEffect(probeDispatcher) {
+        Log.i("SLBack", "probe attached dispatcher=${probeDispatcher?.hashCode()}")
+        if (probeDispatcher == null) return@LaunchedEffect
+        probeDispatcher.transitionState.collect { state ->
+            Log.i("SLBack", "gesture state=$state stack=${backStack.size} toggle=${backGateSettings.enablePredictiveBack}")
+        }
+    }
 }

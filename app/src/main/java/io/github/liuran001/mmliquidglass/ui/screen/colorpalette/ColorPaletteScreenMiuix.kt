@@ -349,20 +349,6 @@ fun ColorPaletteScreenMiuix(
 
                         }
                         SwitchPreference(
-                            title = stringResource(id = R.string.settings_enable_swipe_dismiss),
-                            summary = stringResource(id = R.string.settings_enable_swipe_dismiss_summary),
-                            startAction = {
-                                Icon(
-                                    Icons.Filled.Swipe,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_enable_swipe_dismiss),
-                                    tint = colorScheme.onBackground,
-                                )
-                            },
-                            checked = uiState.enableSwipeDismiss,
-                            onCheckedChange = actions.onSetEnableSwipeDismiss,
-                        )
-                        SwitchPreference(
                             title = stringResource(id = R.string.settings_predictive_back),
                             summary = stringResource(id = R.string.settings_predictive_back_summary),
                             startAction = {

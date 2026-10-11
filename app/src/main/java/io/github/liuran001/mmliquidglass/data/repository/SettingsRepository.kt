@@ -13,7 +13,6 @@ interface SettingsRepository {
     var colorStyle: String
     var colorSpec: String
     var enablePredictiveBack: Boolean
-    var enableSwipeDismiss: Boolean
     var pagerInterceptionMode: Int
     var enableBlur: Boolean
     var enableFloatingBottomBar: Boolean
@@ -54,10 +53,6 @@ class SettingsRepositoryImpl : SettingsRepository {
     override var enablePredictiveBack: Boolean
         get() = p.getBoolean("enable_predictive_back", false)
         set(value) { p.edit().putBoolean("enable_predictive_back", value).apply() }
-
-    override var enableSwipeDismiss: Boolean
-        get() = p.getBoolean("enable_swipe_dismiss", true)
-        set(value) { p.edit().putBoolean("enable_swipe_dismiss", value).apply() }
 
     override var pagerInterceptionMode: Int
         get() = p.getInt("pager_interception_mode", 1)

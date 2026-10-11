@@ -85,8 +85,6 @@
     <string name="settings_enable_glass_summary">启用悬浮底栏的液态玻璃效果</string>
     <string name="settings_enable_predictive_back">预测性返回手势</string>
     <string name="settings_enable_predictive_back_summary">启用对预测性返回手势的支持</string>
-    <string name="settings_enable_swipe_dismiss">横移返回手势</string>
-    <string name="settings_enable_swipe_dismiss_summary">从屏幕边缘横移返回上一页</string>
     <string name="settings_floating_bottom_bar">悬浮底栏</string>
     <string name="settings_floating_bottom_bar_summary">使用 Apple 风格的悬浮底栏</string>
     <string name="settings_key_color">强调色</string>

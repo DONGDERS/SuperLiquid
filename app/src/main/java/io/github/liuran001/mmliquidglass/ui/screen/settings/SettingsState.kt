@@ -26,7 +26,6 @@ object SettingsState {
             colorStyle = r.colorStyle,
             colorSpec = r.colorSpec,
             enablePredictiveBack = r.enablePredictiveBack,
-            enableSwipeDismiss = r.enableSwipeDismiss,
             pagerInterceptionMode = r.pagerInterceptionMode,
             enableBlur = r.enableBlur,
             enableFloatingBottomBar = r.enableFloatingBottomBar,

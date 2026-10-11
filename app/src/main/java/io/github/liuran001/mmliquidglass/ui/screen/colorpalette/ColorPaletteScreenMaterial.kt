@@ -279,15 +279,6 @@ fun ColorPaletteScreenMaterial(
                     content = listOf(
                         {
                             SegmentedSwitchItem(
-                                icon = Icons.Filled.Swipe,
-                                title = stringResource(id = R.string.settings_enable_swipe_dismiss),
-                                summary = stringResource(id = R.string.settings_enable_swipe_dismiss_summary),
-                                checked = uiState.enableSwipeDismiss,
-                                onCheckedChange = actions.onSetEnableSwipeDismiss,
-                            )
-                        },
-                        {
-                            SegmentedSwitchItem(
                                 icon = Icons.AutoMirrored.Filled.ArrowBack,
                                 title = stringResource(id = R.string.settings_predictive_back),
                                 summary = stringResource(id = R.string.settings_predictive_back_summary),

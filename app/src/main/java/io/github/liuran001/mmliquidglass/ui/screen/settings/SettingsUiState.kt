@@ -16,7 +16,6 @@ data class SettingsUiState(
     val colorStyle: String = PaletteStyle.TonalSpot.name,
     val colorSpec: String = ColorSpec.SpecVersion.SPEC_2025.name,
     val enablePredictiveBack: Boolean = false,
-    val enableSwipeDismiss: Boolean = true,
     val pagerInterceptionMode: Int = 1,
     val enableBlur: Boolean = true,
     val enableFloatingBottomBar: Boolean = false,
