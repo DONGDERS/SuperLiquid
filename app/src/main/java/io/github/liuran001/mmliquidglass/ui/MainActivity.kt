@@ -149,19 +149,8 @@ fun MainRoot(pager: PagerState) {
     val scope = rememberCoroutineScope()
     val backStack = rememberNavBackStack(RouteMain)
 
-    // KSU MainScreenBackHandler: with no sub-page on top and the toggle on,
-    // the back gesture snaps the pager back to page 0. Lives at the ROOT
-    // dispatcher (outside NavDisplay): miuix-nav disables the per-entry
-    // dispatcher at depth 0, an in-entry handler would never fire there.
-    val pagerBackSettings = SettingsState.flow.collectAsStateWithLifecycle().value
-    val navEventState = rememberNavigationEventState(NavigationEventInfo.None)
-    val isPagerBackEnabled = backStack.size == 1 && pagerBackSettings.enablePredictiveBack && pager.settledPage != 0
-    NavigationBackHandler(
-        state = navEventState,
-        isBackEnabled = isPagerBackEnabled,
-        onBackCompleted = { scope.launch { pager.animateScrollToPage(0) } },
-    )
-    
+    val backGateSettings = SettingsState.flow.collectAsStateWithLifecycle().value
+
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
@@ -364,4 +353,18 @@ fun MainRoot(pager: PagerState) {
             )
         }
     }
+
+    // Sub-page predictive-back gate. miuix-nav ships finger-following
+    // predictive back for backStackSize > 1 (PredictiveBackHandlerWithSessions).
+    // Handlers dispatch newest-first within the shared processor, so a handler
+    // composed AFTER NavDisplay wins over the library's own. Toggle OFF (or any
+    // legacy fallback where the system never sends progressive events): pop
+    // instantly. Toggle ON: this gate disables itself and the library's
+    // finger-following gesture takes over.
+    val gateState = rememberNavigationEventState(NavigationEventInfo.None)
+    NavigationBackHandler(
+        state = gateState,
+        isBackEnabled = backStack.size > 1 && !backGateSettings.enablePredictiveBack,
+        onBackCompleted = { backStack.removeLastOrNull() },
+    )
 }
