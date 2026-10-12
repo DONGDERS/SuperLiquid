@@ -76,7 +76,7 @@ public class LiquidGlassModule extends XposedModule {
         void after(XposedInterface.Chain chain) throws Throwable;
     }
 
-    public static final String BUILD = "0.4.8-r2";
+    public static final String BUILD = "0.4.8-r3";
 
     @Override
     public void onModuleLoaded(XposedModuleInterface.ModuleLoadedParam param) {
@@ -112,13 +112,20 @@ public class LiquidGlassModule extends XposedModule {
                                             "resume seen: " + name);
                                 }
                                 if (app.launcherActivity.equals(name)) {
+                                    // All dispatch probes at ERROR: INFO/WARN
+                                    // lines after the first class-init call
+                                    // vanish on this device (see r1/r2 logs)
+                                    // while ERROR passes through reliably.
+                                    log(android.util.Log.ERROR, "resume match hit");
                                     GlassConfig.load(activity);
+                                    log(android.util.Log.ERROR, "resume config loaded");
                                     sResumeHits++;
                                     if (sResumeHits <= 3 || sResumeHits % 20 == 0) {
-                                        log(android.util.Log.INFO,
+                                        log(android.util.Log.ERROR,
                                                 "home activity onResume #" + sResumeHits);
                                     }
                                     LiquidGlassInstaller.scheduleInstall(activity);
+                                    log(android.util.Log.ERROR, "resume dispatch step2");
                                     if (app == HostApp.BILIBILI) {
                                         // The service may only be reachable
                                         // through the live view tree (Tinker
@@ -175,7 +182,16 @@ public class LiquidGlassModule extends XposedModule {
             BiliHomeBar.install(app, param.getDefaultClassLoader());
         } else if (app == HostApp.HEYBOX) {
             // Self-drawn triad; probing starts on the first home resume.
-            HeyboxHomeBar.install(app, param.getDefaultClassLoader());
+            log(android.util.Log.ERROR, "heybox dispatch reached");
+            try {
+                HeyboxHomeBar.install(app, param.getDefaultClassLoader());
+                log(android.util.Log.ERROR, "heybox install returned");
+            } catch (Throwable t) {
+                // The framework swallows dispatch throws without a logcat
+                // trace (r1/r2: everything after the first class-init call
+                // went dark); surface clinit/whatever under our own tag.
+                logErr("heybox install threw", t);
+            }
         } else {
             TabBarBridge.install(app, param.getDefaultClassLoader());
         }
