@@ -280,15 +280,21 @@ final class HeyboxHomeBar {
             // object: the installer mutates width/margins on it) and force the
             // bottom-centre anchor so the triad's translationX math holds.
             int idx = parent.indexOfChild(real);
-            ViewGroup.LayoutParams origLp = real.getLayoutParams();
             ViewGroup.LayoutParams hostLp;
-            if (origLp instanceof android.widget.RelativeLayout.LayoutParams) {
-                hostLp = new android.widget.RelativeLayout.LayoutParams(
-                        (android.widget.RelativeLayout.LayoutParams) origLp);
-                ((android.widget.RelativeLayout.LayoutParams) hostLp)
-                        .addRule(ALIGN_PARENT_BOTTOM);
-                ((android.widget.RelativeLayout.LayoutParams) hostLp)
-                        .addRule(CENTER_HORIZONTAL);
+            // The parent IS the RelativeLayout root (vg_main_root). The real
+            // bar's runtime lp is set programmatically and is NOT a
+            // RelativeLayout.LayoutParams (r6 lesson: a foreign lp type loses
+            // all rules and drops the host top-left), and
+            // ViewGroup.generateLayoutParams returns rule-less params. Build
+            // the anchor directly.
+            if (parent instanceof android.widget.RelativeLayout) {
+                android.widget.RelativeLayout.LayoutParams rlp =
+                        new android.widget.RelativeLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT);
+                rlp.addRule(ALIGN_PARENT_BOTTOM);
+                rlp.addRule(CENTER_HORIZONTAL);
+                hostLp = rlp;
             } else {
                 hostLp = new FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -436,7 +442,10 @@ final class HeyboxHomeBar {
                                     + sRealTabs[i].getText()
                                     + " resId=0x" + Integer.toHexString(resId)
                                     + " bg=" + (sRealTabs[i].getBackground() != null
-                                    ? sRealTabs[i].getBackground().getClass().getName() : "null"));
+                                    ? sRealTabs[i].getBackground().getClass().getName() : "null")
+                                    + " fg=" + (sRealTabs[i].getForeground() != null
+                                    ? sRealTabs[i].getForeground().getClass().getName() : "null")
+                                    + " cls=" + sRealTabs[i].getClass().getName());
                 }
             }
             LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(side, side);
@@ -584,24 +593,20 @@ final class HeyboxHomeBar {
     private static void park(LiquidGlassHostLayout host, ViewGroup parent, Activity act) {
         float d = act.getResources().getDisplayMetrics().density;
         int shadowPad = host.shadowPad();
-        ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        try {
-            Method gen = parent.getClass().getMethod(
-                    "generateLayoutParams", ViewGroup.LayoutParams.class);
-            lp = (ViewGroup.LayoutParams) gen.invoke(parent, lp);
-        } catch (Throwable ignored) {
-        }
-        try {
-            Method addRule = lp.getClass().getMethod("addRule", int.class);
-            addRule.invoke(lp, ALIGN_PARENT_BOTTOM);
-            addRule.invoke(lp, CENTER_HORIZONTAL);
-            if (lp instanceof ViewGroup.MarginLayoutParams) {
-                ((ViewGroup.MarginLayoutParams) lp).bottomMargin =
-                        Math.round(GlassConfig.barOffsetDp * d) - shadowPad + navInset(act);
-            }
-        } catch (Throwable t) {
-            // Non-RelativeLayout parent: fall back to FrameLayout semantics.
+        ViewGroup.LayoutParams lp;
+        if (parent instanceof android.widget.RelativeLayout) {
+            // Direct build: generateLayoutParams returns rule-less params and
+            // addRule reflection then fails on the bare type (r6's top-left).
+            android.widget.RelativeLayout.LayoutParams rlp =
+                    new android.widget.RelativeLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT);
+            rlp.addRule(ALIGN_PARENT_BOTTOM);
+            rlp.addRule(CENTER_HORIZONTAL);
+            rlp.bottomMargin =
+                    Math.round(GlassConfig.barOffsetDp * d) - shadowPad + navInset(act);
+            lp = rlp;
+        } else {
             lp = new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
                     Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
