@@ -149,10 +149,21 @@ final class HostApp {
         // is found by id ("rg_main") — its resources keep semantic names.
         HEYBOX.allowShapeFallback = false;
         HEYBOX.selfRow = true;
+        // bili's pill geometry assumes the 0.7 shrink; heybox rides the same
+        // installer path, so it inherits the same proportion.
+        HEYBOX.widthScale = 0.7f;
     }
 
     /** Package name, which is also the name of the process the home screen lives in. */
     final String pkg;
+    /**
+     * Brand colour the droplet dyes swept tabs with, published live by the
+     * self-drawn bridges (HeyboxHomeBar captures it off the native bar).
+     * 0 = generic heuristic (reads the selected label, rejects neutrals,
+     * falls back to WeChat green — wrong for hosts whose selected colour is
+     * neutral, e.g. heybox).
+     */
+    volatile int accentOverride;
     /** Activity hosting the tab bar; the only one worth reacting to. */
     final String launcherActivity;
     /** Tab bar view classes, most likely first. */

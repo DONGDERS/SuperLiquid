@@ -54,7 +54,7 @@ final class HeyboxHomeBar {
     private static final int PLUS_W_DP = 56;
     private static final int PLUS_H_DP = 52;
     /** Plus glyph stroke length/width inside the publish pill, dp. */
-    private static final int PLUS_GLYPH_DP = 22;
+    private static final int PLUS_GLYPH_DP = 26;
     private static final float PLUS_STROKE_DP = 2.5f;
 
     private static final WeakReference<Activity> NULL_ACT = new WeakReference<>(null);
@@ -69,7 +69,8 @@ final class HeyboxHomeBar {
 
     private static RadioButton[] sRealTabs;
     private static ImageView[] sIcons;
-    private static TextView[] sLabels;
+    private static int[] sSnapW;
+    private static int[] sSnapH;
     private static int sAccent;
     private static int sNormal;
 
@@ -83,25 +84,31 @@ final class HeyboxHomeBar {
     private static final Handler sMain = new Handler(Looper.getMainLooper());
     private static long sLastFailLog;
     private static int sResumeLogs;
-    private static int sIconlessLogs;
 
-    /** TextView.mDrawableResId — the resource behind drawableTop, if any. */
-    private static int drawableResIdOf(TextView tv) {
+    /**
+     * A live frame of the native tab: the whole RadioButton — whatever the
+     * server-configured bar draws into it (animated icon frames, label, its
+     * own colours) — rendered into a bitmap of its laid-out size. Safe on
+     * GONE views (draw works off the retained layout); call repeatedly for
+     * animation frames.
+     */
+    private static android.graphics.Bitmap snapshot(RadioButton rb, int w, int h) {
         try {
-            java.lang.reflect.Field f = TextView.class.getDeclaredField("mDrawableResId");
-            f.setAccessible(true);
-            return f.getInt(tv);
+            if (rb == null || w <= 0 || h <= 0) {
+                return null;
+            }
+            android.graphics.Bitmap bm = android.graphics.Bitmap.createBitmap(
+                    w, h, android.graphics.Bitmap.Config.ARGB_8888);
+            android.graphics.Canvas c = new android.graphics.Canvas(bm);
+            rb.draw(c);
+            return bm;
         } catch (Throwable t) {
-            return 0;
+            return null;
         }
     }
 
-    /** Live theme, tracked by poll off the left host (drives night tinting). */
+    /** Live theme, tracked by poll off the left host (drives night sync). */
     private static volatile boolean sDark;
-    /** Night selected-icon tint (no night png ships for selected state). */
-    private static final android.graphics.ColorFilter NIGHT_SELECTED_FILTER =
-            new android.graphics.PorterDuffColorFilter(0xFFCCCDCE,
-                    android.graphics.PorterDuff.Mode.SRC_ATOP);
 
     static void install(HostApp app, ClassLoader cl) {
         // Nothing to hook up front: the bar is found by view id on the live
@@ -229,7 +236,8 @@ final class HeyboxHomeBar {
             }
             sRealTabs = new RadioButton[n];
             sIcons = new ImageView[n];
-            sLabels = new TextView[n];
+            sSnapW = new int[n];
+            sSnapH = new int[n];
             int k = 0;
             for (int i = 0; i < real.getChildCount(); i++) {
                 View c = real.getChildAt(i);
@@ -238,6 +246,17 @@ final class HeyboxHomeBar {
                 }
             }
             captureColors();
+            publishAccent();
+
+            // Snapshot geometry BEFORE hiding: the rbs keep their last laid-out
+            // size after GONE, and every pill icon is a fresh rb.draw() into a
+            // bitmap of exactly these dimensions (r10 icon plan: the native
+            // icons are frame-animation players with no static handle, so we
+            // borrow the app's own canvas).
+            for (int i = 0; i < n; i++) {
+                sSnapW[i] = sRealTabs[i].getWidth();
+                sSnapH[i] = sRealTabs[i].getHeight();
+            }
 
             View publish = findById(act.getWindow().getDecorView(), "vg_mid_tab");
             View tips = findById(act.getWindow().getDecorView(), "vg_tips");
@@ -258,7 +277,23 @@ final class HeyboxHomeBar {
 
             ViewGroup parent = (ViewGroup) real.getParent();
             View backdrop = findById(act.getWindow().getDecorView(), "fl_container");
-            if (backdrop == null) {
+            if (backdrop != null) {
+                // heybox pins the content container ABOVE the bar
+                // (layout_above=rg_main), so nothing ever draws behind the
+                // pill and the glass samples out-of-region garbage. Let the
+                // content run to the screen bottom behind the pill — the
+                // geometry every other host (WeChat/QQ/bili) already has.
+                try {
+                    ViewGroup.LayoutParams blp = backdrop.getLayoutParams();
+                    if (blp instanceof android.widget.RelativeLayout.LayoutParams) {
+                        ((android.widget.RelativeLayout.LayoutParams) blp)
+                                .addRule(android.widget.RelativeLayout.ABOVE, 0);
+                        backdrop.setLayoutParams(blp);
+                    }
+                } catch (Throwable t) {
+                    LiquidGlassModule.logErr("heybox: backdrop extension failed", t);
+                }
+            } else {
                 backdrop = parent;
             }
 
@@ -337,6 +372,17 @@ final class HeyboxHomeBar {
             sDark = isNight(act);
             sLastIndex = checkedIndex(real);
             applySelection();
+            // One-line summary: snapshot dims + state for every slot, plus the
+            // accent handed to the droplet. Single line so log captures that
+            // drop lines can't split it.
+            StringBuilder sb = new StringBuilder("heybox: snap");
+            for (int i = 0; i < n; i++) {
+                sb.append(' ').append(sRealTabs[i].getText()).append('=')
+                        .append(sSnapW[i]).append('x').append(sSnapH[i]);
+            }
+            sb.append(" accent=").append(String.format("#%06X", sAccent & 0xFFFFFF))
+                    .append(" plus=").append(plusHost != null);
+            LiquidGlassModule.log(android.util.Log.ERROR, sb.toString());
             startPolling();
             LiquidGlassModule.log(android.util.Log.INFO,
                     "heybox: pill installed, tabs=" + n
@@ -365,34 +411,38 @@ final class HeyboxHomeBar {
         }
     }
 
+    /** Publish the captured selected colour to the droplet's dye pass. */
+    private static void publishAccent() {
+        HostApp app = LiquidGlassModule.app();
+        if (app != null) {
+            app.accentOverride = sAccent;
+        }
+    }
+
     /**
-     * Re-read icons and label colors off the live RadioButtons. Called on
-     * theme flips: the app swaps in its night drawables / colors itself
-     * (dark mode ships night-xxhdpi variants for every unselected glyph),
-     * and the live views — not static lookups — are the source of truth.
+     * Refresh the pill snapshots (theme flip: the app re-renders its own bar
+     * with night drawables/colours, and a fresh rb.draw() picks it all up —
+     * the live views, not static lookups, are the source of truth).
      */
     private static void recaptureVisuals(Activity act) {
         try {
-            if (sRealTabs == null || sIcons == null || sLabels == null) {
+            if (sRealTabs == null || sIcons == null) {
                 return;
             }
             for (int i = 0; i < sRealTabs.length && i < sIcons.length; i++) {
-                Drawable sel = sRealTabs[i].getCompoundDrawablesRelative()[1];
-                if (sel == null) {
-                    sel = sRealTabs[i].getCompoundDrawables()[1];
-                }
-                if (sel != null && sel.getConstantState() != null
-                        && sIcons[i] != null) {
-                    sIcons[i].setImageDrawable(
-                            sel.getConstantState().newDrawable().mutate());
+                if (sIcons[i] != null && sRealTabs[i] != null) {
+                    android.graphics.Bitmap bm = snapshot(
+                            sRealTabs[i], sSnapW[i], sSnapH[i]);
+                    if (bm != null) {
+                        sIcons[i].setImageBitmap(bm);
+                    }
                 }
             }
             captureColors();
-            // PlusView draws from sAccent live; just nudge a repaint.
-            LiquidGlassHostLayout plus = sPlusHost.get();
-            if (plus != null) {
-                plus.invalidate();
-            }
+            publishAccent();
+            LiquidGlassModule.log(android.util.Log.ERROR,
+                    "heybox: visuals recaptured accent="
+                            + String.format("#%06X", sAccent & 0xFFFFFF));
             applySelection(true);
         } catch (Throwable t) {
             LiquidGlassModule.logErr("heybox: visual recapture failed", t);
@@ -408,78 +458,29 @@ final class HeyboxHomeBar {
             LinearLayout tab = new LinearLayout(act);
             tab.setOrientation(LinearLayout.VERTICAL);
             tab.setGravity(Gravity.CENTER);
-            int padH = Math.round(11 * d);
-            int padV = Math.round(7 * d);
+            // bili buildRow paddings, verbatim.
+            int padH = Math.round(5 * d);
+            int padV = Math.round(5 * d);
             tab.setPadding(padH, padV, padH, padV);
 
+            // Snapshot tab (r10): the whole native RadioButton — animated icon
+            // frames + label, in the app's own colours — captured into a
+            // bitmap. The server-rebound bar plays its icons through a
+            // mechanism with no static handle (bg/fg/compound/resId all null,
+            // cls = plain AppCompatRadioButton), so we borrow the app's own
+            // canvas instead of fighting it. Poll re-draws every tick, so the
+            // pill icons follow the native animation/selection/night state.
             ImageView icon = new ImageView(act);
-            Drawable sel = sRealTabs[i].getCompoundDrawablesRelative()[1];
-            if (sel == null) {
-                sel = sRealTabs[i].getCompoundDrawables()[1];
+            android.graphics.Bitmap bm = snapshot(sRealTabs[i], sSnapW[i], sSnapH[i]);
+            if (bm != null) {
+                icon.setImageBitmap(bm);
             }
-            int side = Math.round(21 * d);
-            // getConstantState() is nullable for runtime-constructed drawables
-            // (heybox's server-rebound tabs ship one) — a null receiver was
-            // r3's NPE despite the sel!=null guard.
-            if (sel != null && sel.getConstantState() != null) {
-                // Own instance per pill slot; the selector carries heybox's
-                // own normal/selected artwork, driven by setSelected().
-                icon.setImageDrawable(sel.getConstantState().newDrawable().mutate());
-                // Original icon geometry, capped like the bar itself draws it.
-                int iw = sel.getIntrinsicWidth(), ih = sel.getIntrinsicHeight();
-                if (iw > 0 && ih > 0) {
-                    side = Math.min(Math.max(iw, ih), Math.round(28 * d));
-                }
-            } else {
-                // Server-config rebind may relocate the icon. mDrawableResId
-                // is what TextView keeps for drawableTop set from a resource;
-                // resolving it ourselves survives any absolute/relative mix.
-                int resId = drawableResIdOf(sRealTabs[i]);
-                if (resId != 0) {
-                    try {
-                        sel = act.getResources().getDrawable(resId);
-                        if (sel != null && sel.getConstantState() != null) {
-                            icon.setImageDrawable(sel.getConstantState().newDrawable().mutate());
-                        }
-                        int iw = sel.getIntrinsicWidth(), ih = sel.getIntrinsicHeight();
-                        if (iw > 0 && ih > 0) {
-                            side = Math.min(Math.max(iw, ih), Math.round(28 * d));
-                        }
-                    } catch (Throwable t) {
-                        LiquidGlassModule.logErr("heybox: resId icon failed", t);
-                    }
-                }
-                if (icon.getDrawable() == null && sIconlessLogs < 4) {
-                    sIconlessLogs++;
-                    LiquidGlassModule.log(android.util.Log.ERROR,
-                            "heybox: slot " + i + " iconless — text="
-                                    + sRealTabs[i].getText()
-                                    + " resId=0x" + Integer.toHexString(resId)
-                                    + " bg=" + (sRealTabs[i].getBackground() != null
-                                    ? sRealTabs[i].getBackground().getClass().getName() : "null")
-                                    + " fg=" + (sRealTabs[i].getForeground() != null
-                                    ? sRealTabs[i].getForeground().getClass().getName() : "null")
-                                    + " cls=" + sRealTabs[i].getClass().getName());
-                }
-            }
-            LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(side, side);
+            LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(
+                    sSnapW[i] > 0 ? sSnapW[i] : Math.round(24 * d),
+                    sSnapH[i] > 0 ? sSnapH[i] : Math.round(24 * d));
             iconLp.gravity = Gravity.CENTER_HORIZONTAL;
             tab.addView(icon, iconLp);
             sIcons[i] = icon;
-
-            TextView label = new TextView(act);
-            label.setText(sRealTabs[i].getText());
-            // Exact size/color of the live tab (server nav cfg may differ per user).
-            label.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX,
-                    sRealTabs[i].getTextSize());
-            label.setTextColor(sNormal);
-            label.setIncludeFontPadding(false);
-            LinearLayout.LayoutParams labelLp = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            labelLp.topMargin = Math.round(3 * d);
-            labelLp.gravity = Gravity.CENTER_HORIZONTAL;
-            tab.addView(label, labelLp);
-            sLabels[i] = label;
 
             final int slot = i;
             tab.setOnLongClickListener(v -> true);
@@ -510,7 +511,10 @@ final class HeyboxHomeBar {
             LinearLayout row = new LinearLayout(act);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER);
-            row.setPadding(shadowPad, shadowPad, shadowPad, shadowPad);
+            // bili buildPublishPill paddings, verbatim (15/13/15/13) — the
+            // glyph 26dp + pads make the pill exactly bili's 56dp square.
+            row.setPadding(Math.round(15 * d), Math.round(13 * d),
+                    Math.round(15 * d), Math.round(13 * d));
             row.addView(new PlusView(act, PLUS_GLYPH_DP, PLUS_STROKE_DP),
                     new LinearLayout.LayoutParams(
                             Math.round(PLUS_GLYPH_DP * d), Math.round(PLUS_GLYPH_DP * d)));
@@ -669,14 +673,16 @@ final class HeyboxHomeBar {
                         "heybox: theme -> " + (dark ? "night" : "day"));
             }
 
-            // Follow the app's own page state (back nav, deep links).
+            // Follow the app's own page state (back nav, deep links) AND
+            // keep the snapshots live: a forced refresh every tick re-draws
+            // the native rbs, so the pill icons track the frame animation.
             RadioGroup real = sRealBar.get();
             if (real != null) {
                 int idx = checkedIndex(real);
-                if (idx >= 0 && idx != sLastIndex) {
+                if (idx >= 0) {
                     sLastIndex = idx;
-                    applySelection();
                 }
+                applySelection(true);
             }
             // Publish pill follows the live theme like the bili one.
             LiquidGlassPanel panel = sPlusPanel.get();
@@ -750,10 +756,15 @@ final class HeyboxHomeBar {
                 continue;
             }
             tab.setSelected(selected);
+            // Snapshot tabs carry the app's own icon/label colours — a fresh
+            // rb.draw() picks up whatever the app renders for this state.
             ImageView icon = sIcons[idx];
-            icon.setSelected(selected);
-            icon.setColorFilter(selected && sDark ? NIGHT_SELECTED_FILTER : null);
-            sLabels[idx].setTextColor(selected ? sAccent : sNormal);
+            if (icon != null) {
+                android.graphics.Bitmap bm = snapshot(sRealTabs[idx], sSnapW[idx], sSnapH[idx]);
+                if (bm != null) {
+                    icon.setImageBitmap(bm);
+                }
+            }
         }
     }
 

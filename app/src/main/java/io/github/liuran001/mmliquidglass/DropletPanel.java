@@ -178,6 +178,14 @@ final class DropletPanel extends View {
      * so it follows the app's own theme rather than being hard-coded.
      */
     private int accentColour(ViewGroup tabRow) {
+        // Self-drawn bridges publish the app's real selected colour; the
+        // neutral-rejection heuristic below is for native bars and would
+        // reject heybox's neutral selected state into the WeChat-green
+        // fallback.
+        HostApp app = LiquidGlassModule.app();
+        if (app != null && app.accentOverride != 0) {
+            return app.accentOverride;
+        }
         for (int i = 0; i < tabRow.getChildCount(); i++) {
             View tab = tabRow.getChildAt(i);
             if (!tab.isSelected()) {
