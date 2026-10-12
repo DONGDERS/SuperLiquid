@@ -75,7 +75,7 @@ public class LiquidGlassModule extends XposedModule {
         void after(XposedInterface.Chain chain) throws Throwable;
     }
 
-    public static final String BUILD = "0.3.9-f10";
+    public static final String BUILD = "0.4.8-r1";
 
     @Override
     public void onModuleLoaded(XposedModuleInterface.ModuleLoadedParam param) {
@@ -118,6 +118,12 @@ public class LiquidGlassModule extends XposedModule {
                                         // through the live view tree (Tinker
                                         // loader); hand the hook the activity.
                                         BiliHomeBar.onHomeResume(activity);
+                                    } else if (app == HostApp.HEYBOX) {
+                                        // Same shape as bili: the self-drawn
+                                        // row finds the native bar in the live
+                                        // tree; nothing resolves at package
+                                        // load that a resume can't redo.
+                                        HeyboxHomeBar.onHomeResume(activity);
                                     }
                                 }
                             }
@@ -159,6 +165,9 @@ public class LiquidGlassModule extends XposedModule {
             // Compose bar: the service bridge does its own hooking and later
             // feeds a self-built row through the ordinary installer entry.
             BiliHomeBar.install(app, param.getDefaultClassLoader());
+        } else if (app == HostApp.HEYBOX) {
+            // Self-drawn triad; probing starts on the first home resume.
+            HeyboxHomeBar.install(app, param.getDefaultClassLoader());
         } else {
             TabBarBridge.install(app, param.getDefaultClassLoader());
         }

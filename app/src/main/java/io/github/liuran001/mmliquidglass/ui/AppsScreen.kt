@@ -29,6 +29,7 @@ private val TARGETS = listOf(
     Target("mm", "微信", "com.tencent.mm"),
     Target("qq", "QQ", "com.tencent.mobileqq"),
     Target("bili", "哔哩哔哩", "tv.danmaku.bili"),
+    Target("heybox", "小黑盒", "com.max.xiaoheihe"),
 )
 
 @Composable
@@ -49,6 +50,7 @@ fun AppsScreen() {
             when (t.key) {
                 "mm" -> AppCard(t, Config.mm, installed("mm")) { Config.setApp("mm", it) }
                 "qq" -> AppCard(t, Config.qq, installed("qq")) { Config.setApp("qq", it) }
+                "heybox" -> AppCard(t, Config.heybox, installed("heybox")) { Config.setApp("heybox", it) }
                 else -> BiliCard(t, Config.bili, installed("bili")) { Config.setBili(it) }
             }
             if (LocalUiMode.current == UiMode.Miuix) {

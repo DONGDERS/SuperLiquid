@@ -80,6 +80,9 @@ object Config {
     private val _bili = mutableStateOf(BiliCfg())
     val bili: BiliCfg get() = _bili.value
 
+    private val _heybox = mutableStateOf(AppCfg())
+    val heybox: AppCfg get() = _heybox.value
+
     fun init(ctx: Context) {
         uiPrefs = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
         hookPrefs = ctx.getSharedPreferences(REMOTE_NAME, Context.MODE_PRIVATE)
@@ -128,6 +131,7 @@ object Config {
         when (key) {
             "mm" -> _mm.value = cfg
             "qq" -> _qq.value = cfg
+            "heybox" -> _heybox.value = cfg
             "bili" -> _bili.value = _bili.value.copy(base = cfg)
         }
         write(key, cfg)
@@ -143,6 +147,7 @@ object Config {
         setApp("mm", AppCfg())
         setApp("qq", AppCfg())
         setBili(BiliCfg())
+        setApp("heybox", AppCfg())
     }
 
     private fun write(key: String, cfg: AppCfg) {
@@ -199,6 +204,7 @@ object Config {
         )
         _mm.value = app("mm", AppCfg())
         _qq.value = app("qq", AppCfg())
+        _heybox.value = app("heybox", AppCfg())
         val b = _bili.value
         _bili.value = BiliCfg(
             base = app("bili", AppCfg(widthScale = 0.7f)),

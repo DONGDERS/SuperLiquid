@@ -111,7 +111,31 @@ final class HostApp {
             false,
             "tv.danmaku.bili.");
 
-    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI};
+    /**
+     * Heybox (小黑盒) 1.3.396 (1135).
+     *
+     * <p>View-system bar: a RadioGroup (id {@code rg_main}) of five
+     * RadioButtons — the middle one is xml-GONE and the publish button is a
+     * separate CardView ({@code vg_mid_tab}) shown at runtime over that slot.
+     * Tab labels/icons are rewritten at runtime from server config
+     * (NavBarCfgObj), so the static layout texts ("发现/游戏库/推荐/社区/我")
+     * are NOT what the user sees (runtime reality: 首页/热点/游戏库/我) —
+     * everything is captured from the live RadioButtons instead.
+     * HeyboxHomeBar does the whole job (self-drawn triad); this entry only
+     * needs the process gate and the resume dispatch.
+     */
+    static final HostApp HEYBOX = new HostApp(
+            "com.max.xiaoheihe",
+            "com.max.xiaoheihe.MainActivity",
+            new String[0],          // self-drawn path: bar found by id, not class
+            new String[0],          // switches driven via performClick on real tabs
+            "",                     // current index read off RadioGroup's checked id
+            new String[0],          // chrome hidden by HeyboxHomeBar directly
+            new String[]{"ImageView"},   // self-drawn row icons
+            false,
+            "com.max.xiaoheihe.");
+
+    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX};
 
     static {
         // Bilibili is full of tab-shaped rows (feed tabs, channel strips), so
@@ -120,6 +144,11 @@ final class HostApp {
         BILIBILI.allowShapeFallback = false;
         BILIBILI.selfRow = true;
         BILIBILI.widthScale = 0.7f;
+        // Heybox drives its whole bar through HeyboxHomeBar (self-drawn
+        // triad); nothing here should ever see the shape fallback. The bar
+        // is found by id ("rg_main") — its resources keep semantic names.
+        HEYBOX.allowShapeFallback = false;
+        HEYBOX.selfRow = true;
     }
 
     /** Package name, which is also the name of the process the home screen lives in. */

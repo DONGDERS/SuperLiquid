@@ -73,6 +73,7 @@ final class GlassConfig {
         if (HostApp.BILIBILI.pkg.equals(pkg)) return "bili";
         if (HostApp.WECHAT.pkg.equals(pkg)) return "mm";
         if (HostApp.QQ.pkg.equals(pkg)) return "qq";
+        if (HostApp.HEYBOX.pkg.equals(pkg)) return "heybox";
         return "";
     }
 
