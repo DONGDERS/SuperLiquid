@@ -17,6 +17,7 @@ public class LiquidGlassModule extends XposedModule {
     private static volatile HostApp sApp;
 
     private static volatile int sResumeHits;
+    private static volatile int sResumeSeen;
     private static volatile LiquidGlassModule sSelf;
 
     public LiquidGlassModule() {
@@ -75,7 +76,7 @@ public class LiquidGlassModule extends XposedModule {
         void after(XposedInterface.Chain chain) throws Throwable;
     }
 
-    public static final String BUILD = "0.4.8-r1";
+    public static final String BUILD = "0.4.8-r2";
 
     @Override
     public void onModuleLoaded(XposedModuleInterface.ModuleLoadedParam param) {
@@ -105,6 +106,11 @@ public class LiquidGlassModule extends XposedModule {
                             if (arg0 instanceof Activity) {
                                 Activity activity = (Activity) arg0;
                                 String name = arg0.getClass().getName();
+                                if (sResumeSeen < 10) {
+                                    sResumeSeen++;
+                                    log(android.util.Log.WARN,
+                                            "resume seen: " + name);
+                                }
                                 if (app.launcherActivity.equals(name)) {
                                     GlassConfig.load(activity);
                                     sResumeHits++;
@@ -154,6 +160,8 @@ public class LiquidGlassModule extends XposedModule {
         // Manager-side config (remote prefs → XSharedPreferences), keyed to
         // this app. Must run before any install path consumes the values.
         GlassConfig.setModule(this, param.getPackageName());
+        log(android.util.Log.INFO, "glass dispatch: " + app
+                + " enabled=" + GlassConfig.enabled);
         if (!GlassConfig.enabled) {
             log(android.util.Log.INFO,
                     "manager config: disabled for " + app + ", skipping install");

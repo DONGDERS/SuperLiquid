@@ -84,6 +84,7 @@ final class HeyboxHomeBar {
 
     private static final Handler sMain = new Handler(Looper.getMainLooper());
     private static long sLastFailLog;
+    private static int sResumeLogs;
 
     /** Live theme, tracked by poll off the left host (drives night tinting). */
     private static volatile boolean sDark;
@@ -103,6 +104,12 @@ final class HeyboxHomeBar {
 
     static void onHomeResume(Activity activity) {
         sHomeActivity = new WeakReference<>(activity);
+        if (sResumeLogs < 5) {
+            sResumeLogs++;
+            LiquidGlassModule.log(android.util.Log.INFO,
+                    "heybox: onHomeResume #" + sResumeLogs
+                            + (sInstalled ? " (installed)" : " probing=" + sProbing));
+        }
         if (!sInstalled && !sProbing) {
             scheduleProbe();
         }
