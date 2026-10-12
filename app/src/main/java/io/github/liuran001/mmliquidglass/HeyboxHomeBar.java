@@ -85,6 +85,18 @@ final class HeyboxHomeBar {
     private static final Handler sMain = new Handler(Looper.getMainLooper());
     private static long sLastFailLog;
     private static int sResumeLogs;
+    private static int sIconlessLogs;
+
+    /** TextView.mDrawableResId — the resource behind drawableTop, if any. */
+    private static int drawableResIdOf(TextView tv) {
+        try {
+            java.lang.reflect.Field f = TextView.class.getDeclaredField("mDrawableResId");
+            f.setAccessible(true);
+            return f.getInt(tv);
+        } catch (Throwable t) {
+            return 0;
+        }
+    }
 
     /** Live theme, tracked by poll off the left host (drives night tinting). */
     private static volatile boolean sDark;
@@ -321,7 +333,10 @@ final class HeyboxHomeBar {
                 return;
             }
             for (int i = 0; i < sRealTabs.length && i < sIcons.length; i++) {
-                Drawable sel = sRealTabs[i].getCompoundDrawables()[1];
+                Drawable sel = sRealTabs[i].getCompoundDrawablesRelative()[1];
+                if (sel == null) {
+                    sel = sRealTabs[i].getCompoundDrawables()[1];
+                }
                 if (sel != null && sIcons[i] != null) {
                     sIcons[i].setImageDrawable(
                             sel.getConstantState().newDrawable().mutate());
@@ -353,7 +368,10 @@ final class HeyboxHomeBar {
             tab.setPadding(padH, padV, padH, padV);
 
             ImageView icon = new ImageView(act);
-            Drawable sel = sRealTabs[i].getCompoundDrawables()[1];
+            Drawable sel = sRealTabs[i].getCompoundDrawablesRelative()[1];
+            if (sel == null) {
+                sel = sRealTabs[i].getCompoundDrawables()[1];
+            }
             int side = Math.round(21 * d);
             if (sel != null) {
                 // Own instance per pill slot; the selector carries heybox's
@@ -363,6 +381,32 @@ final class HeyboxHomeBar {
                 int iw = sel.getIntrinsicWidth(), ih = sel.getIntrinsicHeight();
                 if (iw > 0 && ih > 0) {
                     side = Math.min(Math.max(iw, ih), Math.round(28 * d));
+                }
+            } else {
+                // Server-config rebind may relocate the icon. mDrawableResId
+                // is what TextView keeps for drawableTop set from a resource;
+                // resolving it ourselves survives any absolute/relative mix.
+                int resId = drawableResIdOf(sRealTabs[i]);
+                if (resId != 0) {
+                    try {
+                        sel = act.getResources().getDrawable(resId);
+                        icon.setImageDrawable(sel.getConstantState().newDrawable().mutate());
+                        int iw = sel.getIntrinsicWidth(), ih = sel.getIntrinsicHeight();
+                        if (iw > 0 && ih > 0) {
+                            side = Math.min(Math.max(iw, ih), Math.round(28 * d));
+                        }
+                    } catch (Throwable t) {
+                        LiquidGlassModule.logErr("heybox: resId icon failed", t);
+                    }
+                }
+                if (icon.getDrawable() == null && sIconlessLogs < 4) {
+                    sIconlessLogs++;
+                    LiquidGlassModule.log(android.util.Log.ERROR,
+                            "heybox: slot " + i + " iconless — text="
+                                    + sRealTabs[i].getText()
+                                    + " resId=0x" + Integer.toHexString(resId)
+                                    + " bg=" + (sRealTabs[i].getBackground() != null
+                                    ? sRealTabs[i].getBackground().getClass().getName() : "null"));
                 }
             }
             LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(side, side);
