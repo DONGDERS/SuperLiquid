@@ -273,10 +273,34 @@ final class HeyboxHomeBar {
             leftWrap.addView(sLeftRow, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
                     Gravity.CENTER));
+            // The installer swaps tabView for its glass host IN PLACE — the
+            // view must already be attached, or install() bails on the null
+            // parent (r5's every-time "install refused"). Park it at the real
+            // bar's index with a COPY of its layout params (never share the
+            // object: the installer mutates width/margins on it) and force the
+            // bottom-centre anchor so the triad's translationX math holds.
+            int idx = parent.indexOfChild(real);
+            ViewGroup.LayoutParams origLp = real.getLayoutParams();
+            ViewGroup.LayoutParams hostLp;
+            if (origLp instanceof android.widget.RelativeLayout.LayoutParams) {
+                hostLp = new android.widget.RelativeLayout.LayoutParams(
+                        (android.widget.RelativeLayout.LayoutParams) origLp);
+                ((android.widget.RelativeLayout.LayoutParams) hostLp)
+                        .addRule(ALIGN_PARENT_BOTTOM);
+                ((android.widget.RelativeLayout.LayoutParams) hostLp)
+                        .addRule(CENTER_HORIZONTAL);
+            } else {
+                hostLp = new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+            }
+            parent.addView(leftWrap, idx, hostLp);
             LiquidGlassInstaller.install(leftWrap);
             if (!(leftWrap.getParent() instanceof LiquidGlassHostLayout)) {
                 LiquidGlassModule.log(android.util.Log.WARN,
                         "heybox: install refused, restoring native bar");
+                parent.removeView(leftWrap);
                 restoreNative();
                 sProbes = 0;
                 return false;
