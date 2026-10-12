@@ -337,7 +337,8 @@ final class HeyboxHomeBar {
                 if (sel == null) {
                     sel = sRealTabs[i].getCompoundDrawables()[1];
                 }
-                if (sel != null && sIcons[i] != null) {
+                if (sel != null && sel.getConstantState() != null
+                        && sIcons[i] != null) {
                     sIcons[i].setImageDrawable(
                             sel.getConstantState().newDrawable().mutate());
                 }
@@ -373,7 +374,10 @@ final class HeyboxHomeBar {
                 sel = sRealTabs[i].getCompoundDrawables()[1];
             }
             int side = Math.round(21 * d);
-            if (sel != null) {
+            // getConstantState() is nullable for runtime-constructed drawables
+            // (heybox's server-rebound tabs ship one) — a null receiver was
+            // r3's NPE despite the sel!=null guard.
+            if (sel != null && sel.getConstantState() != null) {
                 // Own instance per pill slot; the selector carries heybox's
                 // own normal/selected artwork, driven by setSelected().
                 icon.setImageDrawable(sel.getConstantState().newDrawable().mutate());
@@ -390,7 +394,9 @@ final class HeyboxHomeBar {
                 if (resId != 0) {
                     try {
                         sel = act.getResources().getDrawable(resId);
-                        icon.setImageDrawable(sel.getConstantState().newDrawable().mutate());
+                        if (sel != null && sel.getConstantState() != null) {
+                            icon.setImageDrawable(sel.getConstantState().newDrawable().mutate());
+                        }
                         int iw = sel.getIntrinsicWidth(), ih = sel.getIntrinsicHeight();
                         if (iw > 0 && ih > 0) {
                             side = Math.min(Math.max(iw, ih), Math.round(28 * d));
