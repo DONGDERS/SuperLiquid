@@ -64,7 +64,6 @@ final class HeyboxHomeBar {
     private static WeakReference<View> sPublishView = new WeakReference<>(null);
     private static WeakReference<View> sTipsView = new WeakReference<>(null);
     private static WeakReference<LiquidGlassHostLayout> sLeftHost = new WeakReference<>(null);
-    private static WeakReference<LiquidGlassHostLayout> sRightHost = new WeakReference<>(null);
     private static WeakReference<LiquidGlassHostLayout> sPlusHost = new WeakReference<>(null);
     private static WeakReference<LiquidGlassPanel> sPlusPanel = new WeakReference<>(null);
 
@@ -75,7 +74,6 @@ final class HeyboxHomeBar {
     private static int sNormal;
 
     private static LinearLayout sLeftRow;
-    private static LinearLayout sRightRow;
 
     private static volatile boolean sInstalled;
     private static volatile boolean sProbing;
@@ -264,10 +262,11 @@ final class HeyboxHomeBar {
                 backdrop = parent;
             }
 
-            // ---- tab pills: [first half] [plus] [second half]
-            int mid = (n + 1) / 2;
-            sLeftRow = buildRow(act, 0, mid);
-            sRightRow = buildRow(act, mid, n);
+            // ---- one pill, all tabs — exactly bili's architecture: the
+            // installer's proven path (hug / droplet / geometry) manages the
+            // single row; the plus pill is a separate bili-style publish
+            // button parked bottom-right. No side pill, no translationX math.
+            sLeftRow = buildRow(act, 0, n);
 
             FrameLayout leftWrap = new FrameLayout(act);
             leftWrap.addView(sLeftRow, new FrameLayout.LayoutParams(
@@ -331,9 +330,7 @@ final class HeyboxHomeBar {
             leftHost.getParent().requestLayout();
             sLeftHost = new WeakReference<>(leftHost);
 
-            LiquidGlassHostLayout rightHost = buildSidePill(act, backdrop, parent, sRightRow);
             LiquidGlassHostLayout plusHost = buildPlusPill(act, backdrop, parent);
-            sRightHost = new WeakReference<>(rightHost);
             sPlusHost = new WeakReference<>(plusHost);
 
             sInstalled = true;
@@ -342,9 +339,9 @@ final class HeyboxHomeBar {
             applySelection();
             startPolling();
             LiquidGlassModule.log(android.util.Log.INFO,
-                    "heybox: triad installed, tabs=" + n + " mid=" + mid
+                    "heybox: pill installed, tabs=" + n
                             + " accent=" + String.format("#%06X", sAccent & 0xFFFFFF)
-                            + " publish=" + (publish != null) + " right=" + (rightHost != null)
+                            + " publish=" + (publish != null)
                             + " plus=" + (plusHost != null));
             return true;
         } catch (Throwable t) {
@@ -500,56 +497,6 @@ final class HeyboxHomeBar {
         return row;
     }
 
-    /**
-     * Side pill: same glass construction as the left pill but parked manually
-     * in the root. RelativeLayout parents need explicit rules — generated
-     * params carry none and would land top-left.
-     */
-    private static LiquidGlassHostLayout buildSidePill(Activity act, View backdropView,
-                                                       ViewGroup parent, LinearLayout row) {
-        try {
-            ViewGroup backdrop = (ViewGroup) backdropView; // fl_container is a FrameLayout
-            LiquidGlassHostLayout host = new LiquidGlassHostLayout(act, backdrop, null);
-            host.setupShadow(act.getResources().getDisplayMetrics().density, isNight(act));
-            int shadowPad = host.shadowPad();
-            FrameLayout wrap = new FrameLayout(act);
-            // Same shadow breathing room the plus pill gives its row, or the
-            // glass samples to the very edge of the host and shears.
-            wrap.setPadding(shadowPad, shadowPad, shadowPad, shadowPad);
-            wrap.addView(row, new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                    Gravity.CENTER));
-            host.addView(wrap, new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                    Gravity.CENTER));
-            if (android.os.Build.VERSION.SDK_INT >= LiquidGlassPanel.MIN_SDK) {
-                LiquidGlassPanel glass = new LiquidGlassPanel(act, backdrop,
-                        act.getResources().getDisplayMetrics().density, isNight(act));
-                host.addView(glass, 0, new FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT));
-                host.setGlassTuner(new LiquidGlassHostLayout.GlassTuner() {
-                    @Override
-                    public void onSize(int w, int h, float cornerRadius) {
-                        glass.invalidate();
-                    }
-
-                    @Override
-                    public void onTheme(boolean dark) {
-                        glass.setTheme(dark);
-                    }
-                });
-            }
-            host.setClipChildren(false);
-            host.setClipToPadding(false);
-            park(host, parent, act);
-            return host;
-        } catch (Throwable t) {
-            LiquidGlassModule.logErr("heybox: side pill failed", t);
-            return null;
-        }
-    }
-
     /** The standalone publish pill: one glass host, one self-drawn plus. */
     private static LiquidGlassHostLayout buildPlusPill(Activity act, View backdropView,
                                                        ViewGroup parent) {
@@ -602,31 +549,31 @@ final class HeyboxHomeBar {
     }
 
     /**
-     * Bottom-centre park in the app's RelativeLayout root. The left pill sits
-     * where the installer put it (the real bar's rules); side/plus pills get
-     * explicit rules — a generated RelativeLayout.LayoutParams without rules
-     * pins the child top-left.
+     * Bottom-end park (bili's publish-pill position: bottom-right, 16dp side
+     * margin), in the app's RelativeLayout root. Params are built directly —
+     * generateLayoutParams returns rule-less params that pin the child
+     * top-left (r6 lesson).
      */
     private static void park(LiquidGlassHostLayout host, ViewGroup parent, Activity act) {
         float d = act.getResources().getDisplayMetrics().density;
         int shadowPad = host.shadowPad();
         ViewGroup.LayoutParams lp;
         if (parent instanceof android.widget.RelativeLayout) {
-            // Direct build: generateLayoutParams returns rule-less params and
-            // addRule reflection then fails on the bare type (r6's top-left).
             android.widget.RelativeLayout.LayoutParams rlp =
                     new android.widget.RelativeLayout.LayoutParams(
                             ViewGroup.LayoutParams.WRAP_CONTENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT);
             rlp.addRule(ALIGN_PARENT_BOTTOM);
-            rlp.addRule(CENTER_HORIZONTAL);
+            rlp.addRule(ALIGN_PARENT_END);
+            rlp.rightMargin = Math.round(16 * d) + shadowPad;
             rlp.bottomMargin =
                     Math.round(GlassConfig.barOffsetDp * d) - shadowPad + navInset(act);
             lp = rlp;
         } else {
             lp = new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                    Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+                    Gravity.BOTTOM | Gravity.END);
+            ((FrameLayout.LayoutParams) lp).rightMargin = Math.round(16 * d) + shadowPad;
             ((FrameLayout.LayoutParams) lp).bottomMargin =
                     Math.round(GlassConfig.barOffsetDp * d) - shadowPad + navInset(act);
         }
@@ -635,6 +582,7 @@ final class HeyboxHomeBar {
 
     /** RelativeLayout rule values (java.lang.reflect, no compile-time need). */
     private static final int ALIGN_PARENT_BOTTOM = 12;
+    private static final int ALIGN_PARENT_END = 11;
     private static final int CENTER_HORIZONTAL = 14;
 
     /** Self-drawn plus: plain strokes, tinted with the live accent color. */
@@ -691,25 +639,20 @@ final class HeyboxHomeBar {
         }
         try {
             LiquidGlassHostLayout left = sLeftHost.get();
-            LiquidGlassHostLayout right = sRightHost.get();
             LiquidGlassHostLayout plus = sPlusHost.get();
             boolean leftAlive = left != null && left.isAttachedToWindow();
-            boolean rightAlive = right == null || right.isAttachedToWindow();
             boolean plusAlive = plus == null || plus.isAttachedToWindow();
-            if (!leftAlive || !rightAlive || !plusAlive) {
+            if (!leftAlive || !plusAlive) {
                 // Window died: installer resets itself on next resume; we rebuild.
                 sInstalled = false;
                 sLeftRow = null;
-                sRightRow = null;
                 sLeftHost = new WeakReference<>(null);
-                sRightHost = new WeakReference<>(null);
                 sPlusHost = new WeakReference<>(null);
                 sLastIndex = -1;
                 scheduleProbe();
                 return;
             }
             keepChromeHidden();
-            alignTriad(left, right, plus);
 
             // Theme flips: the host tracks the live config (bili-style); our
             // icons/labels re-capture off the app's own bar, which swaps in
@@ -762,33 +705,6 @@ final class HeyboxHomeBar {
         }
     }
 
-    /** Centre the [left][plus][right] triad by nudging side hosts off centre. */
-    private static void alignTriad(LiquidGlassHostLayout left,
-                                   LiquidGlassHostLayout right, LiquidGlassHostLayout plus) {
-        if (left == null || right == null || plus == null || sLeftRow == null) {
-            return;
-        }
-        int plusW = plus.getWidth();
-        int leftW = left.getWidth();
-        int rightW = right.getWidth();
-        if (plusW == 0 || leftW == 0 || rightW == 0) {
-            return;
-        }
-        float d = left.getResources().getDisplayMetrics().density;
-        float gap = PILL_GAP_DP * d;
-        // All three hosts are centre-anchored: shift each side pill out by
-        // half the plus width + gap + half its own width, so the plus lands
-        // exactly between them.
-        float shiftLeft = plusW / 2f + gap + leftW / 2f;
-        float shiftRight = plusW / 2f + gap + rightW / 2f;
-        if (left.getTranslationX() != -shiftLeft) {
-            left.setTranslationX(-shiftLeft);
-        }
-        if (right.getTranslationX() != shiftRight) {
-            right.setTranslationX(shiftRight);
-        }
-    }
-
     private static int checkedIndex(RadioGroup real) {
         int checked = real.getCheckedRadioButtonId();
         if (checked == -1 || sRealTabs == null) {
@@ -808,9 +724,6 @@ final class HeyboxHomeBar {
 
     private static void applySelection(boolean force) {
         applyRow(sLeftRow, 0, force);
-        if (sRightRow != null && sLeftRow != null) {
-            applyRow(sRightRow, sLeftRow.getChildCount(), force);
-        }
     }
 
     /**
