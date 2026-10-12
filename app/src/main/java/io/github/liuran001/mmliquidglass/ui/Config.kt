@@ -191,7 +191,9 @@ object Config {
 
     private fun readHook(p: SharedPreferences) {
         fun app(key: String, def: AppCfg): AppCfg = AppCfg(
-            enabled = p.getBoolean("${key}_enabled", def.enabled),
+            // No per-app enable switch any more (LSPosed gates the module):
+            // ignore legacy stored values so an old "off" can't stick.
+            enabled = true,
             widthScale = p.getFloat("${key}_width_scale", def.widthScale),
             offsetDp = p.getInt("${key}_offset_dp", def.offsetDp),
             offsetXdp = p.getInt("${key}_offsetx_dp", def.offsetXdp),

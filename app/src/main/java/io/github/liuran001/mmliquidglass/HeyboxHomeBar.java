@@ -302,16 +302,33 @@ final class HeyboxHomeBar {
                         Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
             }
             parent.addView(leftWrap, idx, hostLp);
+            // One ERROR line with the full install context: if install()
+            // bails, this line plus its silent-return table (parent null /
+            // already wrapped / backdrop null / index<0) pinpoints which one
+            // without another blind round trip.
+            LiquidGlassModule.log(android.util.Log.ERROR,
+                    "heybox: pre-install parent=" + parent.getClass().getSimpleName()
+                            + " idx=" + idx
+                            + " backdrop=" + (backdrop != null
+                            ? backdrop.getClass().getSimpleName() : "null")
+                            + " lp=" + hostLp.getClass().getSimpleName());
             LiquidGlassInstaller.install(leftWrap);
             if (!(leftWrap.getParent() instanceof LiquidGlassHostLayout)) {
-                LiquidGlassModule.log(android.util.Log.WARN,
-                        "heybox: install refused, restoring native bar");
+                LiquidGlassModule.log(android.util.Log.ERROR,
+                        "heybox: install refused — leftWrap parent now "
+                                + (leftWrap.getParent() != null
+                                ? leftWrap.getParent().getClass().getName() : "null"));
                 parent.removeView(leftWrap);
                 restoreNative();
                 sProbes = 0;
                 return false;
             }
             LiquidGlassHostLayout leftHost = (LiquidGlassHostLayout) leftWrap.getParent();
+            // The real bar sits EARLY in the xml (before the fullscreen
+            // content container) — the host inherits that z slot and the
+            // content draws right over the glass. Raise it to the top.
+            leftHost.bringToFront();
+            leftHost.getParent().requestLayout();
             sLeftHost = new WeakReference<>(leftHost);
 
             LiquidGlassHostLayout rightHost = buildSidePill(act, backdrop, parent, sRightRow);

@@ -103,10 +103,9 @@ private fun AppCard(
 @Composable
 private fun AppParams(cfg: Config.AppCfg, set: (Config.AppCfg) -> Unit) {
     Column {
-        LSwitchRow(
-            stringResourceCompat(R.string.apps_enable), null, cfg.enabled
-        ) { set(cfg.copy(enabled = it)) }
-        if (cfg.enabled) {
+        // No per-app enable switch: LSPosed's own toggle already gates the
+        // module; a second switch here was redundant state.
+        run {
             LSliderRow(stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, 0.5f..1.2f) {
                 set(cfg.copy(widthScale = (it * 100).toInt() / 100f))
             }
@@ -178,10 +177,7 @@ private fun BiliCard(
 private fun BiliParams(cfg: Config.BiliCfg, set: (Config.BiliCfg) -> Unit) {
     val base = cfg.base
     Column {
-        LSwitchRow(
-            stringResourceCompat(R.string.apps_enable), null, base.enabled
-        ) { set(cfg.copy(base = base.copy(enabled = it))) }
-        if (base.enabled) {
+        run {
             LSliderRow(stringResourceCompat(R.string.apps_width_scale), base.widthScale, 0.5f..1.2f) {
                 set(cfg.copy(base = base.copy(widthScale = (it * 100).toInt() / 100f)))
             }
