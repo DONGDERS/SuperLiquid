@@ -50,9 +50,6 @@ final class HeyboxHomeBar {
     private static final long POLL_MS = 250;
     /** Gap between the three pills, dp. */
     private static final int PILL_GAP_DP = 12;
-    /** Publish pill box, dp (mirrors the bili publish pill). */
-    private static final int PLUS_W_DP = 56;
-    private static final int PLUS_H_DP = 52;
     /** Plus glyph stroke length/width inside the publish pill, dp. */
     private static final int PLUS_GLYPH_DP = 26;
     private static final float PLUS_STROKE_DP = 2.5f;
@@ -71,6 +68,10 @@ final class HeyboxHomeBar {
     private static ImageView[] sIcons;
     private static int[] sSnapW;
     private static int[] sSnapH;
+    /** bili-proportion scale per slot: native rb height -> 32dp content box. */
+    private static float[] sSnapK;
+    /** Persistent per-slot bitmap: redrawn in place, zero alloc per tick. */
+    private static android.graphics.Bitmap[] sSnapBm;
     private static int sAccent;
     private static int sNormal;
 
@@ -88,18 +89,31 @@ final class HeyboxHomeBar {
     /**
      * A live frame of the native tab: the whole RadioButton — whatever the
      * server-configured bar draws into it (animated icon frames, label, its
-     * own colours) — rendered into a bitmap of its laid-out size. Safe on
-     * GONE views (draw works off the retained layout); call repeatedly for
-     * animation frames.
+     * own colours) — rendered into the slot's persistent bitmap, scaled from
+     * the native rb geometry to bili's tab content box (19dp icon + 2dp gap
+     * + 8sp label ≈ 32dp) so the pill matches bili's proportions. The bitmap
+     * is reused across ticks: zero allocation per redraw (r10 feedback:
+     * fresh bitmaps every poll tick churned ~4MB/s through GC and the pill
+     * visibly dropped frames). Returns the bitmap for display.
      */
-    private static android.graphics.Bitmap snapshot(RadioButton rb, int w, int h) {
+    private static android.graphics.Bitmap snapshot(int slot, RadioButton rb) {
         try {
+            int w = sSnapW[slot], h = sSnapH[slot];
             if (rb == null || w <= 0 || h <= 0) {
                 return null;
             }
-            android.graphics.Bitmap bm = android.graphics.Bitmap.createBitmap(
-                    w, h, android.graphics.Bitmap.Config.ARGB_8888);
+            float k = sSnapK[slot];
+            int tw = Math.max(1, Math.round(w * k));
+            int th = Math.max(1, Math.round(h * k));
+            android.graphics.Bitmap bm = sSnapBm[slot];
+            if (bm == null || bm.getWidth() != tw || bm.getHeight() != th) {
+                bm = android.graphics.Bitmap.createBitmap(
+                        tw, th, android.graphics.Bitmap.Config.ARGB_8888);
+                sSnapBm[slot] = bm;
+            }
+            bm.eraseColor(android.graphics.Color.TRANSPARENT);
             android.graphics.Canvas c = new android.graphics.Canvas(bm);
+            c.scale(k, k);
             rb.draw(c);
             return bm;
         } catch (Throwable t) {
@@ -238,6 +252,8 @@ final class HeyboxHomeBar {
             sIcons = new ImageView[n];
             sSnapW = new int[n];
             sSnapH = new int[n];
+            sSnapK = new float[n];
+            sSnapBm = new android.graphics.Bitmap[n];
             int k = 0;
             for (int i = 0; i < real.getChildCount(); i++) {
                 View c = real.getChildAt(i);
@@ -253,9 +269,19 @@ final class HeyboxHomeBar {
             // bitmap of exactly these dimensions (r10 icon plan: the native
             // icons are frame-animation players with no static handle, so we
             // borrow the app's own canvas).
+            float dens = act.getResources().getDisplayMetrics().density;
             for (int i = 0; i < n; i++) {
                 sSnapW[i] = sRealTabs[i].getWidth();
                 sSnapH[i] = sRealTabs[i].getHeight();
+                // Scale the native rb into bili's tab content box, BOTH axes:
+                // height 32dp (19dp icon + 2dp gap + 8sp label) and width
+                // 46dp (r11 miss: scaling height only let the native slot
+                // width — screen/5 — ride through, and the hug formula
+                // (content+32dp)*0.7 per tab hit its screen cap = full-width
+                // bar; the values were never in bili's dimension).
+                float kh = sSnapH[i] > 0 ? 32f * dens / sSnapH[i] : 1f;
+                float kw = sSnapW[i] > 0 ? 46f * dens / sSnapW[i] : 1f;
+                sSnapK[i] = Math.min(1.2f, Math.max(0.25f, Math.min(kh, kw)));
             }
 
             View publish = findById(act.getWindow().getDecorView(), "vg_mid_tab");
@@ -326,8 +352,13 @@ final class HeyboxHomeBar {
                         new android.widget.RelativeLayout.LayoutParams(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 ViewGroup.LayoutParams.WRAP_CONTENT);
-                rlp.addRule(ALIGN_PARENT_BOTTOM);
-                rlp.addRule(CENTER_HORIZONTAL);
+                rlp.addRule(android.widget.RelativeLayout.ALIGN_PARENT_BOTTOM);
+                rlp.addRule(android.widget.RelativeLayout.ALIGN_PARENT_START);
+                // bili's nudgeStart look, verbatim: the pill is NOT centred,
+                // it sits bottom-START with a 16dp inset (BiliHomeBar pins
+                // BOTTOM|START + leftMargin 16dp after install).
+                rlp.leftMargin = Math.round(16 * dens);
+                rlp.rightMargin = 0;
                 hostLp = rlp;
             } else {
                 hostLp = new FrameLayout.LayoutParams(
@@ -372,6 +403,7 @@ final class HeyboxHomeBar {
             sDark = isNight(act);
             sLastIndex = checkedIndex(real);
             applySelection();
+            bumpIconAnimation();
             // One-line summary: snapshot dims + state for every slot, plus the
             // accent handed to the droplet. Single line so log captures that
             // drop lines can't split it.
@@ -431,10 +463,8 @@ final class HeyboxHomeBar {
             }
             for (int i = 0; i < sRealTabs.length && i < sIcons.length; i++) {
                 if (sIcons[i] != null && sRealTabs[i] != null) {
-                    android.graphics.Bitmap bm = snapshot(
-                            sRealTabs[i], sSnapW[i], sSnapH[i]);
-                    if (bm != null) {
-                        sIcons[i].setImageBitmap(bm);
+                    if (snapshot(i, sRealTabs[i]) != null) {
+                        sIcons[i].invalidate();
                     }
                 }
             }
@@ -471,13 +501,13 @@ final class HeyboxHomeBar {
             // canvas instead of fighting it. Poll re-draws every tick, so the
             // pill icons follow the native animation/selection/night state.
             ImageView icon = new ImageView(act);
-            android.graphics.Bitmap bm = snapshot(sRealTabs[i], sSnapW[i], sSnapH[i]);
+            android.graphics.Bitmap bm = snapshot(i, sRealTabs[i]);
             if (bm != null) {
                 icon.setImageBitmap(bm);
             }
             LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(
-                    sSnapW[i] > 0 ? sSnapW[i] : Math.round(24 * d),
-                    sSnapH[i] > 0 ? sSnapH[i] : Math.round(24 * d));
+                    bm != null ? bm.getWidth() : Math.round(24 * d),
+                    bm != null ? bm.getHeight() : Math.round(32 * d));
             iconLp.gravity = Gravity.CENTER_HORIZONTAL;
             tab.addView(icon, iconLp);
             sIcons[i] = icon;
@@ -489,6 +519,7 @@ final class HeyboxHomeBar {
                     sRealTabs[slot].performClick();
                     sLastIndex = slot;
                     applySelection();
+                    bumpIconAnimation();
                 } catch (Throwable t) {
                     LiquidGlassModule.logErr("heybox: tab click failed", t);
                 }
@@ -504,6 +535,10 @@ final class HeyboxHomeBar {
         try {
             float d = act.getResources().getDisplayMetrics().density;
             ViewGroup backdrop = (ViewGroup) backdropView; // fl_container is a FrameLayout
+            // Manager-side tuning, same knobs the bili pill listens to.
+            float ps = GlassConfig.biliPubScale;
+            if (ps < 0.5f) ps = 0.5f;
+            if (ps > 2f) ps = 2f;
             LiquidGlassHostLayout host = new LiquidGlassHostLayout(act, backdrop, null);
             host.setupShadow(d, isNight(act));
             int shadowPad = host.shadowPad();
@@ -517,7 +552,8 @@ final class HeyboxHomeBar {
                     Math.round(15 * d), Math.round(13 * d));
             row.addView(new PlusView(act, PLUS_GLYPH_DP, PLUS_STROKE_DP),
                     new LinearLayout.LayoutParams(
-                            Math.round(PLUS_GLYPH_DP * d), Math.round(PLUS_GLYPH_DP * d)));
+                            Math.round(PLUS_GLYPH_DP * d * ps),
+                            Math.round(PLUS_GLYPH_DP * d * ps)));
             row.setOnClickListener(v -> openPublish(v));
 
             host.addView(row, new FrameLayout.LayoutParams(
@@ -544,7 +580,54 @@ final class HeyboxHomeBar {
             }
             host.setClipChildren(false);
             host.setClipToPadding(false);
-            park(host, parent, act);
+
+            // ---- park, bili's publish-pill block (fixed host box 56×52 ×ps
+            // + shadow room). r12 log-arbitrated root cause for the top-left
+            // pin: bili's generateLayoutParams reflection is for
+            // CoordinatorLayout, where the method is public. RelativeLayout
+            // inherits it PROTECTED — getMethod throws, the silent catch kept
+            // the FL lp, and RL's addView converted it to rule-less params
+            // (r6 lesson, third round). The left pill never had this problem
+            // because it builds RL.LayoutParams directly — do the same.
+            int w = Math.round(56 * d * ps) + shadowPad * 2;
+            int h = Math.round(52 * d * ps) + shadowPad * 2;
+            int bottom = Math.round(GlassConfig.biliPubBottomDp * d) - shadowPad + navInset(act);
+            int side = Math.round(GlassConfig.biliPubSideDp * d);
+            ViewGroup.LayoutParams glp;
+            if (parent instanceof android.widget.RelativeLayout) {
+                android.widget.RelativeLayout.LayoutParams rlp =
+                        new android.widget.RelativeLayout.LayoutParams(w, h);
+                rlp.addRule(android.widget.RelativeLayout.ALIGN_PARENT_BOTTOM);
+                rlp.addRule(android.widget.RelativeLayout.ALIGN_PARENT_END);
+                rlp.bottomMargin = bottom;
+                rlp.rightMargin = side;
+                glp = rlp;
+            } else {
+                FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                        w, h, Gravity.BOTTOM | Gravity.END);
+                lp.bottomMargin = bottom;
+                lp.rightMargin = side;
+                ViewGroup.LayoutParams converted = lp;
+                try {
+                    java.lang.reflect.Method gen = parent.getClass().getMethod(
+                            "generateLayoutParams", ViewGroup.LayoutParams.class);
+                    converted = (ViewGroup.LayoutParams) gen.invoke(parent, lp);
+                } catch (Throwable ignored) {
+                    // keep the FrameLayout lp (FrameLayout-style parents)
+                }
+                try {
+                    java.lang.reflect.Field g = converted.getClass().getField("gravity");
+                    g.setInt(converted, Gravity.BOTTOM | Gravity.END);
+                } catch (Throwable ignored) {
+                    // FrameLayout-style parents carry gravity natively
+                }
+                if (converted instanceof ViewGroup.MarginLayoutParams) {
+                    ((ViewGroup.MarginLayoutParams) converted).bottomMargin = bottom;
+                    ((ViewGroup.MarginLayoutParams) converted).rightMargin = side;
+                }
+                glp = converted;
+            }
+            parent.addView(host, glp);
             return host;
         } catch (Throwable t) {
             LiquidGlassModule.logErr("heybox: plus pill failed", t);
@@ -552,41 +635,7 @@ final class HeyboxHomeBar {
         }
     }
 
-    /**
-     * Bottom-end park (bili's publish-pill position: bottom-right, 16dp side
-     * margin), in the app's RelativeLayout root. Params are built directly —
-     * generateLayoutParams returns rule-less params that pin the child
-     * top-left (r6 lesson).
-     */
-    private static void park(LiquidGlassHostLayout host, ViewGroup parent, Activity act) {
-        float d = act.getResources().getDisplayMetrics().density;
-        int shadowPad = host.shadowPad();
-        ViewGroup.LayoutParams lp;
-        if (parent instanceof android.widget.RelativeLayout) {
-            android.widget.RelativeLayout.LayoutParams rlp =
-                    new android.widget.RelativeLayout.LayoutParams(
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT);
-            rlp.addRule(ALIGN_PARENT_BOTTOM);
-            rlp.addRule(ALIGN_PARENT_END);
-            rlp.rightMargin = Math.round(16 * d) + shadowPad;
-            rlp.bottomMargin =
-                    Math.round(GlassConfig.barOffsetDp * d) - shadowPad + navInset(act);
-            lp = rlp;
-        } else {
-            lp = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                    Gravity.BOTTOM | Gravity.END);
-            ((FrameLayout.LayoutParams) lp).rightMargin = Math.round(16 * d) + shadowPad;
-            ((FrameLayout.LayoutParams) lp).bottomMargin =
-                    Math.round(GlassConfig.barOffsetDp * d) - shadowPad + navInset(act);
-        }
-        parent.addView(host, lp);
-    }
-
     /** RelativeLayout rule values (java.lang.reflect, no compile-time need). */
-    private static final int ALIGN_PARENT_BOTTOM = 12;
-    private static final int ALIGN_PARENT_END = 11;
     private static final int CENTER_HORIZONTAL = 14;
 
     /** Self-drawn plus: plain strokes, tinted with the live accent color. */
@@ -637,6 +686,43 @@ final class HeyboxHomeBar {
         sMain.postDelayed(HeyboxHomeBar::poll, POLL_MS);
     }
 
+    /**
+     * Fast icon sampling around a switch. r13 feedback: the poll's 250ms
+     * cadence caught only 2-3 frames of the native tab animation (~15fps,
+     * ~500ms). Within ICON_FAST_WINDOW_MS of a switch the snapshot slots are
+     * re-drawn every ICON_FAST_MS (~25fps) — pure rb.draw into the persistent
+     * bitmaps, no allocation, no requestLayout — then pumping stops and the
+     * ordinary poll cadence takes over.
+     */
+    private static final long ICON_FAST_MS = 40;
+    private static final long ICON_FAST_WINDOW_MS = 1500;
+    private static volatile long sAnimUntil;
+
+    private static void bumpIconAnimation() {
+        sAnimUntil = SystemClock.uptimeMillis() + ICON_FAST_WINDOW_MS;
+        sMain.removeCallbacks(HeyboxHomeBar::pumpIcons);
+        sMain.postDelayed(HeyboxHomeBar::pumpIcons, ICON_FAST_MS);
+    }
+
+    private static void pumpIcons() {
+        if (!sInstalled) {
+            return;
+        }
+        try {
+            if (sIcons != null && sRealTabs != null) {
+                for (int i = 0; i < sIcons.length && i < sRealTabs.length; i++) {
+                    if (sIcons[i] != null && snapshot(i, sRealTabs[i]) != null) {
+                        sIcons[i].invalidate();
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        if (SystemClock.uptimeMillis() < sAnimUntil) {
+            sMain.postDelayed(HeyboxHomeBar::pumpIcons, ICON_FAST_MS);
+        }
+    }
+
     private static void poll() {
         if (!sInstalled) {
             return;
@@ -679,7 +765,10 @@ final class HeyboxHomeBar {
             RadioGroup real = sRealBar.get();
             if (real != null) {
                 int idx = checkedIndex(real);
-                if (idx >= 0) {
+                if (idx >= 0 && idx != sLastIndex) {
+                    sLastIndex = idx;
+                    bumpIconAnimation();
+                } else if (idx >= 0) {
                     sLastIndex = idx;
                 }
                 applySelection(true);
@@ -756,13 +845,15 @@ final class HeyboxHomeBar {
                 continue;
             }
             tab.setSelected(selected);
-            // Snapshot tabs carry the app's own icon/label colours — a fresh
-            // rb.draw() picks up whatever the app renders for this state.
+            // Snapshot tabs carry the app's own icon/label colours — redraw
+            // into the persistent bitmap (the same instance the ImageView
+            // wraps) and invalidate; setImageBitmap here would requestLayout
+            // every poll tick and drag the glass through a full re-measure
+            // (r10 feedback: the pill visibly dropped frames).
             ImageView icon = sIcons[idx];
             if (icon != null) {
-                android.graphics.Bitmap bm = snapshot(sRealTabs[idx], sSnapW[idx], sSnapH[idx]);
-                if (bm != null) {
-                    icon.setImageBitmap(bm);
+                if (snapshot(idx, sRealTabs[idx]) != null) {
+                    icon.invalidate();
                 }
             }
         }

@@ -180,6 +180,8 @@ final class LiquidGlassPanel extends View {
 
     /** Cleared if drawing the glass ever throws; the flat wash stays. */
     private boolean mSupported = true;
+    /** One-shot first-draw diagnostics (zero-size vs live panel). */
+    private boolean mLoggedFirstDraw;
 
     /**
      * Re-captures whenever the capture has gone stale, and only then, so a
@@ -266,7 +268,22 @@ final class LiquidGlassPanel extends View {
         int w = getWidth();
         int h = getHeight();
         if (w <= 0 || h <= 0) {
+            // First draw at 0 = the WRAP_CONTENT measure trap: log it once so
+            // a dead panel is visible in one log line instead of silence.
+            if (!mLoggedFirstDraw) {
+                mLoggedFirstDraw = true;
+                LiquidGlassModule.log(android.util.Log.ERROR,
+                        "panel zero-size draw " + w + "x" + h);
+            }
             return;
+        }
+        if (!mLoggedFirstDraw) {
+            mLoggedFirstDraw = true;
+            ViewGroup bd = mBackdropRef.get();
+            LiquidGlassModule.log(android.util.Log.ERROR,
+                    "panel first draw " + w + "x" + h + " hw=" + isHardwareAccelerated()
+                            + " bd=" + (bd == null ? "null"
+                            : bd.getClass().getSimpleName() + " " + bd.getWidth() + "x" + bd.getHeight()));
         }
         // Noted whether or not the capture below succeeds: a capture that
         // cannot be taken must not read as permanently stale.

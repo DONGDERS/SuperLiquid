@@ -50,7 +50,12 @@ fun AppsScreen() {
             when (t.key) {
                 "mm" -> AppCard(t, Config.mm, installed("mm")) { Config.setApp("mm", it) }
                 "qq" -> AppCard(t, Config.qq, installed("qq")) { Config.setApp("qq", it) }
-                "heybox" -> AppCard(t, Config.heybox, installed("heybox")) { Config.setApp("heybox", it) }
+                "heybox" -> AppCard(
+                    t, Config.heybox, installed("heybox"),
+                    // heybox's 1.0 column overruns the pill (r14: full-width
+                    // hug + flush capsule) — cap the slider below it.
+                    widthRange = 0.2f..0.9f
+                ) { Config.setApp("heybox", it) }
                 else -> BiliCard(t, Config.bili, installed("bili")) { Config.setBili(it) }
             }
             if (LocalUiMode.current == UiMode.Miuix) {
@@ -70,6 +75,9 @@ private fun AppCard(
     t: Target,
     cfg: Config.AppCfg,
     installed: Boolean,
+    widthRange: ClosedFloatingPointRange<Float> = 0.5f..1.2f,
+    // set stays LAST: every call site passes it as a trailing lambda, and
+    // Kotlin binds that to the final parameter only.
     set: (Config.AppCfg) -> Unit
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -82,7 +90,7 @@ private fun AppCard(
                 onClick = { expanded = !expanded },
             )
             AnimatedVisibility(visible = expanded) {
-                Column { AppParams(cfg, set) }
+                Column { AppParams(cfg, set, widthRange) }
             }
         }
 
@@ -94,19 +102,23 @@ private fun AppCard(
                 LText(title, subtitle = true)
             }
             AnimatedVisibility(visible = expanded) {
-                Column { AppParams(cfg, set) }
+                Column { AppParams(cfg, set, widthRange) }
             }
         }
     }
 }
 
 @Composable
-private fun AppParams(cfg: Config.AppCfg, set: (Config.AppCfg) -> Unit) {
+private fun AppParams(
+    cfg: Config.AppCfg,
+    set: (Config.AppCfg) -> Unit,
+    widthRange: ClosedFloatingPointRange<Float>
+) {
     Column {
         // No per-app enable switch: LSPosed's own toggle already gates the
         // module; a second switch here was redundant state.
         run {
-            LSliderRow(stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, 0.5f..1.2f) {
+            LSliderRow(stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, widthRange) {
                 set(cfg.copy(widthScale = (it * 100).toInt() / 100f))
             }
             LSliderRow(stringResourceCompat(R.string.apps_pill_scale), cfg.pillScale, 0.1f..3f) {

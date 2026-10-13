@@ -80,7 +80,7 @@ object Config {
     private val _bili = mutableStateOf(BiliCfg())
     val bili: BiliCfg get() = _bili.value
 
-    private val _heybox = mutableStateOf(AppCfg())
+    private val _heybox = mutableStateOf(AppCfg(widthScale = 0.5f))
     val heybox: AppCfg get() = _heybox.value
 
     fun init(ctx: Context) {
@@ -147,7 +147,7 @@ object Config {
         setApp("mm", AppCfg())
         setApp("qq", AppCfg())
         setBili(BiliCfg())
-        setApp("heybox", AppCfg())
+        setApp("heybox", AppCfg(widthScale = 0.5f))
     }
 
     private fun write(key: String, cfg: AppCfg) {
@@ -206,7 +206,7 @@ object Config {
         )
         _mm.value = app("mm", AppCfg())
         _qq.value = app("qq", AppCfg())
-        _heybox.value = app("heybox", AppCfg())
+        _heybox.value = app("heybox", AppCfg(widthScale = 0.5f))
         val b = _bili.value
         _bili.value = BiliCfg(
             base = app("bili", AppCfg(widthScale = 0.7f)),

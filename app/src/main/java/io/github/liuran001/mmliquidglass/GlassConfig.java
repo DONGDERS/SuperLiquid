@@ -93,7 +93,13 @@ final class GlassConfig {
         enabled = true;
         barOffsetDp = 12;
         barOffsetXDp = 0;
-        widthScale = "bili".equals(keyPrefix) ? 0.7f : 1f;
+        // r12 lesson (log-arbitrated): the handoff below OVERWRITES
+        // HostApp.widthScale, so the per-app default must live HERE. "bili"
+        // alone covered bilibili; heybox rode the same 0.7 shrink but got
+        // reset to 1f — the hug then hit its screen cap and the bar went
+        // full-width (tabWidth=246/total=1008 in the capture).
+        widthScale = "bili".equals(keyPrefix) ? 0.7f
+                : "heybox".equals(keyPrefix) ? 0.5f : 1f;
         blurRadius = 3;
         tintStrength = 1f;
         biliHideNative = true;
