@@ -311,7 +311,11 @@ private fun AboutContent(
                                 )
                             } else Modifier
                         ),
-                    painter = painterResource(id = R.drawable.ic_logo),
+                    // Dark mode: the blur/DstIn path can drop the tint, so
+                    // swap to the pre-inverted light PNG as belt-and-braces.
+                    painter = painterResource(
+                        id = if (isInDark) R.drawable.ic_logo_light else R.drawable.ic_logo
+                    ),
                     colorFilter = ColorFilter.tint(colorScheme.onBackground),
                     contentDescription = null,
                 )
@@ -361,7 +365,10 @@ private fun AboutContent(
                         val size = coordinates.size
                         versionCodeY = y + size.height
                     },
-                color = colorScheme.onSurfaceVariantSummary,
+                // Explicit light tone in dark mode: the theme's summary
+                // variant stayed too dark to read on the dark background.
+                color = if (isInDark) androidx.compose.ui.graphics.Color(0xFFCCCCCC)
+                        else colorScheme.onSurfaceVariantSummary,
                 text = state.versionName,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,

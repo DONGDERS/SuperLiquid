@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,18 +46,29 @@ private fun installed(key: String): Boolean {
 
 @Composable
 fun AppsScreen() {
+    var tabDialogKey by remember { mutableStateOf<String?>(null) }
+    TabLayoutDialog(
+        appKey = tabDialogKey ?: "heybox",
+        show = tabDialogKey != null,
+        onApply = { cfg -> tabDialogKey?.let { Config.setTabLayout(it, cfg) } },
+        onDismiss = { tabDialogKey = null },
+    )
     LScreen(title = stringResourceCompat(R.string.apps_title)) {
         TARGETS.forEach { t ->
             when (t.key) {
-                "mm" -> AppCard(t, Config.mm, installed("mm")) { Config.setApp("mm", it) }
-                "qq" -> AppCard(t, Config.qq, installed("qq")) { Config.setApp("qq", it) }
+                "mm" -> AppCard(t, Config.mm, installed("mm"),
+                    onEditTabs = { tabDialogKey = "mm" }) { Config.setApp("mm", it) }
+                "qq" -> AppCard(t, Config.qq, installed("qq"),
+                    onEditTabs = { tabDialogKey = "qq" }) { Config.setApp("qq", it) }
                 "heybox" -> AppCard(
                     t, Config.heybox, installed("heybox"),
                     // heybox's 1.0 column overruns the pill (r14: full-width
                     // hug + flush capsule) — cap the slider below it.
-                    widthRange = 0.2f..0.9f
+                    widthRange = 0.2f..0.9f,
+                    onEditTabs = { tabDialogKey = "heybox" },
                 ) { Config.setApp("heybox", it) }
-                else -> BiliCard(t, Config.bili, installed("bili")) { Config.setBili(it) }
+                else -> BiliCard(t, Config.bili, installed("bili"),
+                    onEditTabs = { tabDialogKey = "bili" }) { Config.setBili(it) }
             }
             if (LocalUiMode.current == UiMode.Miuix) {
                 Spacer(modifier = Modifier.height(12.dp))
@@ -76,6 +88,7 @@ private fun AppCard(
     cfg: Config.AppCfg,
     installed: Boolean,
     widthRange: ClosedFloatingPointRange<Float> = 0.5f..1.2f,
+    onEditTabs: (() -> Unit)? = null,
     // set stays LAST: every call site passes it as a trailing lambda, and
     // Kotlin binds that to the final parameter only.
     set: (Config.AppCfg) -> Unit
@@ -90,7 +103,7 @@ private fun AppCard(
                 onClick = { expanded = !expanded },
             )
             AnimatedVisibility(visible = expanded) {
-                Column { AppParams(cfg, set, widthRange) }
+                Column { AppParams(cfg, set, widthRange, onEditTabs) }
             }
         }
 
@@ -102,7 +115,7 @@ private fun AppCard(
                 LText(title, subtitle = true)
             }
             AnimatedVisibility(visible = expanded) {
-                Column { AppParams(cfg, set, widthRange) }
+                Column { AppParams(cfg, set, widthRange, onEditTabs) }
             }
         }
     }
@@ -112,7 +125,8 @@ private fun AppCard(
 private fun AppParams(
     cfg: Config.AppCfg,
     set: (Config.AppCfg) -> Unit,
-    widthRange: ClosedFloatingPointRange<Float>
+    widthRange: ClosedFloatingPointRange<Float>,
+    onEditTabs: (() -> Unit)? = null
 ) {
     Column {
         // No per-app enable switch: LSPosed's own toggle already gates the
@@ -120,6 +134,11 @@ private fun AppParams(
         run {
             LSliderRow(stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, widthRange) {
                 set(cfg.copy(widthScale = (it * 100).toInt() / 100f))
+            }
+            // heybox only: floating-bar tab layout editor (order + hide).
+            if (onEditTabs != null) {
+                LActionRow(stringResourceCompat(R.string.apps_tab_layout),
+                    stringResourceCompat(R.string.apps_tab_layout_summary), onEditTabs)
             }
             LSliderRow(stringResourceCompat(R.string.apps_pill_scale), cfg.pillScale, 0.1f..3f) {
                 set(cfg.copy(pillScale = (it * 100).toInt() / 100f))
@@ -154,6 +173,7 @@ private fun BiliCard(
     t: Target,
     cfg: Config.BiliCfg,
     installed: Boolean,
+    onEditTabs: (() -> Unit)? = null,
     set: (Config.BiliCfg) -> Unit
 ) {
     val base = cfg.base
@@ -167,7 +187,7 @@ private fun BiliCard(
                 onClick = { expanded = !expanded },
             )
             AnimatedVisibility(visible = expanded) {
-                Column { BiliParams(cfg, set) }
+                Column { BiliParams(cfg, set, onEditTabs) }
             }
         }
 
@@ -179,17 +199,25 @@ private fun BiliCard(
                 LText(title, subtitle = true)
             }
             AnimatedVisibility(visible = expanded) {
-                Column { BiliParams(cfg, set) }
+                Column { BiliParams(cfg, set, onEditTabs) }
             }
         }
     }
 }
 
 @Composable
-private fun BiliParams(cfg: Config.BiliCfg, set: (Config.BiliCfg) -> Unit) {
+private fun BiliParams(
+    cfg: Config.BiliCfg,
+    set: (Config.BiliCfg) -> Unit,
+    onEditTabs: (() -> Unit)? = null
+) {
     val base = cfg.base
     Column {
         run {
+            if (onEditTabs != null) {
+                LActionRow(stringResourceCompat(R.string.apps_tab_layout),
+                    stringResourceCompat(R.string.apps_tab_layout_summary), onEditTabs)
+            }
             LSliderRow(stringResourceCompat(R.string.apps_width_scale), base.widthScale, 0.5f..1.2f) {
                 set(cfg.copy(base = base.copy(widthScale = (it * 100).toInt() / 100f)))
             }

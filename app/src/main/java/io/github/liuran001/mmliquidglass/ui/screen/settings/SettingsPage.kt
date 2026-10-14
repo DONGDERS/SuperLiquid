@@ -143,6 +143,9 @@ private fun SettingsPageMaterial(
                     }
                 )
             }
+            item {
+                ConfigBackupRows(onDone = { SettingsState.refresh() })
+            }
         }
     }
 }
@@ -194,8 +197,116 @@ private fun SettingsPageMiuix(
                     )
                 }
             }
+            // Config backup: one dedicated block (JSON file via SAF).
+            item {
+                ConfigBackupCard(onDone = { SettingsState.refresh() })
+            }
         }
     }
+}
+
+// ---- config backup (export/import as one JSON file, SAF) ----------------
+
+private fun toastMain(ctx: android.content.Context, msg: String) {
+    android.os.Handler(android.os.Looper.getMainLooper()).post {
+        android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_SHORT).show()
+    }
+}
+
+@Composable
+private fun rememberConfigExportLauncher(): androidx.activity.compose.ManagedActivityResultLauncher<String, android.net.Uri?> {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    return rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            Thread {
+                runCatching {
+                    ctx.contentResolver.openOutputStream(uri)?.use { out ->
+                        out.write(ConfigBackup.buildJson().toByteArray())
+                    }
+                    toastMain(ctx, ctx.getString(R.string.settings_backup_done))
+                }.onFailure {
+                    toastMain(ctx, ctx.getString(R.string.settings_backup_fail))
+                }
+            }.start()
+        }
+    }
+}
+
+@Composable
+private fun rememberConfigImportLauncher(
+    onDone: () -> Unit
+): androidx.activity.compose.ManagedActivityResultLauncher<Array<String>, android.net.Uri?> {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    return rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            Thread {
+                val text = runCatching {
+                    ctx.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                }.getOrNull()
+                val applied = text?.let { runCatching { ConfigBackup.applyJson(it) }.getOrDefault(0) } ?: 0
+                toastMain(ctx, if (applied > 0) ctx.getString(R.string.settings_backup_imported, applied)
+                          else ctx.getString(R.string.settings_backup_fail))
+                if (applied > 0) onDone()
+            }.start()
+        }
+    }
+}
+
+/** Miuix-standard backup card: 导出 / 导入 as arrow rows, one block. */
+@Composable
+fun ConfigBackupCard(onDone: () -> Unit) {
+    val exportLauncher = rememberConfigExportLauncher()
+    val importLauncher = rememberConfigImportLauncher(onDone)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp),
+    ) {
+        ArrowPreference(
+            title = stringResource(R.string.settings_backup_export),
+            summary = stringResource(R.string.settings_backup_export_summary),
+            onClick = { exportLauncher.launch("superliquid-config.json") },
+        )
+        ArrowPreference(
+            title = stringResource(R.string.settings_backup_import),
+            summary = stringResource(R.string.settings_backup_import_summary),
+            onClick = {
+                importLauncher.launch(arrayOf("application/json", "text/plain", "text/*"))
+            },
+        )
+    }
+}
+
+/** Material variant of the backup block (segmented rows). */
+@Composable
+fun ConfigBackupRows(onDone: () -> Unit) {
+    val exportLauncher = rememberConfigExportLauncher()
+    val importLauncher = rememberConfigImportLauncher(onDone)
+    SegmentedColumn(
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 13.dp),
+        content = buildList {
+            add {
+                SegmentedListItem(
+                    onClick = { exportLauncher.launch("superliquid-config.json") },
+                    headlineContent = { Text(stringResource(R.string.settings_backup_export)) },
+                    supportingContent = { Text(stringResource(R.string.settings_backup_export_summary)) },
+                    leadingContent = { Icon(Icons.Filled.Check, null) },
+                )
+            }
+            add {
+                SegmentedListItem(
+                    onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "text/*")) },
+                    headlineContent = { Text(stringResource(R.string.settings_backup_import)) },
+                    supportingContent = { Text(stringResource(R.string.settings_backup_import_summary)) },
+                    leadingContent = { Icon(Icons.Filled.Refresh, null) },
+                )
+            }
+        }
+    )
 }
 
 // App-log export: dump `logcat -d` and hand the file to the system file

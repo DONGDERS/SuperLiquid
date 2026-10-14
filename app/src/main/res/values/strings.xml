@@ -54,6 +54,15 @@
     <string name="settings_color_dark">深色</string>
     <string name="settings_reset">恢复默认参数</string>
     <string name="settings_reset_summary">清除所有 Tab 栏玻璃参数，回到内置默认值</string>
+    <string name="settings_backup_export">导出配置</string>
+    <string name="settings_backup_export_summary">把全部设置保存为 JSON 文件</string>
+    <string name="settings_backup_import">导入配置</string>
+    <string name="settings_backup_import_summary">从 JSON 文件恢复，损坏或缺失的部分自动跳过</string>
+    <string name="settings_backup_done">配置已导出</string>
+    <string name="settings_backup_imported">已导入 %1$d 项配置</string>
+    <string name="settings_backup_fail">导入失败：文件无法读取</string>
+    <string name="apps_tab_layout">底栏项目</string>
+    <string name="apps_tab_layout_summary">调整悬浮底栏的顺序或隐藏次要项目</string>
     <string name="settings_ui_mode_summary">选择应用的界面风格</string>
     <string name="settings_theme_summary">自定义更多主题选项</string>
     <string name="settings_export_log">导出App日志</string>

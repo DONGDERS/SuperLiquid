@@ -71,7 +71,7 @@ private fun HomeScreenMaterial(connected: Boolean, onOpenAbout: () -> Unit) {
         val icon = if (connected) Icons.Filled.CheckCircle else Icons.Filled.Warning
         val title = if (connected) "正常工作中" else "模块未生效"
         val summary = if (connected)
-            "v${BuildConfig.VERSION_NAME} · 微信 / QQ / Bilibili Tab 栏液态玻璃"
+            "v${BuildConfig.VERSION_NAME}"
         else
             "请检查 LSPosed 中模块是否启用并勾选作用域，然后重启对应应用"
 
@@ -147,7 +147,7 @@ private fun HomeScreenMiuix(connected: Boolean, onOpenAbout: () -> Unit) {
                     val (bg, iconTint) = heroColors(connected, dark)
                     val title = if (connected) "正常工作中" else "模块未生效"
                     val summary = if (connected)
-                        "v${BuildConfig.VERSION_NAME} · 微信 / QQ / Bilibili Tab 栏液态玻璃"
+                        "v${BuildConfig.VERSION_NAME}"
                     else
                         "请检查 LSPosed 中模块是否启用并勾选作用域，然后重启对应应用"
                     // ---- hero status card: KSU HomeMiuix StatusCard ----

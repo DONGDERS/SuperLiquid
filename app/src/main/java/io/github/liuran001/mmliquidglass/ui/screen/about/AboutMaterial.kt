@@ -26,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -73,10 +74,13 @@ fun AboutScreenMaterial(
                 ) {
                     // Transparent-PNG logo: no frame, no clip — the artwork
                     // carries its own margins (user request: 框框去除).
+                    // Source PNG is pure black — tint it with the theme's
+                    // onSurface so it flips light in dark mode.
                     Image(
                         painter = painterResource(id = R.drawable.ic_logo),
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
+                        colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface),
                         modifier = Modifier.size(96.dp)
                     )
                     Text(
@@ -87,7 +91,8 @@ fun AboutScreenMaterial(
                     )
                     Text(
                         text = state.versionName,
-                        fontSize = MaterialTheme.typography.bodyMedium.fontSize
+                        fontSize = MaterialTheme.typography.bodyMedium.fontSize,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

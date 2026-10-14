@@ -221,6 +221,7 @@ final class LiquidGlassInstaller {
         sTabStructureRefreshPosted = false;
         sTabRowEmptySinceMs = 0L;
         sBarHeight = 0;
+        TabLayoutApplier.clear();
         sBlurLayerRef = new WeakReference<>(null);
         sHairlineRef = new WeakReference<>(null);
         sNavBgRef = new WeakReference<>(null);
@@ -283,6 +284,13 @@ final class LiquidGlassInstaller {
         // Read before the drop lands: the bar is still laid out at its old
         // height here, and the reserve is exactly what the pill must not keep.
         ViewGroup tabRow = TabBarBridge.findTabRow(tabView);
+        // Tab-layout rewrite (manager config): reorder + hide the REAL bar's
+        // cells for the reparented hosts. heybox/bili run their own self-drawn
+        // paths and never reach here.
+        String appKey = GlassConfig.key();
+        if ("mm".equals(appKey) || "qq".equals(appKey)) {
+            TabLayoutApplier.apply(tabRow, appKey);
+        }
         int barHeight = contentBarHeight(tabRow, tabView.getHeight() - navReserve);
 
         // KernelSU's floating bar is width(IntrinsicSize.Min) — it hugs its tabs

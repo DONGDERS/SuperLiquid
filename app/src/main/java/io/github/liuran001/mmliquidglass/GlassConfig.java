@@ -60,10 +60,21 @@ final class GlassConfig {
     /** Fallback route when no live publish route was learned. */
     static volatile String biliPublishFallback = "bilibili://uper/center_plus";
 
+    /** Floating-bar tab layout (ALL hosts): display order (titles) and hidden
+     *  set, matched against each bar's tab titles. The manager writes these as
+     *  JSON string arrays under <app>_tab_order / <app>_tab_hidden. */
+    static volatile String[] tabOrder = new String[0];
+    static volatile String[] tabHidden = new String[0];
+
     static volatile boolean enabled = true;
 
     private static volatile String keyPrefix = "";
     private static volatile boolean moduleLayerRead = false;
+
+    /** App key ("mm"/"qq"/"bili"/"heybox"), "" when unknown. */
+    static String key() {
+        return keyPrefix;
+    }
 
     private GlassConfig() {
     }
@@ -170,6 +181,10 @@ final class GlassConfig {
             biliPublishFallback = p.getString(
                     "bili_publish_fallback", biliPublishFallback);
         }
+        if (!keyPrefix.isEmpty()) {
+            tabOrder = readStrArray(p, keyPrefix + "_tab_order");
+            tabHidden = readStrArray(p, keyPrefix + "_tab_hidden");
+        }
         moduleLayerRead = true;
         // Full applied-config snapshot: one log line answers "why does the
         // glass look wrong" without guessing (adb logcat -s SuperLiquid).
@@ -180,6 +195,24 @@ final class GlassConfig {
                         + " offset=" + barOffsetDp + " offsetX=" + barOffsetXDp + " blur=" + blurRadius
                         + " tint=" + tintStrength + " sat=" + saturationBoost
                         + " gloss=" + glossStrength + " border=" + borderWidthScale
-                        + " hideNative=" + biliHideNative);
+                        + " hideNative=" + biliHideNative
+                        + " tabs(order=" + tabOrder.length + " hidden=" + tabHidden.length + ")");
+    }
+
+    /** Tolerant JSON string-array read: corrupt/missing/absent value → empty
+     *  array (native order / nothing hidden). Never throws. */
+    private static String[] readStrArray(SharedPreferences p, String key) {
+        try {
+            String s = p.getString(key, null);
+            if (s == null || s.isEmpty()) return new String[0];
+            org.json.JSONArray arr = new org.json.JSONArray(s);
+            String[] out = new String[arr.length()];
+            for (int i = 0; i < arr.length(); i++) out[i] = arr.getString(i);
+            return out;
+        } catch (Throwable t) {
+            LiquidGlassModule.log(android.util.Log.WARN,
+                    "config: " + key + " unreadable, keeping defaults");
+            return new String[0];
+        }
     }
 }

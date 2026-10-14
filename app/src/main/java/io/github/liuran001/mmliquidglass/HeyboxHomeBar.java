@@ -65,7 +65,12 @@ final class HeyboxHomeBar {
     private static WeakReference<LiquidGlassPanel> sPlusPanel = new WeakReference<>(null);
 
     private static RadioButton[] sRealTabs;
+    /** Display slots only (tab layout config applied): hidden slots keep
+     *  sIcons[slot] == null so the refresh/pump loops' existing null guards
+     *  skip them naturally. */
     private static ImageView[] sIcons;
+    /** Row position -> slot index; null = no tab-layout config (identity). */
+    private static int[] sDisp;
     private static int[] sSnapW;
     private static int[] sSnapH;
     /** bili-proportion scale per slot: native rb height -> 32dp content box. */
@@ -327,7 +332,8 @@ final class HeyboxHomeBar {
             // installer's proven path (hug / droplet / geometry) manages the
             // single row; the plus pill is a separate bili-style publish
             // button parked bottom-right. No side pill, no translationX math.
-            sLeftRow = buildRow(act, 0, n);
+            sDisp = applyTabLayout();
+            sLeftRow = buildRow(act, sDisp);
 
             FrameLayout leftWrap = new FrameLayout(act);
             leftWrap.addView(sLeftRow, new FrameLayout.LayoutParams(
@@ -479,12 +485,79 @@ final class HeyboxHomeBar {
         }
     }
 
-    private static LinearLayout buildRow(Activity act, int from, int to) {
+    /**
+     * Apply the manager's tab-layout config: compute the display order and
+     * the hidden set from GlassConfig.tabOrder / tabHidden.
+     * Locked basics ("首页"/"主页", "我"/"我的") can never be hidden.
+     *
+     * @return display slots (row position -> capture slot); never null.
+     */
+    private static int[] applyTabLayout() {
+        int n = sRealTabs.length;
+        if (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0) {
+            LiquidGlassModule.log(android.util.Log.INFO,
+                    "heybox: tab layout no config, native order");
+            return identitySlots(n);
+        }
+        try {
+            String[] titles = new String[n];
+            for (int i = 0; i < n; i++) {
+                try {
+                    titles[i] = sRealTabs[i].getText().toString();
+                } catch (Throwable t) {
+                    titles[i] = "";
+                }
+            }
+            // Hidden set (config names the tab titles), basics locked.
+            java.util.Set<String> hidden = new java.util.HashSet<>();
+            for (String h : GlassConfig.tabHidden) {
+                if (h != null && !TabLayoutApplier.isLockedTitle(h)) hidden.add(h);
+            }
+            // Display order: config order first, then unlisted in native order.
+            java.util.ArrayList<Integer> disp = new java.util.ArrayList<>();
+            boolean[] used = new boolean[n];
+            for (String want : GlassConfig.tabOrder) {
+                if (want == null) continue;
+                for (int i = 0; i < n; i++) {
+                    if (!used[i] && want.equals(titles[i]) && !hidden.contains(titles[i])) {
+                        used[i] = true;
+                        disp.add(i);
+                        break;
+                    }
+                }
+            }
+            for (int i = 0; i < n; i++) {
+                if (!used[i] && !hidden.contains(titles[i])) disp.add(i);
+            }
+            int[] out = new int[disp.size()];
+            for (int i = 0; i < disp.size(); i++) out[i] = disp.get(i);
+            // Hidden slots get no icon view: existing null guards skip them.
+            for (int i = 0; i < n; i++) {
+                if (hidden.contains(titles[i])) sIcons[i] = null;
+            }
+            LiquidGlassModule.log(android.util.Log.INFO, "heybox: tab layout applied, visible="
+                    + disp.size() + "/" + n + " titles=" + java.util.Arrays.toString(titles)
+                    + " hidden=" + hidden);
+            return out;
+        } catch (Throwable t) {
+            LiquidGlassModule.logErr("heybox: tab layout apply failed", t);
+            return identitySlots(n);
+        }
+    }
+
+    private static int[] identitySlots(int n) {
+        int[] out = new int[n];
+        for (int i = 0; i < n; i++) out[i] = i;
+        return out;
+    }
+
+    private static LinearLayout buildRow(Activity act, int[] slots) {
         LinearLayout row = new LinearLayout(act);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         float d = act.getResources().getDisplayMetrics().density;
-        for (int i = from; i < to; i++) {
+        for (int pos = 0; pos < slots.length; pos++) {
+            final int i = slots[pos];
             LinearLayout tab = new LinearLayout(act);
             tab.setOrientation(LinearLayout.VERTICAL);
             tab.setGravity(Gravity.CENTER);
@@ -839,7 +912,8 @@ final class HeyboxHomeBar {
         }
         for (int i = 0; i < row.getChildCount(); i++) {
             View tab = row.getChildAt(i);
-            int idx = base + i;
+            // Row position -> capture slot (tab-layout config can reorder).
+            int idx = (sDisp != null && i < sDisp.length) ? sDisp[i] : base + i;
             boolean selected = idx == sLastIndex;
             if (!force && tab.isSelected() == selected) {
                 continue;

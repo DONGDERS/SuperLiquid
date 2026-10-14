@@ -19,6 +19,9 @@ import android.widget.TextView;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Bilibili's home bottom bar is Compose: {@code BottomTabComponent} renders
@@ -872,7 +875,9 @@ final class BiliHomeBar {
     private static void applySelection(LinearLayout row, int index) {
         for (int i = 0; i < row.getChildCount(); i++) {
             View tab = row.getChildAt(i);
-            boolean selected = i == index;
+            // Row position -> slot (tab-layout rewrite can reorder).
+            int slot = (sDisp != null && i < sDisp.length) ? sDisp[i] : i;
+            boolean selected = slot == index;
             if (tab.isSelected() == selected) {
                 continue;
             }
@@ -887,22 +892,80 @@ final class BiliHomeBar {
 
     // ---------------------------------------------------------------- building
 
+    /** Display slots (row position -> slot index); null = no rewrite. */
+    private static int[] sDisp;
+
+    /**
+     * Apply the manager's tab-layout config to the static slot tables.
+     * Basics locked via TabLayoutApplier.isLockedTitle (首页/我的 never hide).
+     */
+    private static int[] applyTabLayout() {
+        int n = LABELS.length;
+        if (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0) {
+            LiquidGlassModule.log(android.util.Log.INFO,
+                    "bili: tab layout no config, native order");
+            return null;
+        }
+        try {
+            Set<String> hidden = new HashSet<>();
+        for (String h : GlassConfig.tabHidden) {
+            if (h != null && !TabLayoutApplier.isLockedTitle(h)) hidden.add(h);
+        }
+        ArrayList<Integer> disp = new ArrayList<>();
+        boolean[] used = new boolean[n];
+        for (String want : GlassConfig.tabOrder) {
+            if (want == null) continue;
+            for (int i = 0; i < n; i++) {
+                if (!used[i] && want.equals(LABELS[i]) && !hidden.contains(LABELS[i])) {
+                    used[i] = true;
+                    disp.add(i);
+                    break;
+                }
+            }
+        }
+        for (int i = 0; i < n; i++) {
+            if (!used[i] && !hidden.contains(LABELS[i])) disp.add(i);
+        }
+        int[] out = new int[disp.size()];
+        for (int i = 0; i < disp.size(); i++) out[i] = disp.get(i);
+        boolean identity = out.length == n;
+        if (identity) {
+            for (int i = 0; i < n; i++) if (out[i] != i) identity = false;
+        }
+        if (identity) return null; // config absent/default: native order
+        sDisp = out;
+        LiquidGlassModule.log(android.util.Log.INFO, "bili: tab layout applied, visible="
+                + out.length + "/" + n + " hidden=" + hidden);
+        return out;
+        } catch (Throwable t) {
+            LiquidGlassModule.logErr("bili: tab layout apply failed", t);
+            return null;
+        }
+    }
+
     private static LinearLayout buildRow(Context ctx) {
         LinearLayout row = new LinearLayout(ctx);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
         int d = Math.round(ctx.getResources().getDisplayMetrics().density);
-        for (int i = 0; i < ICON_NAMES.length; i++) {
+        int[] disp = applyTabLayout();
+        if (disp == null) {
+            sDisp = null;
+            disp = new int[ICON_NAMES.length];
+            for (int i = 0; i < ICON_NAMES.length; i++) disp[i] = i;
+        }
+        for (int pos = 0; pos < disp.length; pos++) {
+            final int index = disp[pos];
             LinearLayout tab = new LinearLayout(ctx);
             tab.setOrientation(LinearLayout.VERTICAL);
             tab.setGravity(Gravity.CENTER);
             int padH = Math.round(5 * d);
             int padV = Math.round(5 * d);
             tab.setPadding(padH, padV, padH, padV);
-            tab.setTag(i);
+            tab.setTag(index);
 
             ImageView icon = new ImageView(ctx);
-            android.graphics.drawable.Drawable glyph = moduleDrawable(ctx, ICON_NAMES[i]);
+            android.graphics.drawable.Drawable glyph = moduleDrawable(ctx, ICON_NAMES[index]);
             if (glyph != null) {
                 icon.setImageDrawable(glyph);
             }
@@ -913,7 +976,7 @@ final class BiliHomeBar {
             tab.addView(icon, iconLp);
 
             TextView label = new TextView(ctx);
-            label.setText(LABELS[i]);
+            label.setText(LABELS[index]);
             label.setTextSize(8);
             label.setTextColor(GRAY);
             label.setIncludeFontPadding(false);
@@ -922,8 +985,6 @@ final class BiliHomeBar {
             labelLp.topMargin = Math.round(2 * d);
             labelLp.gravity = Gravity.CENTER_HORIZONTAL;
             tab.addView(label, labelLp);
-
-            final int index = i;
             // Long-press is an unused gesture on the pill: consume it so a
             // held press can't fire the tab click on release (the refresh
             // re-tap path must trigger on a clean tap only).

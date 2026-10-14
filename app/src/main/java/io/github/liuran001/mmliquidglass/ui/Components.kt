@@ -1,5 +1,6 @@
 package io.github.liuran001.mmliquidglass.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -112,6 +113,23 @@ fun LSwitchRow(
         when (LocalUiMode.current) {
             UiMode.Material -> Switch(checked = checked, onCheckedChange = onChange)
             UiMode.Miuix -> MiuixSwitch(checked = checked, onCheckedChange = onChange)
+        }
+    }
+}
+
+/** Tappable row (title + summary), used for "open editor" entries. */
+@Composable
+fun LActionRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 10.dp, horizontal = if (LocalUiMode.current == UiMode.Miuix) 12.dp else 0.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(Modifier.weight(1f)) {
+            LText(title)
+            LText(subtitle, subtitle = true)
         }
     }
 }

@@ -22,7 +22,8 @@ LSPosed 模块（libxposed API 102）：iOS 26 风格液态玻璃底部导航栏
 
 ## License
 
-MIT（原项目）— 致谢 [sjtt2/HeyBox-LiquidGlass](https://github.com/sjtt2/HeyBox-LiquidGlass)、[tiann/KernelSU](https://github.com/tiann/KernelSU)
+MIT（继承自原项目 [liuran001/WeChat-LiquidGlass](https://github.com/liuran001/WeChat-LiquidGlass)）—
+另致谢参考项目 [sjtt2/HeyBox-LiquidGlass](https://github.com/sjtt2/HeyBox-LiquidGlass)、[tiann/KernelSU](https://github.com/tiann/KernelSU)
 
 ## v0.4.0 — 管理器 GUI
 

@@ -1,6 +1,8 @@
 package io.github.liuran001.mmliquidglass.ui
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
@@ -38,6 +40,10 @@ val Icons.Filled.WaterDrop: ImageVector get() = Info
 val Icons.Filled.DisplaySettings: ImageVector get() = Settings
 val Icons.Filled.Palette: ImageVector get() = Star
 val Icons.Filled.RestartAlt: ImageVector get() = Refresh
+// Tab-layout dialog: drag handle, hide/restore, locked-basics.
+val Icons.Filled.DragHandle: ImageVector get() = Menu
+val Icons.Filled.VisibilityOff: ImageVector get() = Clear
+val Icons.Filled.Visibility: ImageVector get() = Add
 val Icons.Filled.BlurOn: ImageVector get() = Info
 val Icons.Filled.CallToAction: ImageVector get() = Info
 val Icons.Filled.Colorize: ImageVector get() = Info

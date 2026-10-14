@@ -43,6 +43,18 @@ object Config {
         val pubSideDp: Int = 16,
     )
 
+    /**
+     * heybox floating-bar tab layout: display order + hidden titles, both
+     * matched against the native bar's captured tab titles (首页/热点/游戏库/我).
+     * Empty order = native capture order; the hook locks 首页/我 regardless.
+     */
+    data class TabLayout(
+        val order: List<String> = emptyList(),
+        val hidden: List<String> = emptyList(),
+    ) {
+        val isDefault: Boolean get() = order.isEmpty() && hidden.isEmpty()
+    }
+
     const val REMOTE_NAME = "superliquid"
 
     lateinit var uiPrefs: SharedPreferences
@@ -82,6 +94,27 @@ object Config {
 
     private val _heybox = mutableStateOf(AppCfg(widthScale = 0.5f))
     val heybox: AppCfg get() = _heybox.value
+
+    private val _tabs = mutableStateOf(mapOf(
+        "mm" to TabLayout(), "qq" to TabLayout(),
+        "bili" to TabLayout(), "heybox" to TabLayout(),
+    ))
+    fun tabLayout(key: String): TabLayout = _tabs.value[key] ?: TabLayout()
+
+    fun setTabLayout(key: String, t: TabLayout) {
+        _tabs.value = _tabs.value + (key to t)
+        val json = org.json.JSONArray(t.order).toString()
+        val jsonH = org.json.JSONArray(t.hidden).toString()
+        val editor = (remotePrefs ?: hookPrefs)?.edit() ?: return
+        editor.putString("${key}_tab_order", json)
+        editor.putString("${key}_tab_hidden", jsonH)
+        editor.apply()
+        val mirror = if (remotePrefs != null) hookPrefs else null
+        mirror?.edit()?.apply {
+            putString("${key}_tab_order", json)
+            putString("${key}_tab_hidden", jsonH)
+        }?.apply()
+    }
 
     fun init(ctx: Context) {
         uiPrefs = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
@@ -207,6 +240,10 @@ object Config {
         _mm.value = app("mm", AppCfg())
         _qq.value = app("qq", AppCfg())
         _heybox.value = app("heybox", AppCfg(widthScale = 0.5f))
+        _tabs.value = mapOf(
+            "mm" to readTabLayout(p, "mm"), "qq" to readTabLayout(p, "qq"),
+            "bili" to readTabLayout(p, "bili"), "heybox" to readTabLayout(p, "heybox"),
+        )
         val b = _bili.value
         _bili.value = BiliCfg(
             base = app("bili", AppCfg(widthScale = 0.7f)),
@@ -216,5 +253,16 @@ object Config {
             pubBottomDp = p.getInt("bili_pub_bottom_dp", b.pubBottomDp),
             pubSideDp = p.getInt("bili_pub_side_dp", b.pubSideDp),
         )
+    }
+
+    /** Tolerant <key>_tab_* read: corrupt JSON → default (native order). */
+    private fun readTabLayout(p: SharedPreferences, key: String): TabLayout {
+        fun arr(name: String): List<String> = runCatching {
+            val s = p.getString(name, null) ?: return emptyList()
+            if (s.isEmpty()) return emptyList()
+            val a = org.json.JSONArray(s)
+            (0 until a.length()).map { a.getString(it) }
+        }.getOrDefault(emptyList())
+        return TabLayout(order = arr("${key}_tab_order"), hidden = arr("${key}_tab_hidden"))
     }
 }

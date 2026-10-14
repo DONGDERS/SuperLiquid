@@ -70,6 +70,10 @@ final class TabBarBridge {
                         if (thiz instanceof View && arg0 instanceof Integer
                                 && (!shared || isTabView((View) thiz))) {
                             LiquidGlassInstaller.onTabChanged((View) thiz, (Integer) arg0);
+                            // Tab-layout rewrite: the bar addressed children
+                            // positionally with the logical index — re-assert
+                            // the selected state through our mapping.
+                            TabLayoutApplier.correctSelection((View) thiz, (Integer) arg0);
                         }
                     });
                     hooked++;
