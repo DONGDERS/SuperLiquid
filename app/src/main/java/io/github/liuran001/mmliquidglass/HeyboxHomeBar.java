@@ -511,7 +511,7 @@ final class HeyboxHomeBar {
             // Hidden set (config names the tab titles), basics locked.
             java.util.Set<String> hidden = new java.util.HashSet<>();
             for (String h : GlassConfig.tabHidden) {
-                if (h != null && !TabLayoutApplier.isLockedTitle(h)) hidden.add(h);
+                if (h != null && !TabLayoutApplier.isLockedTitle("heybox", h)) hidden.add(h);
             }
             // Display order: config order first, then unlisted in native order.
             java.util.ArrayList<Integer> disp = new java.util.ArrayList<>();

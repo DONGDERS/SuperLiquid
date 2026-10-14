@@ -32,11 +32,21 @@ final class TabLayoutApplier {
     private TabLayoutApplier() {
     }
 
-    /** Basics that every host keeps, whatever the manager says. */
-    static boolean isLockedTitle(String t) {
-        return "首页".equals(t) || "主页".equals(t)
-                || "我".equals(t) || "我的".equals(t)
-                || "微信".equals(t) || "消息".equals(t);
+    /** Basics per app key (mirrors TabLayoutEditor.LOCKED in the manager):
+     *  WeChat's first tab is 消息; QQ locks 消息+联系人 and has no 我. */
+    private static final java.util.Map<String, Set<String>> LOCKED = new java.util.HashMap<>();
+
+    static {
+        LOCKED.put("mm", new HashSet<>(java.util.Arrays.asList("消息", "我")));
+        LOCKED.put("qq", new HashSet<>(java.util.Arrays.asList("消息", "联系人")));
+        LOCKED.put("bili", new HashSet<>(java.util.Arrays.asList("首页", "我的")));
+        LOCKED.put("heybox", new HashSet<>(java.util.Arrays.asList("首页", "我")));
+    }
+
+    /** Basics that the given host keeps, whatever the manager says. */
+    static boolean isLockedTitle(String appKey, String t) {
+        Set<String> set = LOCKED.get(appKey);
+        return set != null && set.contains(t);
     }
 
     /** First non-empty TextView text inside a cell, else its position. */
@@ -50,6 +60,9 @@ final class TabLayoutApplier {
             CharSequence c = ((TextView) cell).getText();
             if (c != null && c.length() > 0) return c.toString().trim();
         }
+        // Some bars label cells only via accessibility (TabWidget does).
+        CharSequence cd = cell.getContentDescription();
+        if (cd != null && cd.length() > 0) return cd.toString().trim();
         return "#" + fallback;
     }
 
@@ -96,11 +109,13 @@ final class TabLayoutApplier {
                 clear();
                 return;
             }
-            // Hidden set; basics locked.
+            // Hidden set; basics locked. Entry tab always survives a title
+            // mismatch too.
             Set<String> hidden = new HashSet<>();
             for (String h : GlassConfig.tabHidden) {
-                if (h != null && !isLockedTitle(h)) hidden.add(h);
+                if (h != null && !isLockedTitle(appKey, h)) hidden.add(h);
             }
+            hidden.remove(titles[0]);
             // Display order: configured titles first, then the rest natively.
             List<Integer> disp = new ArrayList<>();
             boolean[] used = new boolean[n];
@@ -117,7 +132,9 @@ final class TabLayoutApplier {
             for (int i = 0; i < n; i++) {
                 if (!used[i] && !hidden.contains(titles[i])) disp.add(i);
             }
-            // Reorder children (addView moves an existing child) + GONE hidden.
+            // Hard guard: the default-entry tab (logical 0) always stays,
+            // even when its runtime title matched nothing we know.
+            if (!disp.contains(0)) disp.add(0, 0);
             List<View> cells = new ArrayList<>();
             for (int i = 0; i < n; i++) cells.add(row.getChildAt(i));
             int pos = 0;

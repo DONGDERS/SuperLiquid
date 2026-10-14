@@ -132,13 +132,13 @@ private fun AppParams(
         // No per-app enable switch: LSPosed's own toggle already gates the
         // module; a second switch here was redundant state.
         run {
-            LSliderRow(stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, widthRange) {
-                set(cfg.copy(widthScale = (it * 100).toInt() / 100f))
-            }
-            // heybox only: floating-bar tab layout editor (order + hide).
+            // Tab layout editor leads the panel on every host.
             if (onEditTabs != null) {
                 LActionRow(stringResourceCompat(R.string.apps_tab_layout),
                     stringResourceCompat(R.string.apps_tab_layout_summary), onEditTabs)
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, widthRange) {
+                set(cfg.copy(widthScale = (it * 100).toInt() / 100f))
             }
             LSliderRow(stringResourceCompat(R.string.apps_pill_scale), cfg.pillScale, 0.1f..3f) {
                 set(cfg.copy(pillScale = (it * 100).toInt() / 100f))

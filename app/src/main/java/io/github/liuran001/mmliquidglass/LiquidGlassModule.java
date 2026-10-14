@@ -76,7 +76,7 @@ public class LiquidGlassModule extends XposedModule {
         void after(XposedInterface.Chain chain) throws Throwable;
     }
 
-    public static final String BUILD = "0.4.8-r16";
+    public static final String BUILD = "0.4.8-r17";
 
     @Override
     public void onModuleLoaded(XposedModuleInterface.ModuleLoadedParam param) {

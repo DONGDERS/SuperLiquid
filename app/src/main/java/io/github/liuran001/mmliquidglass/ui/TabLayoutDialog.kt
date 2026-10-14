@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -48,17 +49,26 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
  */
 object TabLayoutEditor {
 
-    /** Known tab titles per app key; unmatched runtime tabs ride at the end. */
+    /** Known tab titles per app key; unmatched runtime tabs ride at the end.
+     *  Verified against live bars: WeChat's first tab is 消息 (not 微信),
+     *  QQ has no 我 — its fourth tab is 频道. */
     val DEFAULTS = mapOf(
-        "mm" to listOf("微信", "通讯录", "发现", "我"),
-        "qq" to listOf("消息", "联系人", "动态", "我"),
+        "mm" to listOf("消息", "通讯录", "发现", "我"),
+        "qq" to listOf("消息", "联系人", "动态", "频道"),
         "bili" to listOf("首页", "动态", "会员购", "我的"),
         "heybox" to listOf("首页", "热点", "游戏库", "我"),
     )
 
-    fun locked(title: String): Boolean =
-        title == "首页" || title == "主页" || title == "我" || title == "我的"
-                || title == "微信" || title == "消息"
+    /** Basics per app: never hideable, never reorderable away from slot 0. */
+    val LOCKED = mapOf(
+        "mm" to setOf("消息", "我"),
+        "qq" to setOf("消息", "联系人"),
+        "bili" to setOf("首页", "我的"),
+        "heybox" to setOf("首页", "我"),
+    )
+
+    fun locked(appKey: String, title: String): Boolean =
+        title in (LOCKED[appKey] ?: emptySet())
 
     /** Candidate list = stored order first, then defaults, deduped. */
     fun candidates(key: String, cfg: Config.TabLayout): List<String> {
@@ -70,8 +80,6 @@ object TabLayoutEditor {
     fun toCfg(order: List<String>, hidden: Set<String>): Config.TabLayout =
         Config.TabLayout(order = order.filter { it !in hidden }, hidden = hidden.toList())
 }
-
-private val LOCKED_TITLES = setOf("首页", "主页", "我", "我的", "微信", "消息")
 
 @Composable
 fun TabLayoutDialog(
@@ -95,12 +103,27 @@ fun TabLayoutDialog(
     OverlayDialog(
         show = show,
         title = "底栏项目",
-        summary = "长按拖动排序 · 点眼睛隐藏 · 首个标签与「我」不可移除",
+        summary = "长按拖动排序 · 点眼睛隐藏 · 基础项目不可移除",
         onDismissRequest = onDismiss,
         content = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                items.forEachIndexed { _, (title, hidden) ->
+                items.forEachIndexed { idx, (title, hidden) ->
                     val isDragging = dragging == title
+                    val dragIndex = dragging?.let { d -> items.indexOfFirst { it.first == d } } ?: -1
+                    // Target slot computed from the accumulated offset; the
+                    // LIST is only mutated on release — mutating mid-gesture
+                    // disposes the dragged composable and kills the gesture.
+                    val target = if (dragIndex < 0) idx
+                        else (dragIndex + kotlin.math.round(dragDy / rowH).toInt())
+                            .coerceIn(0, items.lastIndex)
+                    val shift = when {
+                        dragging == null -> 0f
+                        isDragging -> dragDy
+                        dragIndex < 0 -> 0f
+                        idx in (dragIndex + 1)..target -> -rowH
+                        idx in target until dragIndex -> rowH
+                        else -> 0f
+                    }
                     val baseColor = colorScheme.onBackground
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -108,41 +131,37 @@ fun TabLayoutDialog(
                             .fillMaxWidth()
                             .height(48.dp)
                             .alpha(if (hidden && !isDragging) 0.45f else 1f)
+                            .zIndex(if (isDragging) 1f else 0f)
                             .then(
                                 if (isDragging) Modifier.background(
                                     colorScheme.secondaryContainer.copy(alpha = 0.4f),
                                     RoundedCornerShape(12.dp)
                                 ) else Modifier
                             )
-                            .graphicsLayer { translationY = if (isDragging) dragDy else 0f }
-                            // Key on title: after a swap this row hosts another
-                            // item — restart the gesture with fresh captures.
+                            .graphicsLayer { translationY = shift }
+                            // Key on title keeps captures fresh without
+                            // restarting mid-gesture (the list never moves
+                            // while a drag is live, so this is stable).
                             .pointerInput(title) {
                                 detectDragGesturesAfterLongPress(
                                     onDragStart = { dragging = title; dragDy = 0f },
                                     onDragCancel = { dragging = null; dragDy = 0f },
-                                    onDragEnd = { dragging = null; dragDy = 0f },
+                                    onDragEnd = {
+                                        // Apply the pending move once, here.
+                                        val from = items.indexOfFirst { it.first == title }
+                                        val to = (from + kotlin.math.round(dragDy / rowH).toInt())
+                                            .coerceIn(0, items.lastIndex)
+                                        if (from >= 0 && to != from) {
+                                            val next = items.toMutableList()
+                                            val moved = next.removeAt(from)
+                                            next.add(to, moved)
+                                            items = next
+                                        }
+                                        dragging = null; dragDy = 0f
+                                    },
                                     onDrag = { change, amount ->
                                         change.consume()
                                         dragDy += amount.y
-                                        // Stepped swap: crossing one row height
-                                        // moves the item and re-anchors the drag.
-                                        while (kotlin.math.abs(dragDy) >= rowH) {
-                                            val step = if (dragDy > 0) 1 else -1
-                                            val cur = items.indexOfFirst { it.first == title }
-                                            val target = cur + step
-                                            if (target in items.indices && cur >= 0) {
-                                                val next = items.toMutableList()
-                                                val tmp = next[cur]
-                                                next[cur] = next[target]
-                                                next[target] = tmp
-                                                items = next
-                                                dragDy -= step * rowH
-                                            } else {
-                                                dragDy = 0f
-                                                break
-                                            }
-                                        }
                                     },
                                 )
                             },
@@ -151,20 +170,20 @@ fun TabLayoutDialog(
                         Icon(
                             Icons.Filled.DragHandle, contentDescription = "拖动",
                             tint = baseColor.copy(alpha = 0.6f),
-                            modifier = Modifier.size(22.dp),
+                            modifier = Modifier.size(26.dp),
                         )
                         Spacer(Modifier.width(12.dp))
                         Text(
                             title, fontSize = 16.sp, color = baseColor,
                             modifier = Modifier.weight(1f),
                         )
-                        if (TabLayoutEditor.locked(title)) {
+                        if (TabLayoutEditor.locked(appKey, title)) {
                             Icon(
                                 Icons.Filled.Lock, contentDescription = "基础项目",
                                 tint = baseColor.copy(alpha = 0.45f),
                                 modifier = Modifier
-                                    .size(20.dp)
-                                    .padding(end = 14.dp),
+                                    .size(24.dp)
+                                    .padding(end = 10.dp),
                             )
                         } else {
                             Icon(
@@ -172,7 +191,7 @@ fun TabLayoutDialog(
                                 contentDescription = if (hidden) "恢复" else "隐藏",
                                 tint = baseColor.copy(alpha = 0.75f),
                                 modifier = Modifier
-                                    .size(22.dp)
+                                    .size(28.dp)
                                     .clickable {
                                         items = items.map { (t, h) ->
                                             if (t == title) t to !h else t to h

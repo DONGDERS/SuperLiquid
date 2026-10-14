@@ -909,7 +909,7 @@ final class BiliHomeBar {
         try {
             Set<String> hidden = new HashSet<>();
         for (String h : GlassConfig.tabHidden) {
-            if (h != null && !TabLayoutApplier.isLockedTitle(h)) hidden.add(h);
+            if (h != null && !TabLayoutApplier.isLockedTitle("bili", h)) hidden.add(h);
         }
         ArrayList<Integer> disp = new ArrayList<>();
         boolean[] used = new boolean[n];
