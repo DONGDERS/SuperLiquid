@@ -13,7 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Lock
@@ -182,10 +181,13 @@ fun TabLayoutDialog(
                         ),
                 ) {
                     Spacer(Modifier.width(14.dp))
-                    Icon(
-                        Icons.Filled.DragHandle, contentDescription = "拖动",
-                        tint = baseColor.copy(alpha = if (isPinned) 0.2f else 0.6f),
-                        modifier = Modifier.size(26.dp),
+                    // Drag affordance as a glyph: DragHandle lives in
+                    // material-icons-extended which we don't ship — core's
+                    // verified icon set is Add/Clear/Lock only.
+                    Text(
+                        "≡", fontSize = 22.sp,
+                        color = baseColor.copy(alpha = if (isPinned) 0.2f else 0.6f),
+                        modifier = Modifier.padding(end = 8.dp),
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
