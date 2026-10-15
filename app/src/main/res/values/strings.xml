@@ -64,10 +64,7 @@
     <string name="apps_tab_layout">底栏项目</string>
     <string name="apps_tab_layout_summary">调整悬浮底栏的顺序或隐藏次要项目</string>
     <string name="settings_ui_mode_summary">选择应用的界面风格</string>
-    <string name="settings_theme_summary">自定义更多主题选项</string>
-    <string name="settings_export_log">导出App日志</string>
-    <string name="settings_export_log_summary">导出最近的运行日志用于问题诊断</string>
-    <string name="about_title">关于</string>
+    <string name="settings_theme_summary">自定义更多主题选项</string>    <string name="about_title">关于</string>
     <string name="settings_repo_url">https://github.com/DONGDERS/SuperLiquid</string>
 
     <!-- ported from KernelSU manager (GPL-3.0) -->

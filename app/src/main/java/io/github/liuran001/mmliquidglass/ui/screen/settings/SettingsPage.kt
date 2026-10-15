@@ -67,7 +67,6 @@ private fun SettingsPageMaterial(
     onResetDefaults: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val logExporter = rememberLogExporter()
     Scaffold(
         topBar = {
             LargeTopAppBar(
@@ -116,19 +115,6 @@ private fun SettingsPageMaterial(
                         }
                         add {
                             SegmentedListItem(
-                                onClick = { logExporter.launch("superliquid-log.txt") },
-                                headlineContent = { Text(stringResource(R.string.settings_export_log)) },
-                                supportingContent = { Text(stringResource(R.string.settings_export_log_summary)) },
-                                leadingContent = {
-                                    Icon(
-                                        Icons.Filled.Check,
-                                        contentDescription = stringResource(R.string.settings_export_log)
-                                    )
-                                },
-                            )
-                        }
-                        add {
-                            SegmentedListItem(
                                 onClick = onResetDefaults,
                                 headlineContent = { Text(stringResource(R.string.settings_reset)) },
                                 supportingContent = { Text(stringResource(R.string.settings_reset_summary)) },
@@ -156,7 +142,6 @@ private fun SettingsPageMiuix(
     onOpenTheme: () -> Unit,
     onResetDefaults: () -> Unit,
 ) {
-    val logExporter = rememberLogExporter()
     top.yukonga.miuix.kmp.basic.Scaffold { innerPadding ->
         LazyColumn(
             modifier = Modifier
@@ -184,11 +169,6 @@ private fun SettingsPageMiuix(
                         title = stringResource(R.string.settings_theme),
                         summary = stringResource(R.string.settings_theme_summary),
                         onClick = onOpenTheme,
-                    )
-                    ArrowPreference(
-                        title = stringResource(R.string.settings_export_log),
-                        summary = stringResource(R.string.settings_export_log_summary),
-                        onClick = { logExporter.launch("superliquid-log.txt") },
                     )
                     ArrowPreference(
                         title = stringResource(R.string.settings_reset),
@@ -307,38 +287,4 @@ fun ConfigBackupRows(onDone: () -> Unit) {
             }
         }
     )
-}
-
-// App-log export: dump `logcat -d` and hand the file to the system file
-// manager (SAF) — no adb needed for field diagnostics.
-@androidx.compose.runtime.Composable
-private fun rememberLogExporter(): androidx.activity.compose.ManagedActivityResultLauncher<String, android.net.Uri?> {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    return rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("text/plain")
-    ) { uri ->
-        if (uri != null) {
-            Thread {
-                try {
-                    val out = context.contentResolver.openOutputStream(uri)
-                    if (out != null) {
-                        // Primary: in-process ring buffer (no permissions,
-                        // always has our diagnostic lines).
-                        out.write(io.github.liuran001.mmliquidglass.ui.util.Diag.dump().toByteArray())
-                        // Supplement: uid-filtered logcat (may be blocked on
-                        // some OEM SELinux policies — ignore failures).
-                        try {
-                            val proc = Runtime.getRuntime().exec(arrayOf("logcat", "-d"))
-                            out.write("\n==== logcat -d ===\n".toByteArray())
-                            proc.inputStream.copyTo(out)
-                            proc.waitFor()
-                        } catch (_: Throwable) {}
-                        out.close()
-                    }
-                } catch (t: Throwable) {
-                    android.util.Log.e("SuperLiquid", "log export failed", t)
-                }
-            }.start()
-        }
-    }
 }

@@ -33,11 +33,12 @@ final class TabLayoutApplier {
     }
 
     /** Basics per app key (mirrors TabLayoutEditor.LOCKED in the manager):
-     *  WeChat's first tab is 消息; QQ locks 消息+联系人 and has no 我. */
+     *  verified by TA on the live bars: WeChat first tab IS 微信;
+     *  QQ order is 消息/频道/联系人/动态 and locks 消息+联系人. */
     private static final java.util.Map<String, Set<String>> LOCKED = new java.util.HashMap<>();
 
     static {
-        LOCKED.put("mm", new HashSet<>(java.util.Arrays.asList("消息", "我")));
+        LOCKED.put("mm", new HashSet<>(java.util.Arrays.asList("微信", "我")));
         LOCKED.put("qq", new HashSet<>(java.util.Arrays.asList("消息", "联系人")));
         LOCKED.put("bili", new HashSet<>(java.util.Arrays.asList("首页", "我的")));
         LOCKED.put("heybox", new HashSet<>(java.util.Arrays.asList("首页", "我")));
@@ -137,10 +138,19 @@ final class TabLayoutApplier {
             if (!disp.contains(0)) disp.add(0, 0);
             List<View> cells = new ArrayList<>();
             for (int i = 0; i < n; i++) cells.add(row.getChildAt(i));
+            // Titles first — if anything below throws, the evidence line
+            // already told us what the live bar has.
+            LiquidGlassModule.log(android.util.Log.INFO, "tab layout: app=" + appKey
+                    + " titles=" + java.util.Arrays.toString(titles)
+                    + " order=" + java.util.Arrays.toString(GlassConfig.tabOrder)
+                    + " hidden=" + hidden);
             int pos = 0;
             for (int logical : disp) {
                 View cell = cells.get(logical);
-                row.addView(cell, pos); // removes + reinserts at pos
+                // addView() throws "child already has a parent" even for a
+                // same-parent move — detach first, then insert.
+                row.removeView(cell);
+                row.addView(cell, Math.min(pos, row.getChildCount()));
                 cell.setVisibility(View.VISIBLE);
                 pos++;
             }

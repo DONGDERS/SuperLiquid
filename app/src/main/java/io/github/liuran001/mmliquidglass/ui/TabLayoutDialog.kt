@@ -50,18 +50,19 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 object TabLayoutEditor {
 
     /** Known tab titles per app key; unmatched runtime tabs ride at the end.
-     *  Verified against live bars: WeChat's first tab is 消息 (not 微信),
-     *  QQ has no 我 — its fourth tab is 频道. */
+     *  Verified by TA on the live bars (2026-10-15):
+     *  WeChat = 微信/通讯录/发现/我 (first tab IS 微信, not 消息);
+     *  QQ = 消息/频道/联系人/动态 (no 我 tab). */
     val DEFAULTS = mapOf(
-        "mm" to listOf("消息", "通讯录", "发现", "我"),
-        "qq" to listOf("消息", "联系人", "动态", "频道"),
+        "mm" to listOf("微信", "通讯录", "发现", "我"),
+        "qq" to listOf("消息", "频道", "联系人", "动态"),
         "bili" to listOf("首页", "动态", "会员购", "我的"),
         "heybox" to listOf("首页", "热点", "游戏库", "我"),
     )
 
     /** Basics per app: never hideable, never reorderable away from slot 0. */
     val LOCKED = mapOf(
-        "mm" to setOf("消息", "我"),
+        "mm" to setOf("微信", "我"),
         "qq" to setOf("消息", "联系人"),
         "bili" to setOf("首页", "我的"),
         "heybox" to setOf("首页", "我"),
@@ -132,13 +133,16 @@ fun TabLayoutDialog(
                             .height(48.dp)
                             .alpha(if (hidden && !isDragging) 0.45f else 1f)
                             .zIndex(if (isDragging) 1f else 0f)
+                            // Layer BEFORE the background: modifiers after
+                            // graphicsLayer live inside it — if the background
+                            // sits outside, it stays put while the row moves.
+                            .graphicsLayer { translationY = shift }
                             .then(
                                 if (isDragging) Modifier.background(
                                     colorScheme.secondaryContainer.copy(alpha = 0.4f),
                                     RoundedCornerShape(12.dp)
                                 ) else Modifier
                             )
-                            .graphicsLayer { translationY = shift }
                             // Key on title keeps captures fresh without
                             // restarting mid-gesture (the list never moves
                             // while a drag is live, so this is stable).

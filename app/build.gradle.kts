@@ -15,7 +15,7 @@ android {
         minSdk = 33
         targetSdk = 37
         versionCode = 63
-        versionName = "0.4.8-r17"
+        versionName = "0.4.8-r18"
     }
 
     lint {
