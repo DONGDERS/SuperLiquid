@@ -133,9 +133,10 @@ final class TabLayoutApplier {
             for (int i = 0; i < n; i++) {
                 if (!used[i] && !hidden.contains(titles[i])) disp.add(i);
             }
-            // Hard guard: the default-entry tab (logical 0) always stays,
-            // even when its runtime title matched nothing we know.
-            if (!disp.contains(0)) disp.add(0, 0);
+            // Hard rule: the entry tab (logical 0) is PINNED first — it can
+            // never be pushed below slot 0, whatever the stored order says.
+            disp.remove(Integer.valueOf(0));
+            disp.add(0, 0);
             List<View> cells = new ArrayList<>();
             for (int i = 0; i < n; i++) cells.add(row.getChildAt(i));
             // Titles first — if anything below throws, the evidence line
