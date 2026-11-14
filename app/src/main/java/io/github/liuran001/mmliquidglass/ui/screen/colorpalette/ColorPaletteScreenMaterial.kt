@@ -89,6 +89,7 @@ import io.github.liuran001.mmliquidglass.ui.theme.keyColorOptions
 import io.github.liuran001.mmliquidglass.ui.theme.rememberKernelSUColorScheme
 import kotlin.math.roundToInt
 import io.github.liuran001.mmliquidglass.ui.AspectRatio
+import io.github.liuran001.mmliquidglass.ui.BlurOn
 import io.github.liuran001.mmliquidglass.ui.Description
 import io.github.liuran001.mmliquidglass.ui.DesignServices
 import io.github.liuran001.mmliquidglass.ui.Pin
