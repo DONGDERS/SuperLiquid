@@ -9,7 +9,10 @@
 set -euo pipefail
 
 PROJ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BT="/home/z/work/WeChat-LiquidGlass/tools/bt/android-14"
+# Build-tools location: honour an explicit override, else the SDK this machine
+# has. The original line pointed at one developer's home directory, which made
+# the script unusable anywhere else.
+BT="${BT:-${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}/build-tools/36.0.0}"
 OUT="$PROJ/app/build/outputs/apk/release"
 UNSIGNED="$OUT/app-release-unsigned.apk"
 
