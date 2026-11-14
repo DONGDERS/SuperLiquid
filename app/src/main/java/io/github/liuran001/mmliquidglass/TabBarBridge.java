@@ -387,6 +387,9 @@ final class TabBarBridge {
         if (tabRow == null || index < 0) {
             return -1;
         }
+        if (TabLayoutApplier.hasMapping(tabRow)) {
+            return TabLayoutApplier.slotForLogicalIndex(tabRow, index);
+        }
         int slot = 0;
         int rawSlot = -1;
         for (int i = 0; i < tabRow.getChildCount(); i++) {
@@ -521,17 +524,16 @@ final class TabBarBridge {
      * WeChat's own {@code ViewPager} subclass, QQ's {@code ViewPager2} — and
      * {@code getCurrentItem()} is the one accessor both carry.
      *
-     * <p>Only a row in which every child takes part in the layout is trusted. A
-     * GONE tab shifts every later page by one, and following the page is not
-     * worth putting the droplet on the wrong tab for.
+     * <p>Translate logical page indices through the active layout map, or
+     * native tags/positions, before addressing a visible slot.
      */
     static int pageSlot(ViewGroup pager, ViewGroup tabRow) {
-        if (pager == null || tabRow == null
-                || tabCount(tabRow) != tabRow.getChildCount()) {
-            return -1;
-        }
-        int index = currentItem(pager);
-        return index >= 0 && tabAt(tabRow, index) != null ? index : -1;
+        if (pager == null || tabRow == null) return -1;
+        HostApp app = LiquidGlassModule.app();
+        // Self-drawn adapters own their mapping and state readback. Their
+        // backdrop may contain unrelated nested tabs and is not authoritative.
+        if (app != HostApp.WECHAT && app != HostApp.QQ) return -1;
+        return slotForIndex(tabRow, currentItem(pager));
     }
 
     /** The pager's current page, or -1 when it is not a pager we can ask. */

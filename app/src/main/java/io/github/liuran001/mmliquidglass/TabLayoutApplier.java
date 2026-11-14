@@ -189,6 +189,22 @@ final class TabLayoutApplier {
         }
         return false;
     }
+    static boolean hasMapping(ViewGroup row) {
+        return row != null && row == sRow && sPos2Logical != null;
+    }
+
+    static int slotForLogicalIndex(ViewGroup row, int logicalIndex) {
+        int[] map = sPos2Logical;
+        if (!hasMapping(row) || map == null) return -1;
+        int slot = 0;
+        for (int p = 0; p < row.getChildCount(); p++) {
+            if (row.getChildAt(p).getVisibility() == View.GONE) continue;
+            if (slot < map.length && map[slot] == logicalIndex) return slot;
+            slot++;
+        }
+        return -1;
+    }
+
     static void clear() {
         sPos2Logical = null;
         sRow = null;

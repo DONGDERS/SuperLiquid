@@ -626,9 +626,14 @@ final class HeyboxHomeBar {
             tab.setOnClickListener(v -> {
                 try {
                     sRealTabs[slot].performClick();
-                    sLastIndex = slot;
-                    applySelection();
+                    RadioGroup realBar = sRealBar.get();
+                    int confirmed = realBar == null ? -1 : checkedIndex(realBar);
+                    if (confirmed >= 0) {
+                        sLastIndex = confirmed;
+                        applySelection();
+                    }
                     bumpIconAnimation();
+                    LiquidGlassInstaller.requestSelectionSync();
                 } catch (Throwable t) {
                     LiquidGlassModule.logErr("heybox: tab click failed", t);
                 }

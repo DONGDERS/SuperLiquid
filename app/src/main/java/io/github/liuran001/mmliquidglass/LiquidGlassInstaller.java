@@ -175,6 +175,7 @@ final class LiquidGlassInstaller {
                 // screen rebuilds the window state: the navigation inset is
                 // applied again and the dead strip at the bottom re-opens.
                 reassertBottom(activity);
+                requestSelectionSync();
                 return;
             }
             if (live != null) {
@@ -1683,7 +1684,54 @@ final class LiquidGlassInstaller {
         return changed;
     }
 
+    /** The only path that commits a confirmed selection to the renderer. */
+    private static void reconcileSelection(LiquidGlassHostLayout host) {
+        if (host != sHostRef.get() || !host.isAttachedToWindow()) return;
+        ViewGroup tabRow = sTabRowRef.get();
+        if (tabRow == null || scheduleTabStructureRefreshIfNeeded(host)) return;
+        int sel = visibleTabSelection(tabRow);
+        if (sel < 0 || sDrag == null) return;
+        // Do not mark a rejected observation as delivered during a gesture.
+        if (!sDrag.animateToIndex(sel, sLastIndex < 0)) return;
+        boolean changed = sel != sLastIndex;
+        sLastIndex = sel;
+        syncDropletSize(sel);
+        View droplet = sDropletRef.get();
+        if (droplet instanceof DropletPanel) {
+            ((DropletPanel) droplet).setConfirmedIndex(sel);
+        }
+        if (changed) {
+            ViewGroup pager = sPagerRef.get();
+            if (pager != null) pager.post(() -> {
+                if (host == sHostRef.get()) extendPagesToBottom(pager);
+            });
+            LiquidGlassModule.log(android.util.Log.INFO,
+                    "selection accepted slot=" + sel);
+        }
+    }
+
+    static void requestSelectionSync() {
+        LiquidGlassHostLayout host = sHostRef.get();
+        if (host != null && host.isAttachedToWindow()) host.invalidate();
+    }
+
     private static void installSelectionWatcher(LiquidGlassHostLayout host) {
+        // A retained home window may resume without a new tab callback. Keep
+        // one bounded-lifetime check chain for this host, not a busy frame loop.
+        host.postDelayed(new Runnable() {
+            @Override public void run() {
+                if (host != sHostRef.get() || !host.isAttachedToWindow()) return;
+                if (host.isShown() && host.hasWindowFocus()) {
+                    try {
+                        reconcileSelection(host);
+                    } catch (Throwable t) {
+                        // This timer runs outside the protected pre-draw path.
+                        LiquidGlassModule.logErr("selection reconciliation failed", t);
+                    }
+                }
+                host.postDelayed(this, 250L);
+            }
+        }, 250L);
         host.getViewTreeObserver().addOnPreDrawListener(() -> {
             if (host != sHostRef.get() || !host.isAttachedToWindow()) {
                 return true;
@@ -1716,22 +1764,7 @@ final class LiquidGlassInstaller {
                 maintainScrollerPadding();
                 sPageExtent.request();
                 maintainDropletGeometry();
-                ViewGroup tabRow = sTabRowRef.get();
-                int sel = visibleTabSelection(tabRow);
-                if (sel >= 0 && sel != sLastIndex) {
-                    boolean first = sLastIndex < 0;
-                    sLastIndex = sel;
-                    syncDropletSize(sel);
-                    if (sDrag != null) {
-                        // KernelSU animates programmatic switches the same way as
-                        // drags: press, travel, release.
-                        sDrag.animateToIndex(sel, first);
-                    }
-                    ViewGroup pgr = sPagerRef.get();
-                    if (pgr != null) {
-                        pgr.post(() -> extendPagesToBottom(pgr));
-                    }
-                }
+                reconcileSelection(host);
             } catch (Throwable ignored) {
             }
             return true;
@@ -1746,6 +1779,9 @@ final class LiquidGlassInstaller {
     private static final long PAGE_BAR_SETTLE_MS = 250L;
     /** Uptime at which the current disagreement began, or 0 while they agree. */
     private static long sPageBarDisagreeSinceMs;
+    private static int sDisagreePage = -1;
+    private static int sDisagreeBar = -1;
+    private static WeakReference<ViewGroup> sDisagreePager = new WeakReference<>(null);
     private static boolean sPageWonLogged;
     /** Draws the frame that settles a disagreement, in case nothing else would. */
     private static final Runnable sPageBarSettle = () -> {
@@ -1780,9 +1816,15 @@ final class LiquidGlassInstaller {
             return selected;
         }
         long now = android.os.SystemClock.uptimeMillis();
-        if (sPageBarDisagreeSinceMs == 0L) {
+        ViewGroup pager = sPagerRef.get();
+        if (sPageBarDisagreeSinceMs == 0L || sDisagreePage != page
+                || sDisagreeBar != selected || sDisagreePager.get() != pager) {
             sPageBarDisagreeSinceMs = now;
+            sDisagreePage = page;
+            sDisagreeBar = selected;
+            sDisagreePager = new WeakReference<>(pager);
             if (host != null) {
+                host.removeCallbacks(sPageBarSettle);
                 host.postDelayed(sPageBarSettle, PAGE_BAR_SETTLE_MS + 16L);
             }
             return selected;
@@ -2390,7 +2432,7 @@ final class LiquidGlassInstaller {
                 tabView.post(() -> {
                     try {
                         install((ViewGroup) tabView);
-                        syncDropletSize(resolveTabSlot(index));
+                        requestSelectionSync();
                     } catch (Throwable t) {
                         LiquidGlassModule.logErr("install from setTo failed", t);
                     }
@@ -2403,14 +2445,9 @@ final class LiquidGlassInstaller {
             if (scheduleTabStructureRefreshIfNeeded(installedHost)) {
                 return;
             }
-            int slot = resolveTabSlot(index);
-            if (slot < 0) {
-                return;
-            }
-            syncDropletSize(slot);
-            if (sDrag != null) {
-                sDrag.animateToIndex(slot, false);
-            }
+            if (installedHost != sHostRef.get()) return;
+            // Hooks request a readback; only the watcher commits a target.
+            requestSelectionSync();
         });
     }
 

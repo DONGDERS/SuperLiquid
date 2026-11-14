@@ -144,18 +144,18 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
      * than a finger. Ignored mid-drag so a mid-gesture page switch cannot yank
      * the droplet out from under the finger.
      */
-    void animateToIndex(int index, boolean immediate) {
-        if (mDragging) {
-            return;
-        }
+    boolean animateToIndex(int index, boolean immediate) {
+        if (mDragging) return false;
         ViewGroup tabRow = mTabRowRef.get();
-        float target = clamp(index, 0f, tabCount(tabRow) - 1f);
+        View tab = TabBarBridge.tabAt(tabRow, index);
+        if (tab == null || tab.getWidth() <= 0 || tabWidth(tabRow) <= 0f) return false;
+        float target = index;
         // Releasing a drag already aimed the spring here, and the resulting
         // performClick() bounces the selection straight back at us. Without this
         // the droplet pops a second time after it has settled — KernelSU avoids
         // it with a MutatorMutex, which the View world has no equivalent of.
         if (!immediate && Math.abs(mValue.target() - target) < 0.01f) {
-            return;
+            return true;
         }
         if (immediate) {
             mValue.snapTo(target);
@@ -164,13 +164,14 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
             mScaleX.snapTo(1f);
             mScaleY.snapTo(1f);
             apply();
-            return;
+            return true;
         }
         press();
         mValue.animateTo(target);
         mVelocity.animateTo(0f);
         mReleasePending = true;
         schedule();
+        return true;
     }
 
     /* ---------------- gestures ---------------- */
@@ -245,9 +246,13 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
                 mDragging = false;
                 release();
                 View tab = TabBarBridge.tabAt(tabRow, index);
-                if (tab != null && !tab.isSelected()) {
+                if (ev.getActionMasked() == MotionEvent.ACTION_UP
+                        && tab != null && !tab.isSelected()) {
                     tab.performClick();
                 }
+                // Re-read the confirmed selection even if its index did not
+                // change while the drag temporarily owned the spring.
+                LiquidGlassInstaller.requestSelectionSync();
                 return true;
             }
             default:

@@ -434,8 +434,18 @@ final class DropletPanel extends View {
         invalidate();
     }
 
+    private int mConfirmedIndex = -1;
+
+    void setConfirmedIndex(int index) {
+        if (mConfirmedIndex != index) {
+            mConfirmedIndex = index;
+            invalidate();
+        }
+    }
+
     /** Rebinds the tab row when the host app rebuilds its dynamic bottom bar. */
     void setTabRow(ViewGroup tabRow) {
+        mConfirmedIndex = -1;
         mTabRowRef = new WeakReference<>(tabRow);
         invalidate();
     }
@@ -540,8 +550,7 @@ final class DropletPanel extends View {
      */
     private void drawRestingTab(Canvas canvas) {
         ViewGroup tabRow = mTabRowRef.get();
-        int index = TabBarBridge.selectedIndex(tabRow);
-        View tab = TabBarBridge.tabAt(tabRow, index);
+        View tab = TabBarBridge.tabAt(tabRow, mConfirmedIndex);
         if (tab == null || tab.getVisibility() != VISIBLE
                 || !ViewGeom.unscaledScreenPos(this, mSelf)
                 || !ViewGeom.unscaledScreenPos(tab, mSrc)) {

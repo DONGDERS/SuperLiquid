@@ -831,7 +831,7 @@ final class BiliHomeBar {
             View real = sRealBar.get();
             if (real != null && mGetItem != null) {
                 int slot = appToSlot(readIndex(real));
-                if (slot >= 0 && slot != sLastIndex) {
+                if (slot >= 0) {
                     sLastIndex = slot;
                     applySelection(row, slot);
                 }
@@ -1001,8 +1001,13 @@ final class BiliHomeBar {
                 } else {
                     switchTo(appIndex);
                 }
-                sLastIndex = index;
-                applySelection(row, index);
+                // A requested switch can fail or be redirected by the host.
+                int confirmed = real == null ? -1 : appToSlot(readIndex(real));
+                if (confirmed >= 0) {
+                    sLastIndex = confirmed;
+                    applySelection(row, confirmed);
+                }
+                LiquidGlassInstaller.requestSelectionSync();
             });
             row.addView(tab);
         }
