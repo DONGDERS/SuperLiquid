@@ -17,10 +17,11 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      # The runner image already ships a Gradle that satisfies AGP 9.x; asking
+      # setup-gradle for a literal "9.0" is rejected ("version 9.0 does not
+      # exist"). Caching is all we need from the action.
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.0'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
