@@ -137,6 +137,14 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
         apply();
     }
 
+    String selectionDiagnostics() {
+        View droplet = mDropletRef.get();
+        return "value=" + mValue.value() + " target=" + mValue.target()
+                + " dragging=" + mDragging + " scheduled=" + mFrameScheduled
+                + " release=" + mReleasePending
+                + " x=" + (droplet == null ? Float.NaN : droplet.getTranslationX());
+    }
+
     /* ---------------- external drive ---------------- */
 
     /**

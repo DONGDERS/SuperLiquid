@@ -50,6 +50,8 @@ final class LiquidGlassInstaller {
     private static WeakReference<ViewGroup> sTabRowRef = new WeakReference<>(null);
     private static WeakReference<ViewGroup> sPagerRef = new WeakReference<>(null);
     private static int sLastIndex = -1;
+    private static long sSelectionTraceUntil;
+    private static long sSelectionTraceNext;
     private static WeakReference<View> sTabViewRef = new WeakReference<>(null);
     private static WeakReference<View> sGlassRef = new WeakReference<>(null);
     private static DropletDragController sDrag;
@@ -152,6 +154,8 @@ final class LiquidGlassInstaller {
         // Kept for extendUnderNavBar: WeChat's views hand out a context that does
         // not wrap the Activity, so the window is not reachable from them.
         sActivityRef = new WeakReference<>(activity);
+        sSelectionTraceUntil = android.os.SystemClock.uptimeMillis() + 5000L;
+        sSelectionTraceNext = 0L;
         View decor = activity.getWindow().getDecorView();
         if (sHostRef.get() == null) {
             hideStockBarUntilInstalled(decor);
@@ -1690,6 +1694,7 @@ final class LiquidGlassInstaller {
         ViewGroup tabRow = sTabRowRef.get();
         if (tabRow == null || scheduleTabStructureRefreshIfNeeded(host)) return;
         int sel = visibleTabSelection(tabRow);
+        traceSelection(host, tabRow, sel);
         if (sel < 0 || sDrag == null) return;
         // Do not mark a rejected observation as delivered during a gesture.
         if (!sDrag.animateToIndex(sel, sLastIndex < 0)) return;
@@ -1708,6 +1713,33 @@ final class LiquidGlassInstaller {
             LiquidGlassModule.log(android.util.Log.INFO,
                     "selection accepted slot=" + sel);
         }
+    }
+
+    // Bounded snapshots after resume, including unknown/rejected observations.
+    // No chat contents, account names or view text are collected.
+    private static void traceSelection(LiquidGlassHostLayout host,
+                                       ViewGroup row, int resolved) {
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now > sSelectionTraceUntil || now < sSelectionTraceNext) return;
+        sSelectionTraceNext = now + 1000L;
+        ViewGroup pager = sPagerRef.get();
+        StringBuilder flags = new StringBuilder();
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View child = row.getChildAt(i);
+            flags.append(i).append(':').append(child.getVisibility())
+                    .append(':').append(child.isSelected() ? 1 : 0).append(',');
+        }
+        LiquidGlassModule.log(android.util.Log.ERROR,
+                "selection trace v1 resolved=" + resolved + " committed=" + sLastIndex
+                        + " native=" + TabBarBridge.selectedIndex(row)
+                        + " pager=" + (pager == null ? "null" : pager.getClass().getName())
+                        + " item=" + TabBarBridge.currentItem(pager)
+                        + " scrollX=" + (pager == null ? -1 : pager.getScrollX())
+                        + " width=" + (pager == null ? -1 : pager.getWidth())
+                        + " host=" + System.identityHashCode(host)
+                        + " row=" + System.identityHashCode(row)
+                        + " focus=" + host.hasWindowFocus() + " flags=" + flags
+                        + " " + (sDrag == null ? "no-controller" : sDrag.selectionDiagnostics()));
     }
 
     static void requestSelectionSync() {
