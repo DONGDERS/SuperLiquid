@@ -1,0 +1,268 @@
+package io.github.liuran001.mmliquidglass.ui
+
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import io.github.libxposed.service.XposedService
+import io.github.libxposed.service.XposedServiceHelper
+
+/**
+ * Config store for the manager.
+ *
+ * Every hook parameter is written twice:
+ *  - the LSPosed RemotePreferences ("superliquid"), read by hooked hosts via
+ *    XposedModule.getRemotePreferences;
+ *  - a plain SharedPreferences file of the same name, read by hosts through
+ *    XSharedPreferences when the remote channel is unavailable.
+ *
+ * Keys are shared with GlassConfig (hook side) — keep both in sync.
+ */
+object Config {
+
+    data class AppCfg(
+        val enabled: Boolean = true,
+        val widthScale: Float = 1.0f,
+        val offsetDp: Int = 12,
+        val offsetXdp: Int = 0,
+        val blur: Int = 3,
+        val tint: Float = 1.0f,
+        val pillScale: Float = 1.0f,
+        val saturation: Float = 1.0f,
+        val gloss: Float = 1.0f,
+        val border: Float = 1.0f,
+    )
+
+    data class BiliCfg(
+        val base: AppCfg = AppCfg(widthScale = 0.7f),
+        val hoverTint: Boolean = true,
+        val hideNative: Boolean = true,
+        val pubScale: Float = 1.0f,
+        val pubBottomDp: Int = 12,
+        val pubSideDp: Int = 16,
+    )
+
+    /**
+     * heybox floating-bar tab layout: display order + hidden titles, both
+     * matched against the native bar's captured tab titles (首页/热点/游戏库/我).
+     * Empty order = native capture order; the hook locks 首页/我 regardless.
+     */
+    data class TabLayout(
+        val order: List<String> = emptyList(),
+        val hidden: List<String> = emptyList(),
+    ) {
+        val isDefault: Boolean get() = order.isEmpty() && hidden.isEmpty()
+    }
+
+    const val REMOTE_NAME = "superliquid"
+
+    lateinit var uiPrefs: SharedPreferences
+    private var hookPrefs: SharedPreferences? = null
+
+    @Volatile
+    private var remotePrefs: SharedPreferences? = null
+
+    private val _uiMode = mutableStateOf(UiMode.DEFAULT)
+    val uiMode: String get() = _uiMode.value
+    val uiModeEnum: UiMode get() = UiMode.fromValue(_uiMode.value)
+
+    var appParamsCollapsed: Boolean
+        get() = uiPrefs.getBoolean("apps_params_collapsed", false)
+        set(v) {
+            uiPrefs.edit().putBoolean("apps_params_collapsed", v).apply()
+            appParamsCollapsedState.value = v
+        }
+    val appParamsCollapsedState by lazy { mutableStateOf(appParamsCollapsedField()) }
+    private fun appParamsCollapsedField(): Boolean =
+        runCatching { uiPrefs.getBoolean("apps_params_collapsed", false) }.getOrDefault(false)
+
+    private val _colorMode = mutableStateOf(0) // 0 system / 1 light / 2 dark
+    val colorMode: Int get() = _colorMode.value
+
+    private val _serviceConnected = mutableStateOf(false)
+    val serviceConnected: Boolean get() = _serviceConnected.value
+
+    private val _mm = mutableStateOf(AppCfg())
+    val mm: AppCfg get() = _mm.value
+
+    private val _qq = mutableStateOf(AppCfg())
+    val qq: AppCfg get() = _qq.value
+
+    private val _bili = mutableStateOf(BiliCfg())
+    val bili: BiliCfg get() = _bili.value
+
+    private val _heybox = mutableStateOf(AppCfg(widthScale = 0.5f))
+    val heybox: AppCfg get() = _heybox.value
+
+    private val _tabs = mutableStateOf(mapOf(
+        "mm" to TabLayout(), "qq" to TabLayout(),
+        "bili" to TabLayout(), "heybox" to TabLayout(),
+    ))
+    fun tabLayout(key: String): TabLayout = _tabs.value[key] ?: TabLayout()
+
+    fun setTabLayout(key: String, t: TabLayout) {
+        _tabs.value = _tabs.value + (key to t)
+        val json = org.json.JSONArray(t.order).toString()
+        val jsonH = org.json.JSONArray(t.hidden).toString()
+        val editor = (remotePrefs ?: hookPrefs)?.edit() ?: return
+        editor.putString("${key}_tab_order", json)
+        editor.putString("${key}_tab_hidden", jsonH)
+        editor.apply()
+        val mirror = if (remotePrefs != null) hookPrefs else null
+        mirror?.edit()?.apply {
+            putString("${key}_tab_order", json)
+            putString("${key}_tab_hidden", jsonH)
+        }?.apply()
+    }
+
+    fun init(ctx: Context) {
+        uiPrefs = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        hookPrefs = ctx.getSharedPreferences(REMOTE_NAME, Context.MODE_PRIVATE)
+        _uiMode.value = uiPrefs.getString("ui_mode", UiMode.DEFAULT) ?: UiMode.DEFAULT
+        _colorMode.value = uiPrefs.getInt("color_mode", 0)
+        hookPrefs?.let { readHook(it) }
+
+        try {
+            XposedServiceHelper.registerListener(object :
+                XposedServiceHelper.OnServiceListener {
+                override fun onServiceBind(service: XposedService) {
+                    remotePrefs = try {
+                        service.getRemotePreferences(REMOTE_NAME)
+                    } catch (t: Throwable) {
+                        null
+                    }
+                    _serviceConnected.value = remotePrefs != null
+                    remotePrefs?.let { readHook(it) }
+                }
+
+                override fun onServiceDied(service: XposedService) {
+                    _serviceConnected.value = false
+                }
+            })
+        } catch (_: Throwable) {
+            // LSPosed service unavailable (not installed / too old): the
+            // plain-preferences channel below still works through XSP.
+        }
+    }
+
+    fun setUiMode(v: String) {
+        _uiMode.value = v
+        uiPrefs.edit().putString("ui_mode", v).apply()
+        AppSettingsStore.reload()
+    }
+
+    fun setColorMode(v: Int) {
+        _colorMode.value = v
+        uiPrefs.edit().putInt("color_mode", v).apply()
+        AppSettingsStore.reload()
+    }
+
+    // ------------------------------------------------------------ hook params
+
+    fun setApp(key: String, cfg: AppCfg) {
+        when (key) {
+            "mm" -> _mm.value = cfg
+            "qq" -> _qq.value = cfg
+            "heybox" -> _heybox.value = cfg
+            "bili" -> _bili.value = _bili.value.copy(base = cfg)
+        }
+        write(key, cfg)
+    }
+
+    fun setBili(cfg: BiliCfg) {
+        _bili.value = cfg
+        write("bili", cfg.base)
+        writeBiliExtras(cfg)
+    }
+
+    fun resetDefaults() {
+        setApp("mm", AppCfg())
+        setApp("qq", AppCfg())
+        setBili(BiliCfg())
+        setApp("heybox", AppCfg(widthScale = 0.5f))
+    }
+
+    private fun write(key: String, cfg: AppCfg) {
+        val editor = (remotePrefs ?: hookPrefs)?.edit() ?: return
+        fun android.content.SharedPreferences.Editor.putApp(k: String, c: AppCfg) {
+            putBoolean("${k}_enabled", c.enabled)
+            putFloat("${k}_width_scale", c.widthScale)
+            putInt("${k}_offset_dp", c.offsetDp)
+            putInt("${k}_offsetx_dp", c.offsetXdp)
+            putInt("${k}_blur", c.blur)
+            putFloat("${k}_tint", c.tint)
+            putFloat("${k}_pill_scale", c.pillScale)
+            putFloat("${k}_saturation", c.saturation)
+            putFloat("${k}_gloss", c.gloss)
+            putFloat("${k}_border", c.border)
+        }
+        editor.putApp(key, cfg)
+        editor.apply()
+        // Mirror into the other store so both channels always agree.
+        val mirror = if (remotePrefs != null) hookPrefs else null
+        mirror?.edit()?.apply { putApp(key, cfg) }?.apply()
+    }
+
+    private fun writeBiliExtras(cfg: BiliCfg) {
+        val editor = (remotePrefs ?: hookPrefs)?.edit() ?: return
+        editor.putBoolean("bili_hover_tint", cfg.hoverTint)
+        editor.putBoolean("bili_hide_native", cfg.hideNative)
+        editor.putFloat("bili_pub_scale", cfg.pubScale)
+        editor.putInt("bili_pub_bottom_dp", cfg.pubBottomDp)
+        editor.putInt("bili_pub_side_dp", cfg.pubSideDp)
+        editor.apply()
+        val mirror = if (remotePrefs != null) hookPrefs else null
+        mirror?.edit()?.apply {
+            putBoolean("bili_hover_tint", cfg.hoverTint)
+            putBoolean("bili_hide_native", cfg.hideNative)
+            putFloat("bili_pub_scale", cfg.pubScale)
+            putInt("bili_pub_bottom_dp", cfg.pubBottomDp)
+            putInt("bili_pub_side_dp", cfg.pubSideDp)
+        }?.apply()
+    }
+
+    private fun readHook(p: SharedPreferences) {
+        fun app(key: String, def: AppCfg): AppCfg = AppCfg(
+            // No per-app enable switch any more (LSPosed gates the module):
+            // ignore legacy stored values so an old "off" can't stick.
+            enabled = true,
+            widthScale = p.getFloat("${key}_width_scale", def.widthScale),
+            offsetDp = p.getInt("${key}_offset_dp", def.offsetDp),
+            offsetXdp = p.getInt("${key}_offsetx_dp", def.offsetXdp),
+            blur = p.getInt("${key}_blur", def.blur),
+            tint = p.getFloat("${key}_tint", def.tint),
+            pillScale = p.getFloat("${key}_pill_scale", def.pillScale),
+            saturation = p.getFloat("${key}_saturation", def.saturation),
+            gloss = p.getFloat("${key}_gloss", def.gloss),
+            border = p.getFloat("${key}_border", def.border),
+        )
+        _mm.value = app("mm", AppCfg())
+        _qq.value = app("qq", AppCfg())
+        _heybox.value = app("heybox", AppCfg(widthScale = 0.5f))
+        _tabs.value = mapOf(
+            "mm" to readTabLayout(p, "mm"), "qq" to readTabLayout(p, "qq"),
+            "bili" to readTabLayout(p, "bili"), "heybox" to readTabLayout(p, "heybox"),
+        )
+        val b = _bili.value
+        _bili.value = BiliCfg(
+            base = app("bili", AppCfg(widthScale = 0.7f)),
+            hoverTint = p.getBoolean("bili_hover_tint", b.hoverTint),
+            hideNative = p.getBoolean("bili_hide_native", b.hideNative),
+            pubScale = p.getFloat("bili_pub_scale", b.pubScale),
+            pubBottomDp = p.getInt("bili_pub_bottom_dp", b.pubBottomDp),
+            pubSideDp = p.getInt("bili_pub_side_dp", b.pubSideDp),
+        )
+    }
+
+    /** Tolerant <key>_tab_* read: corrupt JSON → default (native order). */
+    private fun readTabLayout(p: SharedPreferences, key: String): TabLayout {
+        fun arr(name: String): List<String> = runCatching {
+            val s = p.getString(name, null) ?: return emptyList()
+            if (s.isEmpty()) return emptyList()
+            val a = org.json.JSONArray(s)
+            (0 until a.length()).map { a.getString(it) }
+        }.getOrDefault(emptyList())
+        return TabLayout(order = arr("${key}_tab_order"), hidden = arr("${key}_tab_hidden"))
+    }
+}

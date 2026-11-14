@@ -1,0 +1,264 @@
+package io.github.liuran001.mmliquidglass.ui
+
+import android.content.pm.PackageManager
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import io.github.liuran001.mmliquidglass.R
+import top.yukonga.miuix.kmp.basic.Card as MiuixCard
+import top.yukonga.miuix.kmp.preference.ArrowPreference
+
+private data class Target(val key: String, val label: String, val pkg: String)
+
+private val TARGETS = listOf(
+    Target("mm", "微信", "com.tencent.mm"),
+    Target("qq", "QQ", "com.tencent.mobileqq"),
+    Target("bili", "哔哩哔哩", "tv.danmaku.bili"),
+    Target("heybox", "小黑盒", "com.max.xiaoheihe"),
+)
+
+@Composable
+private fun installed(key: String): Boolean {
+    val pm = LocalContext.current.packageManager
+    val pkg = TARGETS.first { it.key == key }.pkg
+    return try {
+        pm.getPackageInfo(pkg, 0); true
+    } catch (t: Throwable) {
+        false
+    }
+}
+
+@Composable
+fun AppsScreen() {
+    var tabDialogKey by remember { mutableStateOf<String?>(null) }
+    TabLayoutDialog(
+        appKey = tabDialogKey ?: "heybox",
+        show = tabDialogKey != null,
+        onApply = { cfg -> tabDialogKey?.let { Config.setTabLayout(it, cfg) } },
+        onDismiss = { tabDialogKey = null },
+    )
+    LScreen(title = stringResourceCompat(R.string.apps_title)) {
+        TARGETS.forEach { t ->
+            when (t.key) {
+                "mm" -> AppCard(t, Config.mm, installed("mm"),
+                    onEditTabs = { tabDialogKey = "mm" }) { Config.setApp("mm", it) }
+                "qq" -> AppCard(t, Config.qq, installed("qq"),
+                    onEditTabs = { tabDialogKey = "qq" }) { Config.setApp("qq", it) }
+                "heybox" -> AppCard(
+                    t, Config.heybox, installed("heybox"),
+                    // heybox's 1.0 column overruns the pill (r14: full-width
+                    // hug + flush capsule) — cap the slider below it.
+                    widthRange = 0.2f..0.9f,
+                    onEditTabs = { tabDialogKey = "heybox" },
+                ) { Config.setApp("heybox", it) }
+                else -> BiliCard(t, Config.bili, installed("bili"),
+                    onEditTabs = { tabDialogKey = "bili" }) { Config.setBili(it) }
+            }
+            if (LocalUiMode.current == UiMode.Miuix) {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    }
+}
+
+/**
+ * One app = one expandable card. Params are auto-collapsed; tapping the
+ * header expands them. Miuix skin uses the official idiom (ArrowPreference
+ * + AnimatedVisibility), Mat uses a clickable header row.
+ */
+@Composable
+private fun AppCard(
+    t: Target,
+    cfg: Config.AppCfg,
+    installed: Boolean,
+    widthRange: ClosedFloatingPointRange<Float> = 0.5f..1.2f,
+    onEditTabs: (() -> Unit)? = null,
+    // set stays LAST: every call site passes it as a trailing lambda, and
+    // Kotlin binds that to the final parameter only.
+    set: (Config.AppCfg) -> Unit
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val title = t.label + (if (installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed))
+    when (LocalUiMode.current) {
+        UiMode.Miuix -> MiuixCard(modifier = Modifier.fillMaxWidth()) {
+            ArrowPreference(
+                title = title,
+                summary = stringResourceCompat(R.string.apps_params),
+                onClick = { expanded = !expanded },
+            )
+            AnimatedVisibility(visible = expanded) {
+                Column { AppParams(cfg, set, widthRange, onEditTabs) }
+            }
+        }
+
+        UiMode.Material -> LCard {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+            ) {
+                LText(title, subtitle = true)
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column { AppParams(cfg, set, widthRange, onEditTabs) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppParams(
+    cfg: Config.AppCfg,
+    set: (Config.AppCfg) -> Unit,
+    widthRange: ClosedFloatingPointRange<Float>,
+    onEditTabs: (() -> Unit)? = null
+) {
+    Column {
+        // No per-app enable switch: LSPosed's own toggle already gates the
+        // module; a second switch here was redundant state.
+        run {
+            // Tab layout editor leads the panel on every host.
+            if (onEditTabs != null) {
+                LActionRow(stringResourceCompat(R.string.apps_tab_layout),
+                    stringResourceCompat(R.string.apps_tab_layout_summary), onEditTabs)
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, widthRange) {
+                set(cfg.copy(widthScale = (it * 100).toInt() / 100f))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_pill_scale), cfg.pillScale, 0.1f..3f) {
+                set(cfg.copy(pillScale = (it * 100).toInt() / 100f))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_bar_offset), cfg.offsetDp.toFloat(), 0f..24f, steps = 23) {
+                set(cfg.copy(offsetDp = it.toInt()))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_bar_offset_x), cfg.offsetXdp.toFloat(), -120f..120f) {
+                set(cfg.copy(offsetXdp = it.toInt()))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_blur), cfg.blur.toFloat(), 1f..8f, steps = 6) {
+                set(cfg.copy(blur = it.toInt()))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_tint), cfg.tint, 0.2f..2f) {
+                set(cfg.copy(tint = (it * 100).toInt() / 100f))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_saturation), cfg.saturation, 1.0f..1.3f) {
+                set(cfg.copy(saturation = (it * 100).toInt() / 100f))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_gloss), cfg.gloss, 0f..2f) {
+                set(cfg.copy(gloss = (it * 100).toInt() / 100f))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_border), cfg.border, 0.5f..2f) {
+                set(cfg.copy(border = (it * 100).toInt() / 100f))
+            }
+        }
+    }
+}
+
+@Composable
+private fun BiliCard(
+    t: Target,
+    cfg: Config.BiliCfg,
+    installed: Boolean,
+    onEditTabs: (() -> Unit)? = null,
+    set: (Config.BiliCfg) -> Unit
+) {
+    val base = cfg.base
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val title = t.label + (if (installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed))
+    when (LocalUiMode.current) {
+        UiMode.Miuix -> MiuixCard(modifier = Modifier.fillMaxWidth()) {
+            ArrowPreference(
+                title = title,
+                summary = stringResourceCompat(R.string.apps_params),
+                onClick = { expanded = !expanded },
+            )
+            AnimatedVisibility(visible = expanded) {
+                Column { BiliParams(cfg, set, onEditTabs) }
+            }
+        }
+
+        UiMode.Material -> LCard {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
+            ) {
+                LText(title, subtitle = true)
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column { BiliParams(cfg, set, onEditTabs) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BiliParams(
+    cfg: Config.BiliCfg,
+    set: (Config.BiliCfg) -> Unit,
+    onEditTabs: (() -> Unit)? = null
+) {
+    val base = cfg.base
+    Column {
+        run {
+            if (onEditTabs != null) {
+                LActionRow(stringResourceCompat(R.string.apps_tab_layout),
+                    stringResourceCompat(R.string.apps_tab_layout_summary), onEditTabs)
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_width_scale), base.widthScale, 0.5f..1.2f) {
+                set(cfg.copy(base = base.copy(widthScale = (it * 100).toInt() / 100f)))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_pill_scale), base.pillScale, 0.1f..3f) {
+                set(cfg.copy(base = base.copy(pillScale = (it * 100).toInt() / 100f)))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_bar_offset), base.offsetDp.toFloat(), 0f..24f, steps = 23) {
+                set(cfg.copy(base = base.copy(offsetDp = it.toInt())))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_bar_offset_x), base.offsetXdp.toFloat(), -120f..120f) {
+                set(cfg.copy(base = base.copy(offsetXdp = it.toInt())))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_blur), base.blur.toFloat(), 1f..8f, steps = 6) {
+                set(cfg.copy(base = base.copy(blur = it.toInt())))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_tint), base.tint, 0.2f..2f) {
+                set(cfg.copy(base = base.copy(tint = (it * 100).toInt() / 100f)))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_saturation), base.saturation, 1.0f..1.3f) {
+                set(cfg.copy(base = base.copy(saturation = (it * 100).toInt() / 100f)))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_gloss), base.gloss, 0f..2f) {
+                set(cfg.copy(base = base.copy(gloss = (it * 100).toInt() / 100f)))
+            }
+            LSliderRow(stringResourceCompat(R.string.apps_border), base.border, 0.5f..2f) {
+                set(cfg.copy(base = base.copy(border = (it * 100).toInt() / 100f)))
+            }
+
+            LText(stringResourceCompat(R.string.apps_bili_section), subtitle = true)
+            LSwitchRow(
+                stringResourceCompat(R.string.apps_bili_hide_native), null, cfg.hideNative
+            ) { set(cfg.copy(hideNative = it)) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_bili_pub_scale), cfg.pubScale, 0.5f..2f
+            ) { set(cfg.copy(pubScale = (it * 100).toInt() / 100f)) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_bili_pub_bottom), cfg.pubBottomDp.toFloat(), 0f..48f, steps = 47
+            ) { set(cfg.copy(pubBottomDp = it.toInt())) }
+            LSliderRow(
+                stringResourceCompat(R.string.apps_bili_pub_side), cfg.pubSideDp.toFloat(), 0f..64f, steps = 63
+            ) { set(cfg.copy(pubSideDp = it.toInt())) }
+        }
+    }
+}

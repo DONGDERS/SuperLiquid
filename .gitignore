@@ -1,0 +1,10 @@
+# build outputs
+build/
+.gradle/
+tools/
+local.properties
+*.apk
+*.idsig
+*.keystore
+*.jks
+build*.log
