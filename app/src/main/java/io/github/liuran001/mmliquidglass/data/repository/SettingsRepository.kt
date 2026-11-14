@@ -23,7 +23,7 @@ class SettingsRepositoryImpl : SettingsRepository {
     private val p get() = io.github.liuran001.mmliquidglass.ui.Config.uiPrefs
 
     override var uiMode: String
-        get() = p.getString("ui_mode", "mat") ?: "mat"
+        get() = p.getString("ui_mode", "miuix") ?: "miuix"
         set(value) { p.edit().putString("ui_mode", value).apply() }
 
     override var themeMode: Int

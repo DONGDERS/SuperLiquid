@@ -43,6 +43,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Menu
@@ -190,7 +191,10 @@ fun ColorPaletteScreenMaterial(
                     listOf(ColorMode.SYSTEM) to stringResource(R.string.settings_theme_mode_system),
                     listOf(ColorMode.LIGHT) to stringResource(R.string.settings_theme_mode_light),
                     listOf(ColorMode.DARK) to stringResource(R.string.settings_theme_mode_dark),
-                    listOf(ColorMode.DARK_AMOLED) to stringResource(R.string.settings_theme_mode_dark)
+                    // AMOLED is a distinct choice (pure black), not a second
+                    // "dark" — sharing the label made the two buttons
+                    // indistinguishable.
+                    listOf(ColorMode.DARK_AMOLED) to stringResource(R.string.settings_theme_mode_amoled)
                 )
 
                 Column(
@@ -278,6 +282,18 @@ fun ColorPaletteScreenMaterial(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     content = listOf(
                         {
+                            // Blur is consumed by the Material skin as well
+                            // (LocalEnableBlur), so it needs an entry here —
+                            // it used to be settable only from the Miuix page.
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                SegmentedSwitchItem(
+                                    icon = Icons.Filled.BlurOn,
+                                    title = stringResource(id = R.string.settings_enable_blur),
+                                    summary = stringResource(id = R.string.settings_enable_blur_summary),
+                                    checked = uiState.enableBlur,
+                                    onCheckedChange = actions.onSetEnableBlur,
+                                )
+                            }
                             SegmentedSwitchItem(
                                 icon = Icons.AutoMirrored.Filled.ArrowBack,
                                 title = stringResource(id = R.string.settings_predictive_back),
