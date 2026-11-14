@@ -51,10 +51,16 @@ jobs:
 
           # 1. Align what AGP produced. Native libs are page-aligned (-p) and
           #    resources.arsc lands on a 4-byte boundary.
-          echo "== zipalign ${UNSIGNED} =="
-          "$BT/zipalign" -f -p 4 "$UNSIGNED" out/aligned.apk
-          echo "== alignment straight after zipalign =="
-          python3 scripts/check-apk-align.py out/aligned.apk || true
+          echo "== zipalign variants =="
+          for mode in "-f -p 4" "-f 4"; do
+            tag=$(echo "$mode" | tr -d ' -')
+            "$BT/zipalign" $mode "$UNSIGNED" "out/aligned-$tag.apk" ||               echo "zipalign $mode failed"
+            echo "-- after zipalign $mode --"
+            python3 scripts/check-apk-align.py "out/aligned-$tag.apk" || true
+          done
+          cp out/aligned-4.apk out/aligned.apk
+          echo "== using plain '-f 4' output =="
+          python3 scripts/check-apk-align.py out/aligned.apk
 
           # 2. Append the xposed descriptor. This must come AFTER zipalign:
           #    rewriting the archive afterwards would undo the alignment above,
