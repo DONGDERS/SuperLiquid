@@ -1,0 +1,92 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Locate Android SDK
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
+
+      - name: Assemble release
+        run: gradle assembleRelease --stacktrace --no-daemon
+
+      # The LSPosed entry point is discovered only from META-INF/xposed at the
+      # APK root, and AGP strips META-INF from the merge. It has to be appended
+      # to the unsigned APK before signing, and appended (never rewritten) so
+      # the stored, uncompressed native libs keep their alignment.
+      - name: Inject META-INF/xposed + zipalign + sign
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          BT="${ANDROID_HOME}/build-tools/36.0.0"
+          [ -d "$BT" ] || BT="$(ls -d ${ANDROID_HOME}/build-tools/* | sort -V | tail -1)"
+          echo "build-tools: $BT"
+
+          UNSIGNED=app/build/outputs/apk/release/app-release-unsigned.apk
+          ls -la app/build/outputs/apk/release/
+
+          mkdir -p out
+          cp "$UNSIGNED" out/staged.apk
+
+          # Append the xposed descriptor at the APK root.
+          python3 scripts/inject-xposed.py out/staged.apk META-INF/xposed
+
+          unzip -l out/staged.apk | grep -i xposed
+
+          "$BT/zipalign" -f -p 4 out/staged.apk out/aligned.apk
+
+          # Fail loudly if any stored .so ended up deflated: PackageInstaller
+          # rejects that with INSTALL_FAILED_INVALID_APK.
+          BAD=$(unzip -v out/aligned.apk 'lib/*' | awk '$2 ~ /Defl/ {print $NF}')
+          if [ -n "$BAD" ]; then
+            echo "FATAL: deflated native libs: $BAD" >&2
+            exit 1
+          fi
+
+          echo "$KEYSTORE_BASE64" | base64 -d > out/release.jks
+
+          "$BT/apksigner" sign \
+            --ks out/release.jks \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --key-pass "pass:$KEY_PASSWORD" \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out "out/SuperLiquid-release.apk" \
+            out/aligned.apk
+
+          "$BT/apksigner" verify --print-certs "out/SuperLiquid-release.apk" | head -5
+          ls -la out/SuperLiquid-release.apk
+          sha256sum out/SuperLiquid-release.apk | tee out/sha256.txt
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SuperLiquid-release
+          path: |
+            out/SuperLiquid-release.apk
+            out/sha256.txt
+          if-no-files-found: error
