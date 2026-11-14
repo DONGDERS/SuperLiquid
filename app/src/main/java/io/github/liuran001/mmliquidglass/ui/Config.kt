@@ -176,11 +176,20 @@ object Config {
         writeBiliExtras(cfg)
     }
 
+    /**
+     * Back to built-in defaults. The tab layout is part of what the settings
+     * copy promises ("clear all tab-bar glass parameters"), and an empty order /
+     * hidden set is exactly the native order — leaving them behind made the
+     * button look half-broken.
+     */
     fun resetDefaults() {
         setApp("mm", AppCfg())
         setApp("qq", AppCfg())
         setBili(BiliCfg())
         setApp("heybox", AppCfg(widthScale = 0.5f))
+        for (key in listOf("mm", "qq", "bili", "heybox")) {
+            setTabLayout(key, TabLayout())
+        }
     }
 
     private fun write(key: String, cfg: AppCfg) {

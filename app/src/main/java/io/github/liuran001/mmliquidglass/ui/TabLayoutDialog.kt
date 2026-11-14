@@ -87,8 +87,15 @@ object TabLayoutEditor {
         return out
     }
 
+    /**
+     * Keep hidden tabs in [order]. Filtering them out looked harmless but threw
+     * their position away: the hook only walks the configured order and appends
+     * whatever is left in native order, so a hidden tab always came back at the
+     * end instead of its own slot. The hook already skips hidden titles when it
+     * builds the visible sequence, so carrying them here costs nothing.
+     */
     fun toCfg(order: List<String>, hidden: Set<String>): Config.TabLayout =
-        Config.TabLayout(order = order.filter { it !in hidden }, hidden = hidden.toList())
+        Config.TabLayout(order = order, hidden = hidden.toList())
 }
 
 @Composable

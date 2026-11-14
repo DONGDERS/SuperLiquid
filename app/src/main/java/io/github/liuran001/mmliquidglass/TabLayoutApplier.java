@@ -175,6 +175,20 @@ final class TabLayoutApplier {
         }
     }
 
+    /** Whether {@code ancestor} is {@code v} or one of its view ancestors. */
+    private static boolean isAncestorOf(View ancestor, View v) {
+        if (ancestor == null || v == null) {
+            return false;
+        }
+        android.view.ViewParent p = v.getParent();
+        while (p instanceof View) {
+            if (p == ancestor) {
+                return true;
+            }
+            p = p.getParent();
+        }
+        return false;
+    }
     static void clear() {
         sPos2Logical = null;
         sRow = null;
@@ -188,8 +202,16 @@ final class TabLayoutApplier {
     static void correctSelection(View bar, int logicalIndex) {
         int[] m = sPos2Logical;
         ViewGroup row = sRow;
-        if (m == null || row == null || bar != sRow) {
+        if (m == null || row == null) {
             return; // no rewrite in effect: native selection is already right
+        }
+        // The hook hands us the bar itself (WeChat's LauncherUIBottomTabView,
+        // QQ's QQTabLayout), while apply() recorded the row *inside* it. Requiring
+        // identity here meant this never ran for either of those: only QQ's
+        // QQTabWidget, which doubles as its own row, matched. Accept any bar the
+        // rewritten row belongs to instead.
+        if (bar != row && !isAncestorOf(bar, row)) {
+            return;
         }
         try {
             boolean fixed = false;

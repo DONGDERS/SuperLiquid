@@ -83,6 +83,8 @@ final class HeyboxHomeBar {
     private static LinearLayout sLeftRow;
 
     private static volatile boolean sInstalled;
+    /** One poll chain at a time; see startPolling(). */
+    private static volatile boolean sPolling;
     private static volatile boolean sProbing;
     private static int sProbes;
     private static volatile int sLastIndex = -1;
@@ -153,17 +155,29 @@ final class HeyboxHomeBar {
 
     // ---------------------------------------------------------------- probing
 
+    /**
+     * Queues a probe. sProbing means "a probe is scheduled or running" and is
+     * owned by this trio: armed on the way in, cleared only when the chain
+     * genuinely ends. Clearing it in probe()'s finally regardless of a pending
+     * retry was what let a resume start a second chain beside the first.
+     */
     private static void scheduleProbe() {
+        if (sProbing) {
+            return;
+        }
         sProbing = true;
         sProbes = 0;
         sMain.postDelayed(HeyboxHomeBar::probe, 600);
     }
 
+    /** Queues the next attempt; the chain stays armed. */
     private static void retryProbe() {
         sMain.postDelayed(HeyboxHomeBar::probe, 400);
     }
 
     private static void probe() {
+        sProbing = true;
+        boolean retry = false;
         try {
             Activity act = sHomeActivity.get();
             if (act == null || act.isFinishing() || act.isDestroyed()) {
@@ -178,17 +192,19 @@ final class HeyboxHomeBar {
             }
             RadioGroup real = findBar(act);
             if (real == null) {
-                retryProbe();
-                return;
-            }
-            if (!tryInstall(act, real)) {
-                retryProbe();
+                retry = true;
+            } else if (!tryInstall(act, real)) {
+                retry = true;
             }
         } catch (Throwable t) {
             LiquidGlassModule.logErr("heybox: probe failed", t);
-            retryProbe();
+            retry = true;
         } finally {
-            sProbing = false;
+            if (retry) {
+                retryProbe();   // keeps the chain armed
+            } else {
+                sProbing = false;
+            }
         }
     }
 
@@ -239,6 +255,17 @@ final class HeyboxHomeBar {
     // ---------------------------------------------------------------- install
 
     private static boolean tryInstall(Activity act, RadioGroup real) {
+        // Already up: probe() can be re-entered from a resume while a retry is
+        // still queued, and a second install adds a whole second glass host on
+        // top of the first (the installer's own guard only inspects the parent
+        // of the wrapper it was just handed, which is always the app's root).
+        if (sInstalled) {
+            LiquidGlassHostLayout live = sLeftHost.get();
+            if (live != null && live.isAttachedToWindow()) {
+                return true;
+            }
+            sInstalled = false;
+        }
         try {
             // Capture BEFORE hiding: labels/icons/colors come from the live bar.
             int n = 0;
@@ -252,6 +279,15 @@ final class HeyboxHomeBar {
                 LiquidGlassModule.log(android.util.Log.WARN,
                         "heybox: only " + n + " visible tabs, waiting for server nav cfg");
                 return false;
+            }
+            // A re-install replaces the array; the bitmaps in the old one are
+            // native memory that no GC will reclaim for us.
+            if (sSnapBm != null) {
+                for (android.graphics.Bitmap old : sSnapBm) {
+                    if (old != null && !old.isRecycled()) {
+                        old.recycle();
+                    }
+                }
             }
             sRealTabs = new RadioButton[n];
             sIcons = new ImageView[n];
@@ -755,7 +791,12 @@ final class HeyboxHomeBar {
         LiquidGlassModule.log(android.util.Log.WARN, "heybox: no publish view captured");
     }
 
+    /** One chain only: a second install must not double the 250ms poll. */
     private static void startPolling() {
+        if (sPolling) {
+            return;
+        }
+        sPolling = true;
         sMain.postDelayed(HeyboxHomeBar::poll, POLL_MS);
     }
 
@@ -798,6 +839,7 @@ final class HeyboxHomeBar {
 
     private static void poll() {
         if (!sInstalled) {
+            sPolling = false;
             return;
         }
         try {
@@ -808,6 +850,7 @@ final class HeyboxHomeBar {
             if (!leftAlive || !plusAlive) {
                 // Window died: installer resets itself on next resume; we rebuild.
                 sInstalled = false;
+                sPolling = false;
                 sLeftRow = null;
                 sLeftHost = new WeakReference<>(null);
                 sPlusHost = new WeakReference<>(null);
