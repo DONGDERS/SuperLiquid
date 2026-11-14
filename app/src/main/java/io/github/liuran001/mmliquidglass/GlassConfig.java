@@ -113,6 +113,15 @@ final class GlassConfig {
                 : "heybox".equals(keyPrefix) ? 0.5f : 1f;
         blurRadius = 3;
         tintStrength = 1f;
+        // These six were missing from the reset and would have survived a
+        // prefix switch in a long-lived process, contradicting the contract
+        // stated above (and the comment claiming a complete reset).
+        pillScale = 1f;
+        saturationBoost = 1f;
+        glossStrength = 1f;
+        borderWidthScale = 1f;
+        tabOrder = new String[0];
+        tabHidden = new String[0];
         biliHideNative = true;
         biliPubScale = 1f;
         biliPubBottomDp = 12;

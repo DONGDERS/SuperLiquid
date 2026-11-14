@@ -1015,18 +1015,38 @@ final class BiliHomeBar {
      * referenced via getIdentifier, invisible to the shrinker), which is how
      * 0.4.2 lost every pill icon.
      */
+    /**
+     * Decoded glyphs, keyed by asset name. buildRow() asks once per tab and the
+     * publish pill once more; without this every install re-decoded the same
+     * five PNGs and rebuilt the package Context each time.
+     */
+    private static final java.util.HashMap<String, android.graphics.drawable.Drawable>
+            sGlyphs = new java.util.HashMap<>();
+    private static Context sModuleCtx;
+
     private static android.graphics.drawable.Drawable moduleDrawable(Context ctx, String name) {
+        android.graphics.drawable.Drawable cached = sGlyphs.get(name);
+        if (cached != null) {
+            return cached;
+        }
         try {
-            Context moduleCtx = ctx.createPackageContext(MODULE_PKG,
-                    Context.CONTEXT_IGNORE_SECURITY);
+            Context moduleCtx = sModuleCtx;
+            if (moduleCtx == null) {
+                moduleCtx = ctx.createPackageContext(MODULE_PKG,
+                        Context.CONTEXT_IGNORE_SECURITY);
+                sModuleCtx = moduleCtx;
+            }
             java.io.InputStream is = moduleCtx.getAssets().open(name + ".png");
             android.graphics.Bitmap bmp = android.graphics.BitmapFactory.decodeStream(is);
             is.close();
             if (bmp == null) {
                 return null;
             }
-            return new android.graphics.drawable.BitmapDrawable(
-                    moduleCtx.getResources(), bmp);
+            android.graphics.drawable.Drawable d =
+                    new android.graphics.drawable.BitmapDrawable(
+                            moduleCtx.getResources(), bmp);
+            sGlyphs.put(name, d);
+            return d;
         } catch (Throwable t) {
             LiquidGlassModule.logErr("bili: glyph " + name + " load failed", t);
             return null;

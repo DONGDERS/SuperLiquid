@@ -227,10 +227,19 @@ private fun rememberConfigImportLauncher(
                 val text = runCatching {
                     ctx.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
                 }.getOrNull()
-                val applied = text?.let { runCatching { ConfigBackup.applyJson(it) }.getOrDefault(0) } ?: 0
-                toastMain(ctx, if (applied > 0) ctx.getString(R.string.settings_backup_imported, applied)
-                          else ctx.getString(R.string.settings_backup_fail))
-                if (applied > 0) onDone()
+                // Only the file read is IO. applyJson() writes Config's Compose
+                // MutableState (_tabs, _uiMode) and SettingsState's snapshot;
+                // doing that off the main thread is undefined for Compose's
+                // snapshot system, so the mutation goes back to the UI thread.
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    val applied = text?.let {
+                        runCatching { ConfigBackup.applyJson(it) }.getOrDefault(0)
+                    } ?: 0
+                    toastMain(ctx, if (applied > 0)
+                        ctx.getString(R.string.settings_backup_imported, applied)
+                    else ctx.getString(R.string.settings_backup_fail))
+                    if (applied > 0) onDone()
+                }
             }.start()
         }
     }
