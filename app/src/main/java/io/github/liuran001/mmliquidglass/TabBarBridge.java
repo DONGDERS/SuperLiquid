@@ -646,6 +646,23 @@ final class TabBarBridge {
                     if (self != LiquidGlassInstaller.currentPager()) {
                         return chain.proceed();
                     }
+                    ViewGroup livePager = (ViewGroup) self;
+                    // Resume can issue 3->0->3 before the home window gets
+                    // focus. Turning those restoration hard cuts into smooth
+                    // scrolls makes WxViewPager abort the first scroller at 0
+                    // while retaining currentItem=3. Preserve the host request.
+                    if (!livePager.isAttachedToWindow() || !livePager.isShown()
+                            || !livePager.hasWindowFocus()) {
+                        sJumpTarget = -1;
+                        sJumpDeadlineMs = 0L;
+                        if (sNativeTransitionLogs < 12) {
+                            sNativeTransitionLogs++;
+                            LiquidGlassModule.log(android.util.Log.INFO,
+                                    "pager native transition: home not interactive; item="
+                                            + currentItem(self));
+                        }
+                        return chain.proceed();
+                    }
                     Object[] args = chain.getArgs().toArray();
                     if (args.length >= 2 && args[1] instanceof Boolean
                             && (Boolean) args[1]) {
@@ -663,9 +680,19 @@ final class TabBarBridge {
                     if (distance == 0) {
                         return chain.proceed(); // the pager's own no-op
                     }
-                    // This call is the live intent: whatever an earlier jump was
-                    // still holding back ends here.
+                    // A new hard-cut request during our long slide must
+                    // finish through the host, not start a second smooth jump
+                    // against a scroller that is still being aborted.
+                    boolean interruptedJump = sJumpTarget >= 0
+                            && android.os.SystemClock.uptimeMillis() <= sJumpDeadlineMs;
                     sJumpTarget = -1;
+                    sJumpDeadlineMs = 0L;
+                    if (interruptedJump) {
+                        LiquidGlassModule.log(android.util.Log.INFO,
+                                "pager native transition: interrupted module jump; target="
+                                        + target);
+                        return chain.proceed();
+                    }
                     if (distance > 1) {
                         // Only if the host can be kept from seeing the pages the
                         // slide passes over; otherwise its own hard cut.
@@ -831,6 +858,7 @@ final class TabBarBridge {
      * there is nothing to hold back there.
      */
     private static volatile int sJumpTarget = -1;
+    private static int sNativeTransitionLogs;
     /** Uptime millis after which {@link #sJumpTarget} stops being honoured. */
     private static volatile long sJumpDeadlineMs;
 
