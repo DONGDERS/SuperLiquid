@@ -49,14 +49,17 @@ jobs:
 
           mkdir -p out
 
-          # 1. Align what AGP produced. Native libs are page-aligned (-p) and
-          #    resources.arsc lands on a 4-byte boundary.
-          # zipalign leaves resources.arsc misaligned on these release APKs
-          # (verified: offset 3864271, mod 4 = 3, with both -p 4 and 4), and
-          # Android 11+ rejects that. Rebuild the archive with explicit
-          # per-entry alignment instead; .so keeps page alignment.
-          python3 scripts/align-apk.py "$UNSIGNED" out/aligned.apk
-          python3 scripts/check-apk-align.py out/aligned.apk
+          # 1. Rebuild the archive with explicit per-entry alignment.
+          #    zipalign leaves resources.arsc misaligned on these release APKs
+          #    (offset 3864271, mod 4 = 3, with both "-p 4" and "4"), and
+          #    Android 11+ rejects that. Native libs must also start on a page
+          #    boundary: the manifest declares extractNativeLibs=false, so a
+          #    misaligned .so fails the install with
+          #    INSTALL_FAILED_INVALID_APK "Failed to extract native libraries,
+          #    res=-2". 16 KiB satisfies both 4 KiB and 16 KiB page devices.
+          python3 scripts/align-apk.py "$UNSIGNED" out/aligned.apk 16384
+          python3 scripts/check-apk-align.py out/aligned.apk 4096
+          python3 scripts/check-apk-align.py out/aligned.apk 16384
 
           # 2. Append the xposed descriptor. This must come AFTER the align
           #    pass: rewriting the archive afterwards would undo it, and the
@@ -72,7 +75,8 @@ jobs:
             echo "FATAL: deflated native libs: $BAD" >&2
             exit 1
           fi
-          python3 scripts/check-apk-align.py out/staged.apk
+          python3 scripts/check-apk-align.py out/staged.apk 4096
+          python3 scripts/check-apk-align.py out/staged.apk 16384
 
           echo "$KEYSTORE_BASE64" | base64 -d > out/release.jks
 
