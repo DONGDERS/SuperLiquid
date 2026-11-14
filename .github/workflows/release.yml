@@ -91,6 +91,10 @@ jobs:
             --out "out/SuperLiquid-release.apk" \
             out/staged.apk
 
+          # Signing may rewrite ZIP local headers. Check the shipping bytes.
+          python3 scripts/check-apk-align.py out/SuperLiquid-release.apk 4096
+          python3 scripts/check-apk-align.py out/SuperLiquid-release.apk 16384
+
           # Guard against signing the wrong input: the descriptor has to be in
           # the artifact that actually ships.
           unzip -l out/SuperLiquid-release.apk | grep -q 'META-INF/xposed/module.prop' \

@@ -27,7 +27,7 @@ import zipfile
 
 ALIGN = 4
 DEFAULT_PAGE = 16384
-EXTRA_ID = 0xD935  # private extra-field id; the 0x0000..0x7fff range is free
+EXTRA_ID = 0xA11E  # Opaque padding; 0xD935 is reserved for Android alignment metadata.
 
 LOCAL_SIG = 0x04034B50
 CENTRAL_SIG = 0x02014B50
