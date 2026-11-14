@@ -85,7 +85,12 @@ jobs:
             --v2-signing-enabled true \
             --v3-signing-enabled true \
             --out "out/SuperLiquid-release.apk" \
-            out/aligned.apk
+            out/staged.apk
+
+          # Guard against signing the wrong input: the descriptor has to be in
+          # the artifact that actually ships.
+          unzip -l out/SuperLiquid-release.apk | grep -q 'META-INF/xposed/module.prop' \
+            || { echo "FATAL: signed APK is missing META-INF/xposed" >&2; exit 1; }
 
           "$BT/apksigner" verify --print-certs "out/SuperLiquid-release.apk" | head -5
           ls -la out/SuperLiquid-release.apk
