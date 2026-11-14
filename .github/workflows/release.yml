@@ -51,20 +51,16 @@ jobs:
 
           # 1. Align what AGP produced. Native libs are page-aligned (-p) and
           #    resources.arsc lands on a 4-byte boundary.
-          echo "== zipalign variants =="
-          for mode in "-f -p 4" "-f 4"; do
-            tag=$(echo "$mode" | tr -d ' -')
-            "$BT/zipalign" $mode "$UNSIGNED" "out/aligned-$tag.apk" ||               echo "zipalign $mode failed"
-            echo "-- after zipalign $mode --"
-            python3 scripts/check-apk-align.py "out/aligned-$tag.apk" || true
-          done
-          cp out/aligned-4.apk out/aligned.apk
-          echo "== using plain '-f 4' output =="
+          # zipalign leaves resources.arsc misaligned on these release APKs
+          # (verified: offset 3864271, mod 4 = 3, with both -p 4 and 4), and
+          # Android 11+ rejects that. Rebuild the archive with explicit
+          # per-entry alignment instead; .so keeps page alignment.
+          python3 scripts/align-apk.py "$UNSIGNED" out/aligned.apk
           python3 scripts/check-apk-align.py out/aligned.apk
 
-          # 2. Append the xposed descriptor. This must come AFTER zipalign:
-          #    rewriting the archive afterwards would undo the alignment above,
-          #    and the injector keeps its own entries aligned as it adds them.
+          # 2. Append the xposed descriptor. This must come AFTER the align
+          #    pass: rewriting the archive afterwards would undo it, and the
+          #    injector keeps its own entries aligned as it adds them.
           cp out/aligned.apk out/staged.apk
           python3 scripts/inject-xposed.py out/staged.apk META-INF/xposed
 
