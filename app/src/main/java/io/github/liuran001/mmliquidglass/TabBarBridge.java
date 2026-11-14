@@ -618,6 +618,7 @@ final class TabBarBridge {
      * redundant chains on the same executable.
      */
     static void tryHookPager(ViewGroup pager) {
+        installPagerDiagnostics(pager);
         if (sHookedPager || pager == null) return;
         try {
             Class<?> cls = pager.getClass();
@@ -707,6 +708,117 @@ final class TabBarBridge {
             LiquidGlassModule.log(android.util.Log.WARN,
                     "could not hook the backdrop pager: " + t);
         }
+    }
+
+    // Observe only the live home pager. Never change scroll arguments or results.
+    private static final java.util.HashSet<Method> sPagerDiagnosticMethods =
+            new java.util.HashSet<>();
+    private static int sPagerResetStacks;
+    private static int sPagerLayoutEvents;
+    private static int sPagerSamples;
+    private static long sPagerSampleNext;
+    private static String sPagerSampleKey;
+    private static java.lang.ref.WeakReference<ViewGroup> sSamplePager =
+            new java.lang.ref.WeakReference<>(null);
+
+    private static Method pagerMethod(Class<?> cls, String name, Class<?>... args) {
+        for (Class<?> k = cls; k != null; k = k.getSuperclass()) {
+            try { return k.getDeclaredMethod(name, args); }
+            catch (NoSuchMethodException ignored) { }
+        }
+        return null;
+    }
+
+    private static void installPagerDiagnostics(ViewGroup pager) {
+        if (pager == null || LiquidGlassModule.app() != HostApp.WECHAT) return;
+        try {
+            Method scroll = pagerMethod(pager.getClass(), "scrollTo", int.class, int.class);
+            if (scroll != null && !sPagerDiagnosticMethods.contains(scroll)) {
+                LiquidGlassModule.hookIntercept(scroll, chain -> {
+                    Object self = chain.getThisObject();
+                    if (self != LiquidGlassInstaller.currentPager()) return chain.proceed();
+                    ViewGroup live = (ViewGroup) self;
+                    int before = live.getScrollX();
+                    int requested = (Integer) chain.getArg(0);
+                    boolean reset = before != 0 && requested == 0
+                            && currentItem(live) > 0 && sPagerResetStacks < 12;
+                    if (reset) {
+                        sPagerResetStacks++;
+                        LiquidGlassModule.logErr("pager trace v2 scroll-reset before "
+                                + pagerGeometry(live), new Throwable("scrollTo(0) caller"));
+                    }
+                    Object result = chain.proceed();
+                    if (reset) LiquidGlassModule.log(android.util.Log.ERROR,
+                            "pager trace v2 scroll-reset after " + pagerGeometry(live));
+                    return result;
+                });
+                sPagerDiagnosticMethods.add(scroll);
+                LiquidGlassModule.log(android.util.Log.ERROR,
+                        "pager trace v2 observing " + scroll.getDeclaringClass().getName()
+                                + ".scrollTo; live-home identity guard, reset budget=12");
+            }
+            Method layout = pagerMethod(pager.getClass(), "onLayout",
+                    boolean.class, int.class, int.class, int.class, int.class);
+            if (layout != null && !sPagerDiagnosticMethods.contains(layout)) {
+                LiquidGlassModule.hookIntercept(layout, chain -> {
+                    if (chain.getThisObject() != LiquidGlassInstaller.currentPager())
+                        return chain.proceed();
+                    ViewGroup live = (ViewGroup) chain.getThisObject();
+                    int before = live.getScrollX();
+                    Object result = chain.proceed();
+                    if (before != live.getScrollX() && sPagerLayoutEvents < 20) {
+                        sPagerLayoutEvents++;
+                        LiquidGlassModule.log(android.util.Log.ERROR,
+                                "pager trace v2 layout-scroll before=" + before
+                                        + " after " + pagerGeometry(live));
+                    }
+                    return result;
+                });
+                sPagerDiagnosticMethods.add(layout);
+            }
+        } catch (Throwable t) {
+            LiquidGlassModule.logErr("pager trace v2 hook failed", t);
+        }
+    }
+
+    // State changes remain observable beyond the old five-second resume window.
+    // At most one sample/second and 60 changed samples/process; no UI text.
+    static void tracePagerState(ViewGroup pager) {
+        if (pager == null || LiquidGlassModule.app() != HostApp.WECHAT
+                || sPagerSamples >= 60) return;
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now < sPagerSampleNext) return;
+        sPagerSampleNext = now + 1000L;
+        String key = currentItem(pager) + ":" + pager.getScrollX() + ":"
+                + pager.getWidth() + ":" + pager.hasWindowFocus();
+        if (pager == sSamplePager.get() && key.equals(sPagerSampleKey)) return;
+        sSamplePager = new java.lang.ref.WeakReference<>(pager);
+        sPagerSampleKey = key;
+        sPagerSamples++;
+        LiquidGlassModule.log(android.util.Log.ERROR,
+                "pager trace v2 sample " + pagerGeometry(pager));
+    }
+
+    private static String pagerGeometry(ViewGroup pager) {
+        StringBuilder out = new StringBuilder();
+        out.append("id=").append(System.identityHashCode(pager))
+                .append(" class=").append(pager.getClass().getName())
+                .append(" item=").append(currentItem(pager))
+                .append(" scrollX=").append(pager.getScrollX())
+                .append(" width=").append(pager.getWidth())
+                .append(" attached=").append(pager.isAttachedToWindow())
+                .append(" focus=").append(pager.hasWindowFocus())
+                .append(" children=").append(pager.getChildCount());
+        for (int i = 0; i < pager.getChildCount() && i < 8; i++) {
+            View c = pager.getChildAt(i);
+            out.append(" [").append(i).append(':').append(c.getClass().getName())
+                    .append(" id=").append(System.identityHashCode(c))
+                    .append(" left=").append(c.getLeft()).append(" right=").append(c.getRight())
+                    .append(" tx=").append(c.getTranslationX())
+                    .append(" vis=").append(c.getVisibility())
+                    .append(" shown=").append(c.isShown()).append(']');
+        }
+        return out.toString();
     }
 
     /* ---------------- long jump: hold back the intermediate settles -------- */

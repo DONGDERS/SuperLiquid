@@ -1693,6 +1693,7 @@ final class LiquidGlassInstaller {
         if (host != sHostRef.get() || !host.isAttachedToWindow()) return;
         ViewGroup tabRow = sTabRowRef.get();
         if (tabRow == null || scheduleTabStructureRefreshIfNeeded(host)) return;
+        TabBarBridge.tracePagerState(sPagerRef.get());
         int sel = visibleTabSelection(tabRow);
         traceSelection(host, tabRow, sel);
         if (sel < 0 || sDrag == null) return;
