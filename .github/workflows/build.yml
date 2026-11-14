@@ -23,8 +23,15 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      # The ubuntu runner image already ships the Android SDK. Running
+      # android-actions/setup-android on this image fails with
+      # "Failed to find package 'tools'" (it still asks sdkmanager for the
+      # long-removed "tools" package), which aborted the job before any
+      # compilation happened.
+      - name: Locate Android SDK
+        run: |
+          echo "ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
 
       - name: Report environment
         run: |
