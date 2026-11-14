@@ -37,7 +37,6 @@ object ConfigBackup {
         root.put("qq", appCfg(Config.qq))
         root.put("heybox", appCfg(Config.heybox))
         root.put("bili", appCfg(Config.bili.base).apply {
-            put("hoverTint", Config.bili.hoverTint)
             put("hideNative", Config.bili.hideNative)
             put("pubScale", Config.bili.pubScale.toDouble())
             put("pubBottomDp", Config.bili.pubBottomDp)
@@ -101,7 +100,6 @@ object ConfigBackup {
             }
             Config.setBili(Config.BiliCfg(
                 base = base,
-                hoverTint = o.optBoolean("hoverTint", b.hoverTint),
                 hideNative = o.optBoolean("hideNative", b.hideNative),
                 pubScale = o.optDouble("pubScale", b.pubScale.toDouble()).toFloat(),
                 pubBottomDp = o.optInt("pubBottomDp", b.pubBottomDp),

@@ -47,11 +47,7 @@ fun ColorPaletteScreen(onBack: () -> Unit) {
         onSetEnableBlur = { repo.enableBlur = it; SettingsState.refresh() },
         onSetEnableFloatingBottomBar = { repo.enableFloatingBottomBar = it; SettingsState.refresh() },
         onSetEnableFloatingBottomBarBlur = { repo.enableFloatingBottomBarBlur = it; SettingsState.refresh() },
-        onSetEnableNavigationBadge = { repo.enableNavigationBadge = it; SettingsState.refresh() },
         onSetEnablePredictiveBack = { repo.enablePredictiveBack = it; SettingsState.refresh() },
-        onSetPagerInterceptionMode = { repo.pagerInterceptionMode = it; SettingsState.refresh() },
-        onSetPageScale = { repo.pageScale = it; SettingsState.refresh() },
-        onSetModuleDescriptionMaxLines = { repo.moduleDescriptionMaxLines = it; SettingsState.refresh() },
     )
 
     when (LocalUiMode.current) {

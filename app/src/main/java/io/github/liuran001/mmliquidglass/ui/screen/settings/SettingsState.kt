@@ -26,13 +26,9 @@ object SettingsState {
             colorStyle = r.colorStyle,
             colorSpec = r.colorSpec,
             enablePredictiveBack = r.enablePredictiveBack,
-            pagerInterceptionMode = r.pagerInterceptionMode,
             enableBlur = r.enableBlur,
             enableFloatingBottomBar = r.enableFloatingBottomBar,
             enableFloatingBottomBarBlur = r.enableFloatingBottomBarBlur,
-            enableNavigationBadge = r.enableNavigationBadge,
-            pageScale = r.pageScale,
-            moduleDescriptionMaxLines = r.moduleDescriptionMaxLines,
         )
         AppSettingsStore.reload()
     }

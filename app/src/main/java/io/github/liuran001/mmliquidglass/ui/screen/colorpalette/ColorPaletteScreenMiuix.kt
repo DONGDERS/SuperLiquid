@@ -62,7 +62,6 @@ import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
 import io.github.liuran001.mmliquidglass.R
 
-import io.github.liuran001.mmliquidglass.ui.component.miuix.ScaleDialog
 import io.github.liuran001.mmliquidglass.ui.theme.LocalEnableBlur
 import io.github.liuran001.mmliquidglass.ui.theme.keyColorOptions
 import io.github.liuran001.mmliquidglass.ui.util.BlurredBar
@@ -141,7 +140,6 @@ fun ColorPaletteScreenMiuix(
         },
         contentWindowInsets = WindowInsets.systemBars.add(WindowInsets.displayCutout).only(WindowInsetsSides.Horizontal)
     ) { innerPadding ->
-        val showScaleDialog = rememberSaveable { mutableStateOf(false) }
 
         Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
             LazyColumn(
@@ -363,51 +361,6 @@ fun ColorPaletteScreenMiuix(
                             onCheckedChange = actions.onSetEnablePredictiveBack,
                         )
 
-                        var sliderValue by remember(uiState.pageScale) { mutableFloatStateOf(uiState.pageScale) }
-                        ArrowPreference(
-                            title = stringResource(id = R.string.settings_page_scale),
-                            summary = stringResource(id = R.string.settings_page_scale_summary),
-                            startAction = {
-                                Icon(
-                                    Icons.Filled.AspectRatio,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_page_scale),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            endActions = {
-                                Text(
-                                    text = "${(sliderValue * 100).toInt()}%",
-                                    color = colorScheme.onSurfaceVariantActions,
-                                )
-                            },
-                            onClick = { showScaleDialog.value = !showScaleDialog.value },
-                            holdDownState = showScaleDialog.value,
-                            bottomAction = {
-                                Slider(
-                                    value = sliderValue,
-                                    onValueChange = {
-                                        sliderValue = it
-                                    },
-                                    onValueChangeFinished = {
-                                        actions.onSetPageScale(sliderValue)
-                                    },
-                                    valueRange = 0.8f..1.1f,
-                                    showKeyPoints = true,
-                                    keyPoints = listOf(0.8f, 0.9f, 1f, 1.1f),
-                                    magnetThreshold = 0.01f,
-                                    hapticEffect = SliderDefaults.SliderHapticEffect.Step,
-                                )
-                            },
-                        )
-                        ScaleDialog(
-                            show = showScaleDialog.value,
-                            onDismissRequest = { showScaleDialog.value = false },
-                            volumeState = { uiState.pageScale },
-                            onVolumeChange = {
-                                actions.onSetPageScale(it)
-                            }
-                        )
                     }
 
                 }

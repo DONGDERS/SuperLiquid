@@ -291,57 +291,6 @@ fun ColorPaletteScreenMaterial(
             }
 
             item {
-                TonalCard(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    val sliderState = rememberSliderState(
-                        value = uiState.pageScale,
-                        trackRange = 0.8f..1.1f
-                    )
-
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Filled.AspectRatio,
-                                contentDescription = stringResource(id = R.string.settings_page_scale),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.settings_page_scale),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = stringResource(id = R.string.settings_page_scale_summary),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Text(
-                                text = "${(sliderState.value * 100).toInt()}%",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Slider(
-                            state = sliderState,
-                            onValueChangeFinished = { actions.onSetPageScale(sliderState.value) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            }
-
-            item {
                 Spacer(modifier = Modifier.height(16.dp + navBars.calculateBottomPadding() + captionBar.calculateBottomPadding()))
             }
         }

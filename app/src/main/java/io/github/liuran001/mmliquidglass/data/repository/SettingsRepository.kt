@@ -13,13 +13,9 @@ interface SettingsRepository {
     var colorStyle: String
     var colorSpec: String
     var enablePredictiveBack: Boolean
-    var pagerInterceptionMode: Int
     var enableBlur: Boolean
     var enableFloatingBottomBar: Boolean
     var enableFloatingBottomBarBlur: Boolean
-    var enableNavigationBadge: Boolean
-    var pageScale: Float
-    var moduleDescriptionMaxLines: Int
 }
 
 class SettingsRepositoryImpl : SettingsRepository {
@@ -54,10 +50,6 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = p.getBoolean("enable_predictive_back", false)
         set(value) { p.edit().putBoolean("enable_predictive_back", value).apply() }
 
-    override var pagerInterceptionMode: Int
-        get() = p.getInt("pager_interception_mode", 1)
-        set(value) { p.edit().putInt("pager_interception_mode", value).apply() }
-
     override var enableBlur: Boolean
         get() = p.getBoolean("enable_blur", true)
         set(value) { p.edit().putBoolean("enable_blur", value).apply() }
@@ -69,16 +61,4 @@ class SettingsRepositoryImpl : SettingsRepository {
     override var enableFloatingBottomBarBlur: Boolean
         get() = p.getBoolean("enable_floating_bottom_bar_blur", false)
         set(value) { p.edit().putBoolean("enable_floating_bottom_bar_blur", value).apply() }
-
-    override var enableNavigationBadge: Boolean
-        get() = p.getBoolean("enable_navigation_badge", false)
-        set(value) { p.edit().putBoolean("enable_navigation_badge", value).apply() }
-
-    override var pageScale: Float
-        get() = p.getFloat("page_scale", 1.0f)
-        set(value) { p.edit().putFloat("page_scale", value).apply() }
-
-    override var moduleDescriptionMaxLines: Int
-        get() = p.getInt("module_description_max_lines", 4)
-        set(value) { p.edit().putInt("module_description_max_lines", value).apply() }
 }

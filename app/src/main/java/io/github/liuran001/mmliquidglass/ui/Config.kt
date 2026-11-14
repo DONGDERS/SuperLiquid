@@ -36,7 +36,6 @@ object Config {
 
     data class BiliCfg(
         val base: AppCfg = AppCfg(widthScale = 0.7f),
-        val hoverTint: Boolean = true,
         val hideNative: Boolean = true,
         val pubScale: Float = 1.0f,
         val pubBottomDp: Int = 12,
@@ -215,7 +214,6 @@ object Config {
 
     private fun writeBiliExtras(cfg: BiliCfg) {
         val editor = (remotePrefs ?: hookPrefs)?.edit() ?: return
-        editor.putBoolean("bili_hover_tint", cfg.hoverTint)
         editor.putBoolean("bili_hide_native", cfg.hideNative)
         editor.putFloat("bili_pub_scale", cfg.pubScale)
         editor.putInt("bili_pub_bottom_dp", cfg.pubBottomDp)
@@ -223,7 +221,6 @@ object Config {
         editor.apply()
         val mirror = if (remotePrefs != null) hookPrefs else null
         mirror?.edit()?.apply {
-            putBoolean("bili_hover_tint", cfg.hoverTint)
             putBoolean("bili_hide_native", cfg.hideNative)
             putFloat("bili_pub_scale", cfg.pubScale)
             putInt("bili_pub_bottom_dp", cfg.pubBottomDp)
@@ -256,7 +253,6 @@ object Config {
         val b = _bili.value
         _bili.value = BiliCfg(
             base = app("bili", AppCfg(widthScale = 0.7f)),
-            hoverTint = p.getBoolean("bili_hover_tint", b.hoverTint),
             hideNative = p.getBoolean("bili_hide_native", b.hideNative),
             pubScale = p.getFloat("bili_pub_scale", b.pubScale),
             pubBottomDp = p.getInt("bili_pub_bottom_dp", b.pubBottomDp),

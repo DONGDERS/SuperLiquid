@@ -67,8 +67,6 @@ import io.github.liuran001.mmliquidglass.ui.theme.LocalColorMode
 import io.github.liuran001.mmliquidglass.ui.theme.LocalEnableBlur
 import io.github.liuran001.mmliquidglass.ui.theme.LocalEnableFloatingBottomBar
 import io.github.liuran001.mmliquidglass.ui.theme.LocalEnableFloatingBottomBarBlur
-import io.github.liuran001.mmliquidglass.ui.theme.LocalEnableNavigationBadge
-import io.github.liuran001.mmliquidglass.ui.theme.LocalModuleDescriptionMaxLines
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
@@ -96,8 +94,6 @@ class MainActivity : ComponentActivity() {
                 LocalEnableBlur provides settings.enableBlur,
                 LocalEnableFloatingBottomBar provides settings.enableFloatingBottomBar,
                 LocalEnableFloatingBottomBarBlur provides settings.enableFloatingBottomBarBlur,
-                LocalEnableNavigationBadge provides settings.enableNavigationBadge,
-                LocalModuleDescriptionMaxLines provides settings.moduleDescriptionMaxLines,
             ) {
                 io.github.liuran001.mmliquidglass.ui.theme.KernelSUTheme(appSettings = appSettings) {
                     MainRoot(pagerState)
