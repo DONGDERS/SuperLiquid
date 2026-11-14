@@ -48,22 +48,26 @@ jobs:
           ls -la app/build/outputs/apk/release/
 
           mkdir -p out
-          cp "$UNSIGNED" out/staged.apk
 
-          # Append the xposed descriptor at the APK root.
+          # 1. Align what AGP produced. Native libs are page-aligned (-p) and
+          #    resources.arsc lands on a 4-byte boundary.
+          "$BT/zipalign" -f -p 4 "$UNSIGNED" out/aligned.apk
+
+          # 2. Append the xposed descriptor. This must come AFTER zipalign:
+          #    rewriting the archive afterwards would undo the alignment above,
+          #    and the injector keeps its own entries aligned as it adds them.
+          cp out/aligned.apk out/staged.apk
           python3 scripts/inject-xposed.py out/staged.apk META-INF/xposed
 
           unzip -l out/staged.apk | grep -i xposed
 
-          "$BT/zipalign" -f -p 4 out/staged.apk out/aligned.apk
-
-          # Fail loudly if any stored .so ended up deflated: PackageInstaller
-          # rejects that with INSTALL_FAILED_INVALID_APK.
-          BAD=$(unzip -v out/aligned.apk 'lib/*' | awk '$2 ~ /Defl/ {print $NF}')
+          # 3. Verify the invariants AGP's and our own writes must not break.
+          BAD=$(unzip -v out/staged.apk 'lib/*' | awk '$2 ~ /Defl/ {print $NF}')
           if [ -n "$BAD" ]; then
             echo "FATAL: deflated native libs: $BAD" >&2
             exit 1
           fi
+          python3 scripts/check-apk-align.py out/staged.apk
 
           echo "$KEYSTORE_BASE64" | base64 -d > out/release.jks
 
