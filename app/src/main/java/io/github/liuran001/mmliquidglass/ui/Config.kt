@@ -82,6 +82,9 @@ object Config {
     private val _serviceConnected = mutableStateOf(false)
     val serviceConnected: Boolean get() = _serviceConnected.value
 
+    internal var frameworkService by mutableStateOf<XposedService?>(null)
+        private set
+
     private val _mm = mutableStateOf(AppCfg())
     val mm: AppCfg get() = _mm.value
 
@@ -133,9 +136,13 @@ object Config {
                     }
                     _serviceConnected.value = remotePrefs != null
                     remotePrefs?.let { readHook(it) }
+                    frameworkService = service
                 }
 
                 override fun onServiceDied(service: XposedService) {
+                    if (frameworkService !== service) return
+                    frameworkService = null
+                    remotePrefs = null
                     _serviceConnected.value = false
                 }
             })

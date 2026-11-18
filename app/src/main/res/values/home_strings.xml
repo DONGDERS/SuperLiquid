@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_working">工作中</string>
+    <string name="home_version_information">版本信息</string>
+    <string name="home_info_device">设备</string>
+    <string name="home_info_kernel">内核版本</string>
+    <string name="home_info_android">Android 版本</string>
+    <string name="home_info_fingerprint">系统指纹</string>
+    <string name="home_info_lsp_version">LSPosed 版本</string>
+    <string name="home_status">状态</string>
+    <string name="home_lsp_status">LSPosed 启用状态</string>
+    <string name="home_active_app_count">激活应用个数</string>
+    <string name="home_lsp_disconnected">未连接</string>
+    <string name="home_lsp_unconfirmed">已连接，模块状态未确认</string>
+    <string name="home_lsp_enabled">已启用</string>
+    <string name="home_info_unavailable">不可用</string>
+</resources>

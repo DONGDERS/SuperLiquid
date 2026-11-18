@@ -1,13 +1,10 @@
 package io.github.liuran001.mmliquidglass.ui
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -21,6 +18,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -46,20 +47,20 @@ fun HomeScreen(bottomOverlay: Dp, onOpenAbout: () -> Unit) {
     val connected = Config.serviceConnected
 
     when (LocalUiMode.current) {
-        UiMode.Material -> HomeScreenMaterial(connected, onOpenAbout)
+        UiMode.Material -> HomeScreenMaterial(connected, bottomOverlay, onOpenAbout)
         UiMode.Miuix -> HomeScreenMiuix(connected, bottomOverlay, onOpenAbout)
     }
 }
 
 @Composable
-private fun HomeScreenMaterial(connected: Boolean, onOpenAbout: () -> Unit) {
-    LScreen(title = stringResource(R.string.nav_home)) {
+private fun HomeScreenMaterial(connected: Boolean, bottomOverlay: Dp, onOpenAbout: () -> Unit) {
+    LScreen(title = stringResource(R.string.nav_home), bottomOverlay = bottomOverlay) {
         // ---- hero status card (KSU StatusCard visual) ----
         val container = if (connected) MaterialTheme.colorScheme.secondaryContainer
         else MaterialTheme.colorScheme.errorContainer
         val contentColor = androidx.compose.material3.contentColorFor(container)
         val icon = if (connected) Icons.Filled.CheckCircle else Icons.Filled.Warning
-        val title = if (connected) "正常工作中" else "模块未生效"
+        val title = if (connected) stringResource(R.string.home_working) else "模块未生效"
         val summary = if (connected)
             "v${BuildConfig.VERSION_NAME}"
         else
@@ -86,6 +87,7 @@ private fun HomeScreenMaterial(connected: Boolean, onOpenAbout: () -> Unit) {
         }
 
         Spacer12()
+        HomeInformation()
 
         // ---- About entry ----
         SegmentedColumn(
@@ -119,7 +121,7 @@ private fun HomeScreenMiuix(connected: Boolean, bottomOverlay: Dp, onOpenAbout: 
     LScreen(title = stringResource(R.string.nav_home), bottomOverlay = bottomOverlay) {
         val dark = isInDarkTheme()
         val (bg, iconTint) = heroColors(connected, dark)
-        val title = if (connected) "正常工作中" else "模块未生效"
+        val title = if (connected) stringResource(R.string.home_working) else "模块未生效"
         val summary = if (connected)
             "v${BuildConfig.VERSION_NAME}"
         else
@@ -133,40 +135,21 @@ private fun HomeScreenMiuix(connected: Boolean, bottomOverlay: Dp, onOpenAbout: 
             pressFeedbackType = top.yukonga.miuix.kmp.utils.PressFeedbackType.Tilt,
             showIndication = true,
         ) {
-            Box {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .offset(27.dp, 31.dp),
-                    contentAlignment = Alignment.BottomEnd,
-                ) {
-                    Icon(
-                        modifier = Modifier.size(110.dp),
-                        imageVector = if (connected) Icons.Filled.CheckCircle else Icons.Filled.Warning,
-                        tint = iconTint,
-                        contentDescription = null,
-                    )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    MiuixText(text = title, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+                    MiuixText(text = summary, fontSize = 15.sp, modifier = Modifier.padding(top = 4.dp))
                 }
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp, 14.dp),
-                    contentAlignment = Alignment.TopStart,
-                ) {
-                    Column {
-                        MiuixText(
-                            text = title,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        Spacer(Modifier.height(1.dp))
-                        MiuixText(text = summary, fontSize = 15.sp)
-                    }
-                }
+                Spacer(Modifier.size(16.dp))
+                HeroStatusIcon(connected, iconTint, Modifier.size(64.dp))
             }
         }
 
         Spacer12()
+        HomeInformation()
 
         // ---- About entry ----
         MiuixCard(modifier = Modifier.fillMaxWidth()) {
@@ -176,6 +159,29 @@ private fun HomeScreenMiuix(connected: Boolean, bottomOverlay: Dp, onOpenAbout: 
                 onClick = onOpenAbout,
             )
         }
+    }
+}
+
+@Composable
+private fun HeroStatusIcon(connected: Boolean, tint: Color, modifier: Modifier) {
+    if (!connected) {
+        Icon(Icons.Filled.Warning, contentDescription = null, modifier = modifier, tint = tint)
+        return
+    }
+    Canvas(modifier) {
+        val diameter = size.minDimension
+        val stroke = Stroke(
+            width = diameter * 0.065f,
+            cap = StrokeCap.Round,
+            join = StrokeJoin.Round,
+        )
+        drawCircle(color = tint, radius = diameter * 0.43f, style = stroke)
+        val check = Path().apply {
+            moveTo(center.x - diameter * 0.19f, center.y)
+            lineTo(center.x - diameter * 0.055f, center.y + diameter * 0.135f)
+            lineTo(center.x + diameter * 0.205f, center.y - diameter * 0.135f)
+        }
+        drawPath(check, color = tint, style = stroke)
     }
 }
 
