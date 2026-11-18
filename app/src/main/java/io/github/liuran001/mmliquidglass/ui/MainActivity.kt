@@ -180,8 +180,10 @@ fun MainRoot(pager: PagerState) {
                 }
             // KSU: capture only when the floating glass bar actually blurs.
             val captureGlass = enableFloating && settings.enableFloatingBottomBarBlur
-            val blurBackdrop =
-                io.github.liuran001.mmliquidglass.ui.util.rememberBlurBackdrop(settings.enableBlur)
+            val blurBackdrop = io.github.liuran001.mmliquidglass.ui.util.rememberBlurBackdrop(
+                enableBlur = LocalUiMode.current == UiMode.Miuix && !enableFloating && settings.enableBlur,
+                surface = backdropSurface,
+            )
             android.util.Log.println(android.util.Log.INFO, "SuperLiquid",
                 "dongder.super.liquid glass wiring: uiMode=" + LocalUiMode.current
                         + " floating=" + enableFloating
@@ -189,15 +191,16 @@ fun MainRoot(pager: PagerState) {
                         + " capture=" + captureGlass
                         + " shaderSupported=" + top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported())
 
-            // In floating mode the content remains visible behind the glass, but
-            // the actual measured bar height is reserved at the end of each page.
+            // Overlay bars need a full-height backdrop. Reserve their height at
+            // the end of the scroll content instead of shrinking the viewport.
             val pagerContent: @Composable (PaddingValues) -> Unit = { pad ->
                 val layoutDirection = LocalLayoutDirection.current
-                val bottomOverlay = if (enableFloating) pad.calculateBottomPadding() else 0.dp
+                val drawsBehindBar = enableFloating || blurBackdrop != null
+                val bottomOverlay = if (drawsBehindBar) pad.calculateBottomPadding() else 0.dp
                 val viewportPadding = PaddingValues(
                     start = pad.calculateStartPadding(layoutDirection),
                     end = pad.calculateEndPadding(layoutDirection),
-                    bottom = if (enableFloating) 0.dp else pad.calculateBottomPadding(),
+                    bottom = if (drawsBehindBar) 0.dp else pad.calculateBottomPadding(),
                 )
                 // KSU-exact capture structure: the backdrop modifier lives on
                 // a wrapping Box, NOT on the pager itself — a scroll container
