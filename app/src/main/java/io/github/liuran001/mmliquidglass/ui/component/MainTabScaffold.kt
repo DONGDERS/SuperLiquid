@@ -3,6 +3,9 @@ package io.github.liuran001.mmliquidglass.ui.component
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
+
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +37,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun MainTabScaffold(
     title: String,
+    actions: @Composable RowScope.() -> Unit = {},
+    belowTopBar: @Composable () -> Unit = {},
     content: @Composable (Modifier, PaddingValues) -> Unit,
 ) {
     val insets = WindowInsets(0, 0, 0, 0)
@@ -50,15 +55,19 @@ internal fun MainTabScaffold(
                 modifier = Modifier.fillMaxSize(),
                 topBar = {
                     BlurredBar(backdrop, surface = surface) {
-                        TopAppBar(
-                            title = { Text(title) },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = if (backdrop != null) Color.Transparent else surface,
-                                scrolledContainerColor = if (backdrop != null) Color.Transparent
-                                else MaterialTheme.colorScheme.surfaceContainer,
-                            ),
-                            scrollBehavior = scroll,
-                        )
+                        Column {
+                            TopAppBar(
+                                title = { Text(title) },
+                                actions = actions,
+                                colors = TopAppBarDefaults.topAppBarColors(
+                                    containerColor = if (backdrop != null) Color.Transparent else surface,
+                                    scrolledContainerColor = if (backdrop != null) Color.Transparent
+                                    else MaterialTheme.colorScheme.surfaceContainer,
+                                ),
+                                scrollBehavior = scroll,
+                            )
+                            belowTopBar()
+                        }
                     }
                 },
                 contentWindowInsets = insets,
@@ -74,6 +83,8 @@ internal fun MainTabScaffold(
                     BlurredBar(backdrop, surface = surface) {
                         MiuixTopAppBar(
                             title = title,
+                            actions = actions,
+                            bottomContent = belowTopBar,
                             color = if (backdrop != null) Color.Transparent else surface,
                             scrollBehavior = scroll,
                         )

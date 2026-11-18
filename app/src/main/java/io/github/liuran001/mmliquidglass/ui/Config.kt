@@ -36,10 +36,13 @@ object Config {
 
     data class BiliCfg(
         val base: AppCfg = AppCfg(widthScale = 0.7f),
-        val hideNative: Boolean = true,
-        val pubScale: Float = 1.0f,
-        val pubBottomDp: Int = 12,
-        val pubSideDp: Int = 16,
+        val plus: PlusCfg = PlusCfg(),
+    )
+
+    data class PlusCfg(
+        val scale: Float = 1f,
+        val bottomDp: Int = 12,
+        val sideDp: Int = 16,
     )
 
     /**
@@ -96,6 +99,9 @@ object Config {
 
     private val _heybox = mutableStateOf(AppCfg(widthScale = 0.5f))
     val heybox: AppCfg get() = _heybox.value
+
+    private val _heyboxPlus = mutableStateOf(PlusCfg())
+    val heyboxPlus: PlusCfg get() = _heyboxPlus.value
 
     private val _tabs = mutableStateOf(mapOf(
         "mm" to TabLayout(), "qq" to TabLayout(),
@@ -179,7 +185,12 @@ object Config {
     fun setBili(cfg: BiliCfg) {
         _bili.value = cfg
         write("bili", cfg.base)
-        writeBiliExtras(cfg)
+        writePlus("bili", cfg.plus)
+    }
+
+    fun setHeyboxPlus(cfg: PlusCfg) {
+        _heyboxPlus.value = cfg
+        writePlus("heybox", cfg)
     }
 
     /**
@@ -193,6 +204,7 @@ object Config {
         setApp("qq", AppCfg())
         setBili(BiliCfg())
         setApp("heybox", AppCfg(widthScale = 0.5f))
+        setHeyboxPlus(PlusCfg())
         for (key in listOf("mm", "qq", "bili", "heybox")) {
             setTabLayout(key, TabLayout())
         }
@@ -219,20 +231,16 @@ object Config {
         mirror?.edit()?.apply { putApp(key, cfg) }?.apply()
     }
 
-    private fun writeBiliExtras(cfg: BiliCfg) {
+    private fun writePlus(key: String, cfg: PlusCfg) {
         val editor = (remotePrefs ?: hookPrefs)?.edit() ?: return
-        editor.putBoolean("bili_hide_native", cfg.hideNative)
-        editor.putFloat("bili_pub_scale", cfg.pubScale)
-        editor.putInt("bili_pub_bottom_dp", cfg.pubBottomDp)
-        editor.putInt("bili_pub_side_dp", cfg.pubSideDp)
-        editor.apply()
+        fun SharedPreferences.Editor.putPlus() = apply {
+            putFloat("${key}_pub_scale", cfg.scale)
+            putInt("${key}_pub_bottom_dp", cfg.bottomDp)
+            putInt("${key}_pub_side_dp", cfg.sideDp)
+        }
+        editor.putPlus().apply()
         val mirror = if (remotePrefs != null) hookPrefs else null
-        mirror?.edit()?.apply {
-            putBoolean("bili_hide_native", cfg.hideNative)
-            putFloat("bili_pub_scale", cfg.pubScale)
-            putInt("bili_pub_bottom_dp", cfg.pubBottomDp)
-            putInt("bili_pub_side_dp", cfg.pubSideDp)
-        }?.apply()
+        mirror?.edit()?.putPlus()?.apply()
     }
 
     private fun readHook(p: SharedPreferences) {
@@ -253,19 +261,22 @@ object Config {
         _mm.value = app("mm", AppCfg())
         _qq.value = app("qq", AppCfg())
         _heybox.value = app("heybox", AppCfg(widthScale = 0.5f))
+        _heyboxPlus.value = readPlus(p, "heybox")
         _tabs.value = mapOf(
             "mm" to readTabLayout(p, "mm"), "qq" to readTabLayout(p, "qq"),
             "bili" to readTabLayout(p, "bili"), "heybox" to readTabLayout(p, "heybox"),
         )
-        val b = _bili.value
         _bili.value = BiliCfg(
             base = app("bili", AppCfg(widthScale = 0.7f)),
-            hideNative = p.getBoolean("bili_hide_native", b.hideNative),
-            pubScale = p.getFloat("bili_pub_scale", b.pubScale),
-            pubBottomDp = p.getInt("bili_pub_bottom_dp", b.pubBottomDp),
-            pubSideDp = p.getInt("bili_pub_side_dp", b.pubSideDp),
+            plus = readPlus(p, "bili"),
         )
     }
+
+    private fun readPlus(p: SharedPreferences, key: String, defaults: PlusCfg = PlusCfg()) = PlusCfg(
+        scale = p.getFloat("${key}_pub_scale", defaults.scale),
+        bottomDp = p.getInt("${key}_pub_bottom_dp", defaults.bottomDp),
+        sideDp = p.getInt("${key}_pub_side_dp", defaults.sideDp),
+    )
 
     /** Tolerant <key>_tab_* read: corrupt JSON → default (native order). */
     private fun readTabLayout(p: SharedPreferences, key: String): TabLayout {

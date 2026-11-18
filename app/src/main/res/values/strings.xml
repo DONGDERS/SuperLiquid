@@ -27,17 +27,19 @@
     <string name="apps_bar_offset_x">底部横轴坐标</string>
     <string name="apps_blur">模糊强度</string>
     <string name="apps_tint">反射色调强度</string>
-    <string name="apps_params">液态玻璃参数</string>
+    <string name="apps_search">搜索应用</string>
+    <string name="apps_search_hint">应用名称或包名</string>
+    <string name="apps_search_close">关闭搜索</string>
+    <string name="apps_search_empty">没有匹配的应用</string>
     <string name="apps_pill_scale">整个Tab栏大小</string>
     <string name="apps_saturation">折射饱和度</string>
     <string name="apps_gloss">高光强度</string>
     <string name="apps_border">描边宽度</string>
     <string name="apps_params_collapse">默认折叠App参数</string>
-    <string name="apps_bili_section">Bilibili 专属</string>
-    <string name="apps_bili_hide_native">隐藏原生底栏</string>
-    <string name="apps_bili_pub_scale">＋号玻璃大小</string>
-    <string name="apps_bili_pub_bottom">＋号离底部</string>
-    <string name="apps_bili_pub_side">＋号离右侧</string>
+    <string name="apps_plus_section">+玻璃参数设置</string>
+    <string name="apps_plus_scale">＋号玻璃大小</string>
+    <string name="apps_plus_bottom">＋号离底部</string>
+    <string name="apps_plus_side">＋号离右侧</string>
 
     <!-- settings -->
     <string name="settings_title">设置</string>

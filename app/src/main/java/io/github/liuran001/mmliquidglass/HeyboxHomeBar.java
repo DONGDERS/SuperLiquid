@@ -649,8 +649,7 @@ final class HeyboxHomeBar {
         try {
             float d = act.getResources().getDisplayMetrics().density;
             ViewGroup backdrop = (ViewGroup) backdropView; // fl_container is a FrameLayout
-            // Manager-side tuning, same knobs the bili pill listens to.
-            float ps = GlassConfig.biliPubScale;
+            float ps = GlassConfig.pubScale;
             if (ps < 0.5f) ps = 0.5f;
             if (ps > 2f) ps = 2f;
             LiquidGlassHostLayout host = new LiquidGlassHostLayout(act, backdrop, null);
@@ -705,8 +704,8 @@ final class HeyboxHomeBar {
             // because it builds RL.LayoutParams directly — do the same.
             int w = Math.round(56 * d * ps) + shadowPad * 2;
             int h = Math.round(52 * d * ps) + shadowPad * 2;
-            int bottom = Math.round(GlassConfig.biliPubBottomDp * d) - shadowPad + navInset(act);
-            int side = Math.round(GlassConfig.biliPubSideDp * d);
+            int bottom = Math.round(GlassConfig.pubBottomDp * d) - shadowPad + navInset(act);
+            int side = Math.round(GlassConfig.pubSideDp * d);
             ViewGroup.LayoutParams glp;
             if (parent instanceof android.widget.RelativeLayout) {
                 android.widget.RelativeLayout.LayoutParams rlp =

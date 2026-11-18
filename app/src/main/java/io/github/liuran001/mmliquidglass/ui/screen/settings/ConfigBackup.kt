@@ -35,12 +35,11 @@ object ConfigBackup {
         }
         root.put("mm", appCfg(Config.mm))
         root.put("qq", appCfg(Config.qq))
-        root.put("heybox", appCfg(Config.heybox))
+        root.put("heybox", appCfg(Config.heybox).apply {
+            writePlus(Config.heyboxPlus)
+        })
         root.put("bili", appCfg(Config.bili.base).apply {
-            put("hideNative", Config.bili.hideNative)
-            put("pubScale", Config.bili.pubScale.toDouble())
-            put("pubBottomDp", Config.bili.pubBottomDp)
-            put("pubSideDp", Config.bili.pubSideDp)
+            writePlus(Config.bili.plus)
         })
         root.put("tabLayout", JSONObject().apply {
             for (key in listOf("mm", "qq", "bili", "heybox")) {
@@ -86,7 +85,11 @@ object ConfigBackup {
         }
         app("mm")?.let { Config.setApp("mm", it); applied++ }
         app("qq")?.let { Config.setApp("qq", it); applied++ }
-        app("heybox")?.let { Config.setApp("heybox", it); applied++ }
+        app("heybox")?.let {
+            Config.setApp("heybox", it)
+            Config.setHeyboxPlus(root.getJSONObject("heybox").readPlus(Config.heyboxPlus))
+            applied++
+        }
 
         runCatching {
             val o = root.getJSONObject("bili")
@@ -100,10 +103,7 @@ object ConfigBackup {
             }
             Config.setBili(Config.BiliCfg(
                 base = base,
-                hideNative = o.optBoolean("hideNative", b.hideNative),
-                pubScale = o.optDouble("pubScale", b.pubScale.toDouble()).toFloat(),
-                pubBottomDp = o.optInt("pubBottomDp", b.pubBottomDp),
-                pubSideDp = o.optInt("pubSideDp", b.pubSideDp),
+                plus = o.readPlus(b.plus),
             ))
             applied++
         }
@@ -132,6 +132,19 @@ object ConfigBackup {
         }
         return applied
     }
+
+    private fun JSONObject.writePlus(plus: Config.PlusCfg) {
+        put("pubScale", plus.scale.toDouble())
+        put("pubBottomDp", plus.bottomDp)
+        put("pubSideDp", plus.sideDp)
+    }
+
+    private fun JSONObject.readPlus(defaults: Config.PlusCfg) = Config.PlusCfg(
+        scale = optDouble("pubScale", defaults.scale.toDouble()).takeIf { it.isFinite() }
+            ?.coerceIn(0.5, 2.0)?.toFloat() ?: defaults.scale,
+        bottomDp = optInt("pubBottomDp", defaults.bottomDp).coerceIn(0, 48),
+        sideDp = optInt("pubSideDp", defaults.sideDp).coerceIn(0, 64),
+    )
 
     // AppCfg is a data class — set via copy() keyed by field name.
     private fun setF(c: Config.AppCfg, f: String, v: Float) = when (f) {

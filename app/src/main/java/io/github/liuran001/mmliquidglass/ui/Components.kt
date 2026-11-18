@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -35,9 +37,11 @@ fun stringResourceCompat(res: Int): String = androidx.compose.ui.res.stringResou
 fun LScreen(
     title: String,
     bottomOverlay: Dp = 0.dp,
+    actions: @Composable RowScope.() -> Unit = {},
+    belowTopBar: @Composable () -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    MainTabScaffold(title) { modifier, spacing ->
+    MainTabScaffold(title, actions, belowTopBar) { modifier, spacing ->
         Column(
             modifier = modifier
                 .verticalScroll(rememberScrollState())

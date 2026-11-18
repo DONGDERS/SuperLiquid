@@ -60,9 +60,6 @@ final class BiliHomeBar {
     private static volatile WeakReference<Activity> sHomeActivity = new WeakReference<>(null);
     private static volatile WeakReference<View> sWindowBar = new WeakReference<>(null);
     private static volatile WeakReference<View> sRealBar = new WeakReference<>(null);
-    private static volatile WeakReference<ViewGroup> sRealParent = new WeakReference<>(null);
-    private static volatile int sRealIdx = -1;
-    private static volatile ViewGroup.LayoutParams sRealLp = null;
     private static volatile Method mSetItem;
     private static volatile Method mGetItem;
     /** Pill slot -> real-bar page index; the centre publish (2) is not a page. */
@@ -502,9 +499,6 @@ final class BiliHomeBar {
             sInstalled = true;
             sLeftHost = new WeakReference<>(leftHost);
             sRealBar = new WeakReference<>(real);
-            sRealParent = new WeakReference<>(parent);
-            sRealIdx = idx;
-            sRealLp = originalLp;
             applyNativeBarVisibility();
             // Whole-tab-bar size knob, pivot bottom-centre.
             final float lps = GlassConfig.pillScale;
@@ -622,7 +616,7 @@ final class BiliHomeBar {
             float d = ctx.getResources().getDisplayMetrics().density;
             boolean night = isNight(ctx);
             // Manager-side pill tuning: overall scale + bottom/right offsets.
-            float ps = GlassConfig.biliPubScale;
+            float ps = GlassConfig.pubScale;
             if (ps < 0.5f) ps = 0.5f;
             if (ps > 2f) ps = 2f;
 
@@ -678,8 +672,8 @@ final class BiliHomeBar {
                     Math.round(56 * d * ps) + shadowPad * 2,
                     Math.round(52 * d * ps) + shadowPad * 2,
                     Gravity.BOTTOM | Gravity.END);
-            lp.bottomMargin = Math.round(GlassConfig.biliPubBottomDp * d) - shadowPad + navInset(act);
-            lp.rightMargin = Math.round(GlassConfig.biliPubSideDp * d);
+            lp.bottomMargin = Math.round(GlassConfig.pubBottomDp * d) - shadowPad + navInset(act);
+            lp.rightMargin = Math.round(GlassConfig.pubSideDp * d);
 
             // Park beside the left pill in the app's own root, not in the
             // content root: the glass samples the page container, and a host
@@ -1090,34 +1084,14 @@ final class BiliHomeBar {
         return m;
     }
 
-    /**
-     * Hide or restore the native bar per the manager's "hide native bar"
-     * switch. The real bar is detached on install, so restoring means adding
-     * it back at its original index with its original layout params.
-     */
+    /** Keep the native bar detached while the glass replacement is active. */
     private static void applyNativeBarVisibility() {
         View real = sRealBar.get();
-        if (real == null) {
-            return;
+        if (real == null) return;
+        if (real.getParent() instanceof ViewGroup) {
+            ((ViewGroup) real.getParent()).removeView(real);
         }
-        if (GlassConfig.biliHideNative) {
-            if (real.getParent() instanceof ViewGroup) {
-                ((ViewGroup) real.getParent()).removeView(real);
-            }
-            real.setVisibility(View.GONE);
-        } else {
-            real.setVisibility(View.VISIBLE);
-            ViewGroup p = sRealParent.get();
-            if (real.getParent() == null && p != null && sRealLp != null && sRealIdx >= 0) {
-                try {
-                    p.addView(real, sRealIdx, sRealLp);
-                    LiquidGlassModule.log(android.util.Log.INFO,
-                            "bili: native bar restored (manager switch)");
-                } catch (Throwable t) {
-                    LiquidGlassModule.logErr("bili: native bar restore failed", t);
-                }
-            }
-        }
+        real.setVisibility(View.GONE);
     }
 
     /**

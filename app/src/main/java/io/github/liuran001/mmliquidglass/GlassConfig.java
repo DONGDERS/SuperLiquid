@@ -52,11 +52,10 @@ final class GlassConfig {
     /** Border stroke width multiplier (0.5 – 2). */
     static volatile float borderWidthScale = 1f;
     /** Whether the real Bilibili bottom bar is kept hidden under the glass. */
-    static volatile boolean biliHideNative = true;
     /** Publish-pill size multiplier and bottom/right margins, dp. */
-    static volatile float biliPubScale = 1f;
-    static volatile int biliPubBottomDp = 12;
-    static volatile int biliPubSideDp = 16;
+    static volatile float pubScale = 1f;
+    static volatile int pubBottomDp = 12;
+    static volatile int pubSideDp = 16;
     /** Fallback route when no live publish route was learned. */
     static volatile String biliPublishFallback = "bilibili://uper/center_plus";
 
@@ -122,10 +121,9 @@ final class GlassConfig {
         borderWidthScale = 1f;
         tabOrder = new String[0];
         tabHidden = new String[0];
-        biliHideNative = true;
-        biliPubScale = 1f;
-        biliPubBottomDp = 12;
-        biliPubSideDp = 16;
+        pubScale = 1f;
+        pubBottomDp = 12;
+        pubSideDp = 16;
         biliPublishFallback = "bilibili://uper/center_plus";
         moduleLayerRead = false;
 
@@ -182,11 +180,12 @@ final class GlassConfig {
         saturationBoost = p.getFloat(k("saturation"), saturationBoost);
         glossStrength = p.getFloat(k("gloss"), glossStrength);
         borderWidthScale = p.getFloat(k("border"), borderWidthScale);
+        if ("bili".equals(keyPrefix) || "heybox".equals(keyPrefix)) {
+            pubScale = p.getFloat(k("pub_scale"), pubScale);
+            pubBottomDp = p.getInt(k("pub_bottom_dp"), pubBottomDp);
+            pubSideDp = p.getInt(k("pub_side_dp"), pubSideDp);
+        }
         if ("bili".equals(keyPrefix)) {
-            biliHideNative = p.getBoolean("bili_hide_native", biliHideNative);
-            biliPubScale = p.getFloat("bili_pub_scale", biliPubScale);
-            biliPubBottomDp = p.getInt("bili_pub_bottom_dp", biliPubBottomDp);
-            biliPubSideDp = p.getInt("bili_pub_side_dp", biliPubSideDp);
             biliPublishFallback = p.getString(
                     "bili_publish_fallback", biliPublishFallback);
         }
@@ -204,7 +203,6 @@ final class GlassConfig {
                         + " offset=" + barOffsetDp + " offsetX=" + barOffsetXDp + " blur=" + blurRadius
                         + " tint=" + tintStrength + " sat=" + saturationBoost
                         + " gloss=" + glossStrength + " border=" + borderWidthScale
-                        + " hideNative=" + biliHideNative
                         + " tabs(order=" + tabOrder.length + " hidden=" + tabHidden.length + ")");
     }
 
