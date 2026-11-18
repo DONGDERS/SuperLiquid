@@ -27,6 +27,18 @@ LSPosed 模块（libxposed API 102）：iOS 26 风格液态玻璃底部导航栏
 MIT（继承自原项目 [liuran001/WeChat-LiquidGlass](https://github.com/liuran001/WeChat-LiquidGlass)）—
 另致谢参考项目 [sjtt2/HeyBox-LiquidGlass](https://github.com/sjtt2/HeyBox-LiquidGlass)、[tiann/KernelSU](https://github.com/tiann/KernelSU)
 
+
+## v0.4.9-R1 — UI 优化与问题修复
+
+- 优化：主页布局，新增「版本信息」「状态」区块与双主题图标
+- 优化：Miuix 状态大卡片勾选排版，Material 卡片视觉保持不变
+- 优化：App 配置页显示应用图标、「+玻璃参数设置」独立分区
+- 优化：App 页面新增搜索，支持应用名称与包名筛选
+- 修复：Material 主题下 App 配置卡片点击区域过小的问题
+- 修复：小黑盒缺少加号尺寸/位置参数的问题
+- 修复：Miuix 固定底栏实时模糊被截断的问题
+- 移除：Bilibili「隐藏原生底栏」开关（原生底栏默认隐藏）
+
 ## v0.4.0 — 管理器 GUI
 
 - 内置设置面板（KernelSU 管理器风格，**Mat / Miuix 双主题**可切换）
