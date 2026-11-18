@@ -4,17 +4,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
@@ -23,26 +18,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.liuran001.mmliquidglass.BuildConfig
 import io.github.liuran001.mmliquidglass.R
 import io.github.liuran001.mmliquidglass.ui.component.material.SegmentedColumn
 import io.github.liuran001.mmliquidglass.ui.component.material.SegmentedListItem
-import io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsState
 import io.github.liuran001.mmliquidglass.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.CardDefaults
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
-import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.Card as MiuixCard
+import top.yukonga.miuix.kmp.basic.Text as MiuixText
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 /**
@@ -51,13 +42,12 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
  * oversized decorative icon + big 22sp title).
  */
 @Composable
-fun HomeScreen(onOpenAbout: () -> Unit) {
-    val settings by SettingsState.flow.collectAsStateWithLifecycle()
+fun HomeScreen(bottomOverlay: Dp, onOpenAbout: () -> Unit) {
     val connected = Config.serviceConnected
 
     when (LocalUiMode.current) {
         UiMode.Material -> HomeScreenMaterial(connected, onOpenAbout)
-        UiMode.Miuix -> HomeScreenMiuix(connected, onOpenAbout)
+        UiMode.Miuix -> HomeScreenMiuix(connected, bottomOverlay, onOpenAbout)
     }
 }
 
@@ -125,85 +115,66 @@ private fun heroColors(connected: Boolean, dark: Boolean): Pair<Color, Color> = 
 }
 
 @Composable
-private fun HomeScreenMiuix(connected: Boolean, onOpenAbout: () -> Unit) {
-    val scrollBehavior = MiuixScrollBehavior()
-    MiuixScaffold(
-        topBar = {
-            SmallTopAppBar(
-                title = stringResource(R.string.nav_home),
-                scrollBehavior = scrollBehavior,
-            )
-        },
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxHeight()
-                .padding(horizontal = 12.dp),
-            contentPadding = innerPadding,
+private fun HomeScreenMiuix(connected: Boolean, bottomOverlay: Dp, onOpenAbout: () -> Unit) {
+    LScreen(title = stringResource(R.string.nav_home), bottomOverlay = bottomOverlay) {
+        val dark = isInDarkTheme()
+        val (bg, iconTint) = heroColors(connected, dark)
+        val title = if (connected) "正常工作中" else "模块未生效"
+        val summary = if (connected)
+            "v${BuildConfig.VERSION_NAME}"
+        else
+            "请检查 LSPosed 中模块是否启用并勾选作用域，然后重启对应应用"
+        // ---- hero status card: KSU HomeMiuix StatusCard ----
+        MiuixCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.defaultColors(color = bg),
+            // KSU StatusCard press feedback; no navigation wired.
+            onClick = {},
+            pressFeedbackType = top.yukonga.miuix.kmp.utils.PressFeedbackType.Tilt,
+            showIndication = true,
         ) {
-            item {
-                Column {
-                    val dark = isInDarkTheme()
-                    val (bg, iconTint) = heroColors(connected, dark)
-                    val title = if (connected) "正常工作中" else "模块未生效"
-                    val summary = if (connected)
-                        "v${BuildConfig.VERSION_NAME}"
-                    else
-                        "请检查 LSPosed 中模块是否启用并勾选作用域，然后重启对应应用"
-                    // ---- hero status card: KSU HomeMiuix StatusCard ----
-                    MiuixCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.defaultColors(color = bg),
-                        // KSU StatusCard press feedback; no navigation wired.
-                        onClick = {},
-                        pressFeedbackType = top.yukonga.miuix.kmp.utils.PressFeedbackType.Tilt,
-                        showIndication = true,
-                    ) {
-                        Box {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .offset(27.dp, 31.dp),
-                                contentAlignment = Alignment.BottomEnd,
-                            ) {
-                                Icon(
-                                    modifier = Modifier.size(110.dp),
-                                    imageVector = if (connected) Icons.Filled.CheckCircle else Icons.Filled.Warning,
-                                    tint = iconTint,
-                                    contentDescription = null,
-                                )
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp, 14.dp),
-                                contentAlignment = Alignment.TopStart,
-                            ) {
-                                Column {
-                                    Text(
-                                        text = title,
-                                        fontSize = 22.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                    )
-                                    Spacer(Modifier.height(1.dp))
-                                    Text(text = summary, fontSize = 15.sp)
-                                }
-                            }
-                        }
-                    }
-
-                    Spacer12()
-
-                    // ---- About entry ----
-                    MiuixCard(modifier = Modifier.fillMaxWidth()) {
-                        ArrowPreference(
-                            title = stringResource(R.string.about_title),
-                            summary = stringResource(R.string.settings_repo_url),
-                            onClick = onOpenAbout,
+            Box {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .offset(27.dp, 31.dp),
+                    contentAlignment = Alignment.BottomEnd,
+                ) {
+                    Icon(
+                        modifier = Modifier.size(110.dp),
+                        imageVector = if (connected) Icons.Filled.CheckCircle else Icons.Filled.Warning,
+                        tint = iconTint,
+                        contentDescription = null,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp, 14.dp),
+                    contentAlignment = Alignment.TopStart,
+                ) {
+                    Column {
+                        MiuixText(
+                            text = title,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.SemiBold,
                         )
+                        Spacer(Modifier.height(1.dp))
+                        MiuixText(text = summary, fontSize = 15.sp)
                     }
                 }
             }
+        }
+
+        Spacer12()
+
+        // ---- About entry ----
+        MiuixCard(modifier = Modifier.fillMaxWidth()) {
+            ArrowPreference(
+                title = stringResource(R.string.about_title),
+                summary = stringResource(R.string.settings_repo_url),
+                onClick = onOpenAbout,
+            )
         }
     }
 }

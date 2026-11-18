@@ -42,6 +42,7 @@
     <!-- settings -->
     <string name="settings_title">设置</string>
     <string name="settings_appearance">外观</string>
+    <string name="settings_config_management">配置管理</string>
     <string name="settings_ui_mode">界面主题</string>
     <string name="settings_ui_mode_mat">Mat</string>
     <string name="settings_ui_mode_miuix">Miuix</string>

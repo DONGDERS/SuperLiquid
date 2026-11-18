@@ -1,5 +1,7 @@
 # SuperLiquid — 液态玻璃底栏
 
+> **构建说明：** 当前本地 Android / Termux / proot 环境无法构建 SuperLiquid，请使用 GitHub CI（GitHub Actions）。 详见 [AGENTS.md](AGENTS.md)。
+
 LSPosed 模块（libxposed API 102）：iOS 26 风格液态玻璃底部导航栏。
 
 **由 GLM（智谱）编写扩展** · 原项目：[liuran001/WeChat-LiquidGlass](https://github.com/liuran001/WeChat-LiquidGlass)

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -45,7 +46,7 @@ private fun installed(key: String): Boolean {
 }
 
 @Composable
-fun AppsScreen() {
+fun AppsScreen(bottomOverlay: Dp) {
     var tabDialogKey by remember { mutableStateOf<String?>(null) }
     TabLayoutDialog(
         appKey = tabDialogKey ?: "heybox",
@@ -53,7 +54,7 @@ fun AppsScreen() {
         onApply = { cfg -> tabDialogKey?.let { Config.setTabLayout(it, cfg) } },
         onDismiss = { tabDialogKey = null },
     )
-    LScreen(title = stringResourceCompat(R.string.apps_title)) {
+    LScreen(title = stringResourceCompat(R.string.apps_title), bottomOverlay = bottomOverlay) {
         TARGETS.forEach { t ->
             when (t.key) {
                 "mm" -> AppCard(t, Config.mm, installed("mm"),

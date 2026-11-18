@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -16,10 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.liuran001.mmliquidglass.ui.component.MainTabScaffold
 import top.yukonga.miuix.kmp.basic.Card as MiuixCard
 import top.yukonga.miuix.kmp.basic.Text as MiuixText
 import top.yukonga.miuix.kmp.basic.Switch as MiuixSwitch
@@ -33,23 +32,23 @@ internal fun miuixColors() = MiuixTheme.colorScheme
 fun stringResourceCompat(res: Int): String = androidx.compose.ui.res.stringResource(res)
 
 @Composable
-fun LScreen(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 24.dp)
-    ) {
-        Text(
-            text = title,
-            style = TextStyle(
-                fontSize = if (LocalUiMode.current == UiMode.Material) 32.sp else 36.sp,
-                fontWeight = FontWeight.Bold,
-            ),
-            modifier = Modifier.padding(top = 48.dp, bottom = 12.dp)
+fun LScreen(
+    title: String,
+    bottomOverlay: Dp = 0.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    MainTabScaffold(title) { modifier, spacing ->
+        Column(
+            modifier = modifier
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    start = if (LocalUiMode.current == UiMode.Miuix) 12.dp else 16.dp,
+                    end = if (LocalUiMode.current == UiMode.Miuix) 12.dp else 16.dp,
+                    top = spacing.calculateTopPadding(),
+                    bottom = 24.dp + bottomOverlay,
+                ),
+            content = content,
         )
-        content()
     }
 }
 

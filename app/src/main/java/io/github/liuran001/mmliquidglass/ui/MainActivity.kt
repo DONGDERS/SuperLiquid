@@ -32,8 +32,15 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -158,7 +165,7 @@ fun MainRoot(pager: PagerState) {
     ) {
         entry<RouteMain> {
             val settings = SettingsState.flow.collectAsStateWithLifecycle().value
-            val enableFloating = settings.enableFloatingBottomBar
+            val enableFloating = LocalUiMode.current == UiMode.Miuix && settings.enableFloatingBottomBar
             // KSU MainScreen: the backdrop carries a surface base fill so an
             // uncaptured/empty layer reads as the theme surface, NOT black —
             // the bare rememberLayerBackdrop() was the grey-glass root cause.
@@ -182,16 +189,24 @@ fun MainRoot(pager: PagerState) {
                         + " capture=" + captureGlass
                         + " shaderSupported=" + top.yukonga.miuix.kmp.blur.isRuntimeShaderSupported())
 
-            // One shared pager for both skins: the theme switch swaps only the
-            // Scaffold wrapper, the pager never leaves composition.
-            val pagerContent: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit = { pad ->
+            // In floating mode the content remains visible behind the glass, but
+            // the actual measured bar height is reserved at the end of each page.
+            val pagerContent: @Composable (PaddingValues) -> Unit = { pad ->
+                val layoutDirection = LocalLayoutDirection.current
+                val bottomOverlay = if (enableFloating) pad.calculateBottomPadding() else 0.dp
+                val viewportPadding = PaddingValues(
+                    start = pad.calculateStartPadding(layoutDirection),
+                    end = pad.calculateEndPadding(layoutDirection),
+                    bottom = if (enableFloating) 0.dp else pad.calculateBottomPadding(),
+                )
                 // KSU-exact capture structure: the backdrop modifier lives on
                 // a wrapping Box, NOT on the pager itself — a scroll container
                 // as the record node captures empty layers on some pipelines.
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(pad)
+                        .padding(viewportPadding)
+                        .consumeWindowInsets(viewportPadding)
                         .then(
                             if (captureGlass) Modifier.layerBackdrop(pageBackdrop)
                             else Modifier
@@ -208,14 +223,16 @@ fun MainRoot(pager: PagerState) {
                     ) { page ->
                         when (page) {
                             0 -> HomeScreen(
+                                bottomOverlay = bottomOverlay,
                                 onOpenAbout = {
                                     // Rapid double-tap guard: pushing the same NavKey twice
                                     // crashes NavDisplay at reconcile (duplicate route key).
                                     if (backStack.lastOrNull() !is RouteAbout) backStack.add(RouteAbout)
                                 },
                             )
-                            1 -> AppsScreen()
+                            1 -> AppsScreen(bottomOverlay)
                             else -> io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsPage(
+                                bottomOverlay = bottomOverlay,
                                 onOpenTheme = {
                                     if (backStack.lastOrNull() !is RouteColorPalette) backStack.add(RouteColorPalette)
                                 },
@@ -252,7 +269,7 @@ fun MainRoot(pager: PagerState) {
                 // floating branch: bottom = navigationBars padding).
                 val density = LocalDensity.current
                 val navInset = with(density) {
-                    androidx.compose.foundation.layout.WindowInsets.navigationBars
+                    WindowInsets.navigationBars
                         .getBottom(this).toDp()
                 }
                 // Some devices (hidden gesture pill) report a zero nav-bar
@@ -294,6 +311,7 @@ fun MainRoot(pager: PagerState) {
                 // The floating glass bar is a Miuix-skin feature (KSU parity):
                 // it reads MiuixTheme, which the Mat branch does not provide.
                 UiMode.Material -> Scaffold(
+                    contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal),
                     bottomBar = {
                         NavigationBar {
                             NAV.forEachIndexed { i, e ->
@@ -314,6 +332,7 @@ fun MainRoot(pager: PagerState) {
                 ) { pad -> pagerContent(pad) }
 
                 UiMode.Miuix -> MiuixScaffold(
+                    contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal),
                     bottomBar = {
                         if (enableFloating) floatingBar() else {
                             // KSU BottomBarMiuix non-floating branch: the bar
@@ -336,17 +355,7 @@ fun MainRoot(pager: PagerState) {
                             }
                         }
                     }
-                ) { pad ->
-                    // Floating glass: the page content must extend UNDER the
-                    // pill (edge to edge) — the glass samples the backdrop at
-                    // its own screen position, so a padded content area ends
-                    // above the pill and the sample falls out of the captured
-                    // layer (grey/black glass + a dead strip behind it).
-                    pagerContent(
-                        if (enableFloating) androidx.compose.foundation.layout.PaddingValues(0.dp)
-                        else pad
-                    )
-                }
+                ) { pad -> pagerContent(pad) }
             }
         }
 

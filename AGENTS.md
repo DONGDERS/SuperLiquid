@@ -1,0 +1,8 @@
+# SuperLiquid 开发说明
+
+## 构建与验证（开始任务前阅读）
+
+- 当前本地 Android / Termux / proot 环境无法构建 SuperLiquid，请使用 GitHub CI（GitHub Actions）。
+- 本地只做源码编辑和静态检查（例如 `git diff --check`）；不要用本地 Gradle、`build.sh` 或 `setup-tools.sh` 作为验证，也不要为此临时安装工具链。
+- Debug 验证使用 `.github/workflows/build.yml`（`build`）；签名发布包使用 `.github/workflows/release.yml`（`release`）。优先在 CI 仓库的独立分支验证普通改动；不为验证而推送主仓库 `main` 或发布 Release。
+- 核对 Actions 运行的提交 SHA 和结果。编译通过不等于真机 UI 已验证。
