@@ -4,12 +4,32 @@ import android.os.Build
 import android.provider.Settings
 import android.system.Os
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Android
+import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.DeveloperBoard
+import androidx.compose.material.icons.outlined.Fingerprint
+import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.Smartphone
+import androidx.compose.material3.Icon
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Phone
+import top.yukonga.miuix.kmp.icon.extended.Layers
+import top.yukonga.miuix.kmp.icon.extended.Info
+import top.yukonga.miuix.kmp.icon.extended.Scan
+import top.yukonga.miuix.kmp.icon.extended.Tune
+import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.icon.extended.GridView
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -52,10 +72,28 @@ internal fun HomeInformation() {
         }
     }
     val unknown = stringResource(R.string.home_info_unavailable)
-    val device = remember(context, refresh) {
-        runCatching { Settings.Global.getString(context.contentResolver, "device_name") }
-            .getOrNull()?.trim()?.takeIf { it.isNotEmpty() } ?: Build.MODEL
+    val model = Build.MODEL.takeUnless { it.isBlank() || it.equals(Build.UNKNOWN, true) }
+    val deviceName by produceState<String?>(null, context, refresh) {
+        value = withContext(Dispatchers.IO) {
+            val properties = listOf(
+                "ro.product.marketname", "ro.product.vendor.marketname", "ro.vivo.market.name",
+                "ro.vivo.internet.name", "ro.config.marketing_name", "ro.product.market_name",
+            )
+            val marketingName = properties.firstNotNullOfOrNull { property ->
+                runCatching {
+                    val process = ProcessBuilder("/system/bin/getprop", property).start()
+                    try {
+                        process.inputStream.bufferedReader().use { it.readText().trim() }
+                    } finally {
+                        process.destroy()
+                    }
+                }.getOrNull()?.takeIf { it.isNotEmpty() && !it.equals(model, true) }
+            }
+            marketingName ?: runCatching { Settings.Global.getString(context.contentResolver, "device_name") }
+                .getOrNull()?.trim()?.takeIf { it.isNotEmpty() && !it.equals(model, true) }
+        }
     }
+    val device = "${deviceName ?: unknown} - ${model ?: unknown}"
     val kernel = remember { runCatching { Os.uname().release }.getOrNull() }
     val status = stringResource(
         when {
@@ -103,14 +141,23 @@ private fun HomeInfoSection(title: String, rows: List<Pair<Int, String>>) {
             ) {
                 Column(Modifier.padding(vertical = 4.dp)) {
                     rows.forEach { (label, value) ->
-                        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                            Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
-                            SelectionContainer {
-                                Text(
-                                    text = value,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        ) {
+                            Icon(
+                                homeInfoIcon(label, UiMode.Material), contentDescription = null,
+                                modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(label), style = MaterialTheme.typography.bodyMedium)
+                                SelectionContainer {
+                                    Text(
+                                        text = value,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }
@@ -122,10 +169,40 @@ private fun HomeInfoSection(title: String, rows: List<Pair<Int, String>>) {
             MiuixCard(modifier = Modifier.fillMaxWidth()) {
                 rows.forEach { (label, value) ->
                     SelectionContainer {
-                        BasicComponent(title = stringResource(label), summary = value)
+                        BasicComponent(
+                            title = stringResource(label),
+                            summary = value,
+                            startAction = {
+                                top.yukonga.miuix.kmp.basic.Icon(
+                                    homeInfoIcon(label, UiMode.Miuix), contentDescription = null,
+                                    modifier = Modifier.size(24.dp).padding(end = 0.dp),
+                                )
+                            },
+                        )
                     }
                 }
             }
         }
+    }
+}
+
+private fun homeInfoIcon(label: Int, mode: UiMode) = when (mode) {
+    UiMode.Material -> when (label) {
+        R.string.home_info_device -> Icons.Outlined.Smartphone
+        R.string.home_info_kernel -> Icons.Outlined.DeveloperBoard
+        R.string.home_info_android -> Icons.Outlined.Android
+        R.string.home_info_fingerprint -> Icons.Outlined.Fingerprint
+        R.string.home_info_lsp_version -> Icons.Outlined.Security
+        R.string.home_lsp_status -> Icons.Outlined.CheckCircle
+        else -> Icons.Outlined.Apps
+    }
+    UiMode.Miuix -> when (label) {
+        R.string.home_info_device -> MiuixIcons.Phone
+        R.string.home_info_kernel -> MiuixIcons.Layers
+        R.string.home_info_android -> MiuixIcons.Info
+        R.string.home_info_fingerprint -> MiuixIcons.Scan
+        R.string.home_info_lsp_version -> MiuixIcons.Tune
+        R.string.home_lsp_status -> MiuixIcons.Ok
+        else -> MiuixIcons.GridView
     }
 }

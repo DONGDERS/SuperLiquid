@@ -27,10 +27,16 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.GridView
+import top.yukonga.miuix.kmp.icon.extended.Home
+import top.yukonga.miuix.kmp.icon.extended.Settings
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -52,7 +58,6 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.path
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -114,31 +119,13 @@ private data class NavEntry(
     val labelRes: Int,
     val filled: ImageVector,
     val outlined: ImageVector,
+    val miuix: ImageVector,
 )
 
-// 2×2 grid "Apps" glyph — avoids pulling material-icons-extended (tens of
-// thousands of vector classes) into R8 just for one icon.
-private val AppsIcon: ImageVector by lazy {
-    ImageVector.Builder(
-        name = "Apps",
-        defaultWidth = 24.dp, defaultHeight = 24.dp,
-        viewportWidth = 24f, viewportHeight = 24f,
-    ).apply {
-        path(
-            fill = androidx.compose.ui.graphics.SolidColor(androidx.compose.ui.graphics.Color.Black)
-        ) {
-            moveTo(4f, 4f); lineTo(10f, 4f); lineTo(10f, 10f); lineTo(4f, 10f); close()
-            moveTo(14f, 4f); lineTo(20f, 4f); lineTo(20f, 10f); lineTo(14f, 10f); close()
-            moveTo(4f, 14f); lineTo(10f, 14f); lineTo(10f, 20f); lineTo(4f, 20f); close()
-            moveTo(14f, 14f); lineTo(20f, 14f); lineTo(20f, 20f); lineTo(14f, 20f); close()
-        }
-    }.build()
-}
-
 private val NAV = listOf(
-    NavEntry(R.string.nav_home, Icons.Filled.Home, Icons.Outlined.Home),
-    NavEntry(R.string.nav_apps, AppsIcon, AppsIcon),
-    NavEntry(R.string.nav_settings, Icons.Filled.Settings, Icons.Outlined.Settings),
+    NavEntry(R.string.nav_home, Icons.Filled.Home, Icons.Outlined.Home, MiuixIcons.Home),
+    NavEntry(R.string.nav_apps, Icons.Filled.Apps, Icons.Outlined.Apps, MiuixIcons.GridView),
+    NavEntry(R.string.nav_settings, Icons.Filled.Settings, Icons.Outlined.Settings, MiuixIcons.Settings),
 )
 
 // Sub-page routes. KSU renders its sub-screens with miuix-nav NavDisplay:
@@ -301,7 +288,7 @@ fun MainRoot(pager: PagerState) {
                                 modifier = Modifier.defaultMinSize(minWidth = 76.dp),
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(e.filled, contentDescription = null, modifier = Modifier.size(22.dp))
+                                    Icon(e.miuix, contentDescription = null, modifier = Modifier.size(22.dp))
                                     Text(stringResource(e.labelRes), fontSize = 10.sp)
                                 }
                             }
@@ -350,7 +337,7 @@ fun MainRoot(pager: PagerState) {
                                             modifier = Modifier.weight(1f),
                                             selected = pager.currentPage == i,
                                             onClick = { goto(i) },
-                                            icon = e.filled,
+                                            icon = e.miuix,
                                             label = stringResource(e.labelRes),
                                         )
                                     }

@@ -1,10 +1,14 @@
 package io.github.liuran001.mmliquidglass.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -135,16 +139,24 @@ private fun HomeScreenMiuix(connected: Boolean, bottomOverlay: Dp, onOpenAbout: 
             pressFeedbackType = top.yukonga.miuix.kmp.utils.PressFeedbackType.Tilt,
             showIndication = true,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    MiuixText(text = title, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-                    MiuixText(text = summary, fontSize = 15.sp, modifier = Modifier.padding(top = 4.dp))
+            Box {
+                // Deliberately let the oversized mark bleed past the card edge.
+                Box(
+                    modifier = Modifier.fillMaxSize().offset(27.dp, 31.dp),
+                    contentAlignment = Alignment.BottomEnd,
+                ) {
+                    HeroStatusIcon(connected, iconTint, Modifier.size(110.dp))
                 }
-                Spacer(Modifier.size(16.dp))
-                HeroStatusIcon(connected, iconTint, Modifier.size(64.dp))
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(16.dp, 14.dp),
+                    contentAlignment = Alignment.TopStart,
+                ) {
+                    Column {
+                        MiuixText(text = title, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+                        Spacer(Modifier.height(1.dp))
+                        MiuixText(text = summary, fontSize = 15.sp)
+                    }
+                }
             }
         }
 
