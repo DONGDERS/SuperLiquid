@@ -45,6 +45,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
     private Rect nativeRowPadding;
     private int huggedWidth;
     private int lastAvailableWidth;
+    private int contentHeight;
     private float lastWidthScale;
     private final View root;
 
@@ -222,20 +223,22 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
             huggedWidth = LiquidGlassInstaller.hugContentWidth(row, density, availableWidth);
             if (huggedWidth > 0) {
                 lp.width = huggedWidth;
+                lp.height = nativeRowParams.height;
                 lp.gravity = (lp.gravity == -1 ? 0 : lp.gravity & ~android.view.Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK)
                         | android.view.Gravity.CENTER_HORIZONTAL;
                 row.setLayoutParams(lp);
                 lastAvailableWidth = availableWidth;
                 lastWidthScale = GlassConfig.widthScale;
+                contentHeight = 0;
                 return;
             }
             pillBounds.setEmpty();
             return;
         }
         if (row.isLayoutRequested() || row.getWidth() != huggedWidth || visibleChildren(row) == 0) return;
-        int naturalHeight = LiquidGlassInstaller.contentRowHeight(row);
-        int centerY = naturalHeight / 2;
-        int height = Math.round(naturalHeight * clamp(GlassConfig.pillScale, 0.1f, 3f));
+        if (contentHeight == 0) contentHeight = LiquidGlassInstaller.contentRowHeight(row);
+        int centerY = contentHeight / 2;
+        int height = Math.round(contentHeight * clamp(GlassConfig.pillScale, 0.1f, 3f));
         int width = huggedWidth;
         if (width <= 0 || height <= 0) return;
         ViewGroup currentBackdrop = findBackdrop(section);
@@ -246,7 +249,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         }
         rowBackground = clearBackground(row, rowBackground);
         barBackground = clearBackground(bar, barBackground);
-        int center = row.getTop() + centerY
+        int center = bar.getPaddingTop() + nativeRowParams.topMargin + centerY
                 + Math.round((12f - clamp(GlassConfig.barOffsetDp, 0f, 24f)) * density);
         int tx = Math.round(row.getTranslationX());
         int ty = Math.round(row.getTranslationY());
@@ -260,13 +263,25 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         }
         width = Math.min(width, maxX - minX);
         height = Math.min(height, maxY - minY);
-        // Prefer trimming the surface to shifting it away from the native labels.
-        int centeredHeight = 2 * Math.min(center - minY, maxY - center);
-        if (centeredHeight > 0) height = Math.min(height, centeredHeight);
         int left = row.getLeft()
                 + Math.round(clamp(GlassConfig.barOffsetXDp, -120f, 120f) * density);
         left = Math.max(minX, Math.min(left, maxX - width));
         int top = Math.max(minY, Math.min(center - height / 2, maxY - height));
+        FrameLayout.LayoutParams rowParams = (FrameLayout.LayoutParams) row.getLayoutParams();
+        // Match the native touch/layout box to the same height as the glass.
+        // Measure content before applying this constraint to avoid feeding a
+        // clipped height back into the next layout pass.
+        int rowGravity = android.view.Gravity.TOP | android.view.Gravity.CENTER_HORIZONTAL;
+        int topMargin = top - bar.getPaddingTop();
+        if (rowParams.height != height || rowParams.topMargin != topMargin
+                || rowParams.gravity != rowGravity) {
+            rowParams.height = height;
+            rowParams.gravity = rowGravity;
+            rowParams.topMargin = topMargin;
+            row.setLayoutParams(rowParams);
+            pillBounds.setEmpty();
+            return;
+        }
         pillBounds.set(left, top, left + width, top + height);
         updatePlayer(bar, Math.round(GlassConfig.kugouPlayerLiftDp * density));
     }
@@ -327,6 +342,8 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
             FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) row.getLayoutParams();
             lp.width = nativeRowParams.width;
             lp.gravity = nativeRowParams.gravity;
+            lp.height = nativeRowParams.height;
+            lp.topMargin = nativeRowParams.topMargin;
             row.setLayoutParams(lp);
             row.setPadding(nativeRowPadding.left, nativeRowPadding.top,
                     nativeRowPadding.right, nativeRowPadding.bottom);
@@ -335,6 +352,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         nativeRowPadding = null;
         huggedWidth = 0;
         boolean sameChildren = row.getChildCount() == nativeOrder.length;
+        contentHeight = 0;
         for (View child : nativeOrder) sameChildren &= child.getParent() == row;
         for (int i = 0; i < nativeOrder.length; i++) {
             View child = nativeOrder[i];

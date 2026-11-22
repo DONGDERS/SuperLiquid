@@ -64,7 +64,7 @@ object TabLayoutEditor {
         "qq" to listOf("消息", "频道", "联系人", "动态"),
         "bili" to listOf("首页", "动态", "会员购", "我的"),
         "heybox" to listOf("首页", "热点", "游戏库", "我"),
-        "kugou" to listOf("首页", "直播", "唱玩", "视频", "K歌", "金币", "我的"),
+        "kugou" to listOf("首页", "直播", "K歌", "赚钱", "我"),
     )
 
     /** Basics per app: never hideable, never reorderable away from slot 0. */
@@ -73,7 +73,7 @@ object TabLayoutEditor {
         "qq" to setOf("消息", "联系人"),
         "bili" to setOf("首页", "我的"),
         "heybox" to setOf("首页", "我"),
-        "kugou" to setOf("首页", "我的"),
+        "kugou" to setOf("首页", "我"),
     )
 
     fun locked(appKey: String, title: String): Boolean =
@@ -81,12 +81,23 @@ object TabLayoutEditor {
 
     /** Candidate list = stored order first, then defaults, deduped. */
     fun candidates(key: String, cfg: Config.TabLayout): List<String> {
+        if (key == "kugou") {
+            val defaults = DEFAULTS.getValue(key)
+            return (defaults.take(1) + cfg.order.map(::kugouTitle) + defaults)
+                .filter { it in defaults }.distinct()
+        }
         val out = ArrayList<String>()
         // Entry tab (slot 0) is pinned to the front regardless of what an
         // older config stored there.
         DEFAULTS[key]?.firstOrNull()?.let { out.add(it) }
         for (t in cfg.order + (DEFAULTS[key] ?: emptyList())) if (t !in out) out.add(t)
         return out
+    }
+
+    fun kugouTitle(title: String): String = when (title) {
+        "金币" -> "赚钱"
+        "我的" -> "我"
+        else -> title
     }
 
     /**
@@ -111,7 +122,9 @@ fun TabLayoutDialog(
     val initial = Config.tabLayout(appKey)
     // entries: (title, hidden) in working order.
     val start = TabLayoutEditor.candidates(appKey, initial).map { t ->
-        t to (t in initial.hidden)
+        val hidden = if (appKey == "kugou") initial.hidden.map(TabLayoutEditor::kugouTitle) else initial.hidden
+        t to (t in hidden && (appKey != "kugou" || !TabLayoutEditor.locked(appKey, t)))
+
     }
     var items by remember(show) { mutableStateOf(start) }
     var dragging by remember(show) { mutableStateOf<String?>(null) }

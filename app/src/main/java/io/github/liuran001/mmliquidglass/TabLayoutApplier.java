@@ -42,7 +42,7 @@ final class TabLayoutApplier {
         LOCKED.put("qq", new HashSet<>(java.util.Arrays.asList("消息", "联系人")));
         LOCKED.put("bili", new HashSet<>(java.util.Arrays.asList("首页", "我的")));
         LOCKED.put("heybox", new HashSet<>(java.util.Arrays.asList("首页", "我")));
-        LOCKED.put("kugou", new HashSet<>(java.util.Arrays.asList("首页", "我的")));
+        LOCKED.put("kugou", new HashSet<>(java.util.Arrays.asList("首页", "我")));
     }
 
     /** Basics that the given host keeps, whatever the manager says. */
@@ -56,16 +56,23 @@ final class TabLayoutApplier {
         if (tag instanceof String) {
             switch (((String) tag).trim()) {
                 case "ting": return "首页";
-                case "mine": return "我的";
+                case "mine": return "我";
                 case "chang": return "唱玩";
                 case "kan": return "直播";
                 case "video": return "视频";
                 case "songroom": return "K歌";
-                case "make_money": return "金币";
+                case "make_money": return "赚钱";
                 default: break; // The fun tab may be labelled 直播 or 视频.
             }
         }
-        return cellTitle(cell, fallback);
+        return normalizeTitle("kugou", cellTitle(cell, fallback));
+    }
+
+    private static String normalizeTitle(String appKey, String title) {
+        if (!"kugou".equals(appKey)) return title;
+        if ("金币".equals(title)) return "赚钱";
+        if ("我的".equals(title)) return "我";
+        return title;
     }
 
     /** First non-empty TextView text inside a cell, else its position. */
@@ -133,6 +140,7 @@ final class TabLayoutApplier {
             // mismatch too.
             Set<String> hidden = new HashSet<>();
             for (String h : GlassConfig.tabHidden) {
+                h = normalizeTitle(appKey, h);
                 if (h != null && !isLockedTitle(appKey, h)) hidden.add(h);
             }
             hidden.remove(titles[0]);
@@ -141,6 +149,7 @@ final class TabLayoutApplier {
             boolean[] used = new boolean[n];
             for (String want : GlassConfig.tabOrder) {
                 if (want == null) continue;
+                want = normalizeTitle(appKey, want);
                 for (int i = 0; i < n; i++) {
                     if (!used[i] && want.equals(titles[i]) && !hidden.contains(titles[i])) {
                         used[i] = true;
