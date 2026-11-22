@@ -555,6 +555,7 @@ final class LiquidGlassInstaller {
         private final int[] mRowPadding = new int[4];
         private final View[] mTabs;
         private final int[] mWidths;
+        private final int[] mHeights;
         private final float[] mWeights;
         private final boolean[] mHadLayoutParams;
 
@@ -568,6 +569,7 @@ final class LiquidGlassInstaller {
             int count = row == null ? 0 : row.getChildCount();
             mTabs = new View[count];
             mWidths = new int[count];
+            mHeights = new int[count];
             mWeights = new float[count];
             mHadLayoutParams = new boolean[count];
             if (row == null) {
@@ -586,6 +588,7 @@ final class LiquidGlassInstaller {
                 }
                 mHadLayoutParams[i] = true;
                 mWidths[i] = lp.width;
+                mHeights[i] = lp.height;
                 mWeights[i] = lp instanceof android.widget.LinearLayout.LayoutParams
                         ? ((android.widget.LinearLayout.LayoutParams) lp).weight : 0f;
             }
@@ -610,6 +613,7 @@ final class LiquidGlassInstaller {
                     continue;
                 }
                 lp.width = mWidths[i];
+                lp.height = mHeights[i];
                 if (lp instanceof android.widget.LinearLayout.LayoutParams) {
                     ((android.widget.LinearLayout.LayoutParams) lp).weight = mWeights[i];
                 }
@@ -1329,6 +1333,12 @@ final class LiquidGlassInstaller {
             lp.width = tabWidth;
             if (lp instanceof android.widget.LinearLayout.LayoutParams) {
                 ((android.widget.LinearLayout.LayoutParams) lp).weight = 0f;
+                if (hugApp == HostApp.KUGOU) {
+                    // Stock Kugou uses WRAP_CONTENT cells in a full-height row.
+                    // Give the shared droplet the same slot as the glass, not
+                    // just the intrinsic height of the icon and label.
+                    lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                }
             }
             tab.setLayoutParams(lp);
         }
