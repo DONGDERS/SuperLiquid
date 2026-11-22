@@ -65,6 +65,7 @@ private val TARGETS = listOf(
     Target("qq", "QQ", "com.tencent.mobileqq"),
     Target("bili", "哔哩哔哩", "tv.danmaku.bili"),
     Target("heybox", "小黑盒", "com.max.xiaoheihe"),
+    Target("kugou", "酷狗音乐", "com.kugou.android"),
 )
 
 private data class AppIdentity(val installed: Boolean, val label: String?, val icon: ImageBitmap?)
@@ -135,7 +136,16 @@ fun AppsScreen(bottomOverlay: Dp) {
         targets.forEach { t ->
             key(t.key) {
                 cardState.SaveableStateProvider(t.key) {
-                    AppCard(t, identities.getValue(t.key)) {
+                    AppCard(t, identities.getValue(t.key)) card@{
+                        if (t.key == "kugou") {
+                            LSliderRow(
+                                stringResourceCompat(R.string.apps_kugou_player_lift),
+                                Config.kugouPlayerLiftDp.toFloat(),
+                                0f..48f,
+                                steps = 47,
+                            ) { Config.setKugouPlayerLiftDp(it.toInt()) }
+                            return@card
+                        }
                         val cfg = when (t.key) {
                             "mm" -> Config.mm
                             "qq" -> Config.qq

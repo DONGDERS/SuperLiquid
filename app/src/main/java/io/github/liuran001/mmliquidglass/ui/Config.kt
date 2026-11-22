@@ -97,6 +97,8 @@ object Config {
     private val _bili = mutableStateOf(BiliCfg())
     val bili: BiliCfg get() = _bili.value
 
+    private val _kugouPlayerLiftDp = mutableStateOf(0)
+    val kugouPlayerLiftDp: Int get() = _kugouPlayerLiftDp.value
     private val _heybox = mutableStateOf(AppCfg(widthScale = 0.5f))
     val heybox: AppCfg get() = _heybox.value
 
@@ -188,6 +190,14 @@ object Config {
         writePlus("bili", cfg.plus)
     }
 
+    fun setKugouPlayerLiftDp(value: Int) {
+        val dp = value.coerceIn(0, 48)
+        _kugouPlayerLiftDp.value = dp
+        val remote = remotePrefs
+        remote?.edit()?.putInt("kugou_player_lift_dp", dp)?.apply()
+        hookPrefs?.edit()?.putInt("kugou_player_lift_dp", dp)?.apply()
+    }
+
     fun setHeyboxPlus(cfg: PlusCfg) {
         _heyboxPlus.value = cfg
         writePlus("heybox", cfg)
@@ -205,6 +215,7 @@ object Config {
         setBili(BiliCfg())
         setApp("heybox", AppCfg(widthScale = 0.5f))
         setHeyboxPlus(PlusCfg())
+        setKugouPlayerLiftDp(0)
         for (key in listOf("mm", "qq", "bili", "heybox")) {
             setTabLayout(key, TabLayout())
         }
@@ -261,6 +272,7 @@ object Config {
         _mm.value = app("mm", AppCfg())
         _qq.value = app("qq", AppCfg())
         _heybox.value = app("heybox", AppCfg(widthScale = 0.5f))
+        _kugouPlayerLiftDp.value = p.getInt("kugou_player_lift_dp", 0).coerceIn(0, 48)
         _heyboxPlus.value = readPlus(p, "heybox")
         _tabs.value = mapOf(
             "mm" to readTabLayout(p, "mm"), "qq" to readTabLayout(p, "qq"),

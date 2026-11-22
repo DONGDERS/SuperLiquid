@@ -66,6 +66,7 @@ final class GlassConfig {
     static volatile String[] tabHidden = new String[0];
 
     static volatile boolean enabled = true;
+    static volatile int kugouPlayerLiftDp;
 
     private static volatile String keyPrefix = "";
     private static volatile boolean moduleLayerRead = false;
@@ -84,6 +85,7 @@ final class GlassConfig {
         if (HostApp.WECHAT.pkg.equals(pkg)) return "mm";
         if (HostApp.QQ.pkg.equals(pkg)) return "qq";
         if (HostApp.HEYBOX.pkg.equals(pkg)) return "heybox";
+        if (HostApp.KUGOU.pkg.equals(pkg)) return "kugou";
         return "";
     }
 
@@ -101,6 +103,7 @@ final class GlassConfig {
         // Reset to per-app defaults before layering, so a prefix switch in a
         // long-lived process cannot inherit another app's values.
         enabled = true;
+        kugouPlayerLiftDp = 0;
         barOffsetDp = 12;
         barOffsetXDp = 0;
         // r12 lesson (log-arbitrated): the handoff below OVERWRITES
@@ -180,6 +183,9 @@ final class GlassConfig {
         saturationBoost = p.getFloat(k("saturation"), saturationBoost);
         glossStrength = p.getFloat(k("gloss"), glossStrength);
         borderWidthScale = p.getFloat(k("border"), borderWidthScale);
+        if ("kugou".equals(keyPrefix)) {
+            kugouPlayerLiftDp = Math.max(0, Math.min(48, p.getInt(k("player_lift_dp"), 0)));
+        }
         if ("bili".equals(keyPrefix) || "heybox".equals(keyPrefix)) {
             pubScale = p.getFloat(k("pub_scale"), pubScale);
             pubBottomDp = p.getInt(k("pub_bottom_dp"), pubBottomDp);

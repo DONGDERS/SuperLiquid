@@ -135,9 +135,15 @@ final class HostApp {
             false,
             "com.max.xiaoheihe.");
 
-    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX};
+    static final HostApp KUGOU = new HostApp(
+            "com.kugou.android", "com.kugou.android.app.MediaActivity",
+            new String[0], new String[0], "", new String[0], new String[0],
+            false, "com.kugou.android.");
+
+    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX, KUGOU};
 
     static {
+        KUGOU.allowShapeFallback = false;
         // Bilibili is full of tab-shaped rows (feed tabs, channel strips), so
         // the shape fallback would latch onto the wrong one. Its bar is found
         // by class name instead.

@@ -35,6 +35,9 @@ object ConfigBackup {
         }
         root.put("mm", appCfg(Config.mm))
         root.put("qq", appCfg(Config.qq))
+        root.put("kugou", JSONObject().apply {
+            put("playerLiftDp", Config.kugouPlayerLiftDp)
+        })
         root.put("heybox", appCfg(Config.heybox).apply {
             writePlus(Config.heyboxPlus)
         })
@@ -85,6 +88,12 @@ object ConfigBackup {
         }
         app("mm")?.let { Config.setApp("mm", it); applied++ }
         app("qq")?.let { Config.setApp("qq", it); applied++ }
+        root.optJSONObject("kugou")?.let {
+            runCatching { it.getInt("playerLiftDp") }.getOrNull()?.let { dp ->
+                Config.setKugouPlayerLiftDp(dp)
+                applied++
+            }
+        }
         app("heybox")?.let {
             Config.setApp("heybox", it)
             Config.setHeyboxPlus(root.getJSONObject("heybox").readPlus(Config.heyboxPlus))

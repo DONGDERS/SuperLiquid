@@ -124,6 +124,11 @@ public class LiquidGlassModule extends XposedModule {
                                         log(android.util.Log.ERROR,
                                                 "home activity onResume #" + sResumeHits);
                                     }
+                                    if (app == HostApp.KUGOU) {
+                                        // Keep the native vertical stack out of stretch/reparent.
+                                        KugouHomeBar.onHomeResume(activity);
+                                        return result;
+                                    }
                                     LiquidGlassInstaller.scheduleInstall(activity);
                                     log(android.util.Log.ERROR, "resume dispatch step2");
                                     if (app == HostApp.BILIBILI) {
@@ -192,7 +197,7 @@ public class LiquidGlassModule extends XposedModule {
                 // went dark); surface clinit/whatever under our own tag.
                 logErr("heybox install threw", t);
             }
-        } else {
+        } else if (app != HostApp.KUGOU) {
             TabBarBridge.install(app, param.getDefaultClassLoader());
         }
     }
