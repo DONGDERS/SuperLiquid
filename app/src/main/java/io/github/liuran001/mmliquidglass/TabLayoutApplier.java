@@ -42,12 +42,30 @@ final class TabLayoutApplier {
         LOCKED.put("qq", new HashSet<>(java.util.Arrays.asList("消息", "联系人")));
         LOCKED.put("bili", new HashSet<>(java.util.Arrays.asList("首页", "我的")));
         LOCKED.put("heybox", new HashSet<>(java.util.Arrays.asList("首页", "我")));
+        LOCKED.put("kugou", new HashSet<>(java.util.Arrays.asList("首页", "我的")));
     }
 
     /** Basics that the given host keeps, whatever the manager says. */
     static boolean isLockedTitle(String appKey, String t) {
         Set<String> set = LOCKED.get(appKey);
         return set != null && set.contains(t);
+    }
+
+    private static String kugouTitle(View cell, int fallback) {
+        Object tag = cell.getTag();
+        if (tag instanceof String) {
+            switch (((String) tag).trim()) {
+                case "ting": return "首页";
+                case "mine": return "我的";
+                case "chang": return "唱玩";
+                case "kan": return "直播";
+                case "video": return "视频";
+                case "songroom": return "K歌";
+                case "make_money": return "金币";
+                default: break; // The fun tab may be labelled 直播 or 视频.
+            }
+        }
+        return cellTitle(cell, fallback);
     }
 
     /** First non-empty TextView text inside a cell, else its position. */
@@ -101,7 +119,8 @@ final class TabLayoutApplier {
             }
             String[] titles = new String[n];
             for (int i = 0; i < n; i++) {
-                titles[i] = cellTitle(row.getChildAt(i), i);
+                View cell = row.getChildAt(i);
+                titles[i] = "kugou".equals(appKey) ? kugouTitle(cell, i) : cellTitle(cell, i);
             }
             if (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0) {
                 LiquidGlassModule.log(android.util.Log.INFO,

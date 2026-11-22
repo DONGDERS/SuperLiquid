@@ -111,6 +111,7 @@ object Config {
     private val _tabs = mutableStateOf(mapOf(
         "mm" to TabLayout(), "qq" to TabLayout(),
         "bili" to TabLayout(), "heybox" to TabLayout(),
+        "kugou" to TabLayout(),
     ))
     fun tabLayout(key: String): TabLayout = _tabs.value[key] ?: TabLayout()
 
@@ -221,7 +222,7 @@ object Config {
         setHeyboxPlus(PlusCfg())
         setApp("kugou", AppCfg())
         setKugouPlayerLiftDp(DEFAULT_KUGOU_PLAYER_LIFT_DP)
-        for (key in listOf("mm", "qq", "bili", "heybox")) {
+        for (key in listOf("mm", "qq", "bili", "heybox", "kugou")) {
             setTabLayout(key, TabLayout())
         }
     }
@@ -283,6 +284,7 @@ object Config {
         _tabs.value = mapOf(
             "mm" to readTabLayout(p, "mm"), "qq" to readTabLayout(p, "qq"),
             "bili" to readTabLayout(p, "bili"), "heybox" to readTabLayout(p, "heybox"),
+            "kugou" to readTabLayout(p, "kugou"),
         )
         _bili.value = BiliCfg(
             base = app("bili", AppCfg(widthScale = 0.7f)),

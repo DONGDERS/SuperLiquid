@@ -197,7 +197,9 @@ public class LiquidGlassModule extends XposedModule {
                 // went dark); surface clinit/whatever under our own tag.
                 logErr("heybox install threw", t);
             }
-        } else if (app != HostApp.KUGOU) {
+        } else if (app == HostApp.KUGOU) {
+            KugouHomeBar.install(param.getDefaultClassLoader());
+        } else {
             TabBarBridge.install(app, param.getDefaultClassLoader());
         }
     }

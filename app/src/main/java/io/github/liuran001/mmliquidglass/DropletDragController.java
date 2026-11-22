@@ -66,6 +66,25 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
     private final Spring mScaleX;
     private final Spring mScaleY;
 
+    interface Positioner {
+        void place(float index, float scaleX, float scaleY, float progress);
+    }
+    private Positioner mPositioner;
+
+    void setPositioner(Positioner positioner) {
+        mPositioner = positioner;
+    }
+
+    void refreshGeometry() {
+        apply();
+    }
+
+    void syncConfirmedIndex(int index, boolean immediate) {
+        if (!mDragging && (immediate || Math.abs(mValue.target() - index) >= 0.01f)) {
+            animateToIndex(index, immediate);
+        }
+    }
+
     private float mDownX;
     private float mDownY;
     private float mDragStartValue;
@@ -396,7 +415,7 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
         ViewGroup.LayoutParams lp = droplet.getLayoutParams();
         float dropletW = lp != null && lp.width > 0 ? lp.width : droplet.getWidth();
         float originX = originInHost(tabRow, first, dropletW);
-        droplet.setTranslationX(originX + mValue.value() * tabWidth);
+        if (mPositioner == null) droplet.setTranslationX(originX + mValue.value() * tabWidth);
 
         // KernelSU:
         //   scaleX /= 1f - (velocity * 0.75f).coerceIn(-0.2f, 0.2f)
@@ -404,8 +423,14 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
         float v = mVelocity.value() / 10f;
         float along = clamp(v * 0.75f, -STRETCH_LIMIT, STRETCH_LIMIT);
         float across = clamp(v * 0.25f, -STRETCH_LIMIT, STRETCH_LIMIT);
-        droplet.setScaleX(mScaleX.value() / (1f - along));
-        droplet.setScaleY(mScaleY.value() * (1f - across));
+        float sx = mScaleX.value() / (1f - along);
+        float sy = mScaleY.value() * (1f - across);
+        if (mPositioner == null) {
+            droplet.setScaleX(sx);
+            droplet.setScaleY(sy);
+        } else {
+            mPositioner.place(mValue.value(), sx, sy, mPress.value());
+        }
 
         // The lens, its wash and the inner shadow all ride on press progress.
         float p = mPress.value();

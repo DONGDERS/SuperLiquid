@@ -45,7 +45,7 @@ object ConfigBackup {
             writePlus(Config.bili.plus)
         })
         root.put("tabLayout", JSONObject().apply {
-            for (key in listOf("mm", "qq", "bili", "heybox")) {
+            for (key in listOf("mm", "qq", "bili", "heybox", "kugou")) {
                 val t = Config.tabLayout(key)
                 if (!t.isDefault) put(key, JSONObject().apply {
                     put("order", JSONArray(t.order))
@@ -124,7 +124,7 @@ object ConfigBackup {
                 val a = o.getJSONArray(k)
                 (0 until a.length()).mapNotNull { runCatching { a.getString(it) }.getOrNull() }
             }.getOrDefault(emptyList())
-            for (key in listOf("mm", "qq", "bili", "heybox")) {
+            for (key in listOf("mm", "qq", "bili", "heybox", "kugou")) {
                 runCatching {
                     val o = t.getJSONObject(key)
                     Config.setTabLayout(key, Config.TabLayout(

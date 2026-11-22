@@ -64,6 +64,7 @@ object TabLayoutEditor {
         "qq" to listOf("消息", "频道", "联系人", "动态"),
         "bili" to listOf("首页", "动态", "会员购", "我的"),
         "heybox" to listOf("首页", "热点", "游戏库", "我"),
+        "kugou" to listOf("首页", "直播", "唱玩", "视频", "K歌", "金币", "我的"),
     )
 
     /** Basics per app: never hideable, never reorderable away from slot 0. */
@@ -72,6 +73,7 @@ object TabLayoutEditor {
         "qq" to setOf("消息", "联系人"),
         "bili" to setOf("首页", "我的"),
         "heybox" to setOf("首页", "我"),
+        "kugou" to setOf("首页", "我的"),
     )
 
     fun locked(appKey: String, title: String): Boolean =
