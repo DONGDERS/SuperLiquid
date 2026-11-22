@@ -811,6 +811,16 @@ final class LiquidGlassInstaller {
             return;
         }
         ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) lp;
+        // Bilibili's 0dp home pager is constrained below the category bar.
+        // MATCH_PARENT instead lays it out from the top of the parent.
+        if (mlp.height == 0 && LiquidGlassModule.app() == HostApp.BILIBILI
+                && "com.bilibili.lib.homepage.widget.ChangeScrollableViewPager"
+                        .equals(c.getClass().getName())) {
+            int pagerId = c.getResources().getIdentifier("pager", "id", "tv.danmaku.bili");
+            if (pagerId != 0 && c.getId() == pagerId) {
+                return;
+            }
+        }
         boolean changed = false;
         if (mlp.bottomMargin != 0) {
             mlp.bottomMargin = 0;
