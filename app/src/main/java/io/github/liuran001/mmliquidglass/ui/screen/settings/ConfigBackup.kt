@@ -35,7 +35,7 @@ object ConfigBackup {
         }
         root.put("mm", appCfg(Config.mm))
         root.put("qq", appCfg(Config.qq))
-        root.put("kugou", JSONObject().apply {
+        root.put("kugou", appCfg(Config.kugou).apply {
             put("playerLiftDp", Config.kugouPlayerLiftDp)
         })
         root.put("heybox", appCfg(Config.heybox).apply {
@@ -73,6 +73,7 @@ object ConfigBackup {
             val cur = when (key) {
                 "mm" -> Config.mm; "qq" -> Config.qq
                 "heybox" -> Config.heybox; "bili" -> Config.bili.base
+                "kugou" -> Config.kugou
                 else -> return null
             }
             var c = cur
@@ -88,11 +89,11 @@ object ConfigBackup {
         }
         app("mm")?.let { Config.setApp("mm", it); applied++ }
         app("qq")?.let { Config.setApp("qq", it); applied++ }
-        root.optJSONObject("kugou")?.let {
-            runCatching { it.getInt("playerLiftDp") }.getOrNull()?.let { dp ->
-                Config.setKugouPlayerLiftDp(dp)
-                applied++
-            }
+        app("kugou")?.let { cfg ->
+            Config.setApp("kugou", cfg)
+            runCatching { root.getJSONObject("kugou").getInt("playerLiftDp") }
+                .getOrNull()?.let(Config::setKugouPlayerLiftDp)
+            applied++
         }
         app("heybox")?.let {
             Config.setApp("heybox", it)

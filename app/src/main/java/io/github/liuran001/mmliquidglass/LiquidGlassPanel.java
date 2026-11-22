@@ -131,7 +131,21 @@ final class LiquidGlassPanel extends View {
     private RenderEffect mChain;
     private int mChainW;
     private int mChainH;
+    private boolean mUseAppTuning;
+    private float mChainBlur;
+    private float mChainSaturation;
+    private final Paint mGloss = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RenderEffect mSaturate;
+
+    void useAppTuning() {
+        mUseAppTuning = true;
+        mChain = null;
+        invalidate();
+    }
+
+    private static float tuning(float value, float min, float max) {
+        return Float.isFinite(value) ? Math.max(min, Math.min(max, value)) : 1f;
+    }
 
     /**
      * KernelSU's InteractiveHighlight: a white wash plus a radial bloom that
@@ -383,9 +397,21 @@ final class LiquidGlassPanel extends View {
 
         // Surface wash and rim highlight sit on top of the refracted backdrop —
         // this is what carries legibility, not a heavy blur.
+        if (mUseAppTuning) {
+            int color = mNight ? 0x002C2C2E : 0x00F2F2F7;
+            int baseAlpha = mBackdropRef.get() == null ? 176 : 102;
+            int alpha = Math.min(255, Math.round(baseAlpha * tuning(GlassConfig.tintStrength, 0.2f, 2f)));
+            mSurfacePaint.setColor(color | (alpha << 24));
+            mHighlightPaint.setStrokeWidth(mDensity * tuning(GlassConfig.borderWidthScale, 0.5f, 2f));
+        }
         canvas.drawRoundRect(0, 0, w, h, radius, radius, mSurfacePaint);
+        if (mUseAppTuning) {
+            mGloss.setColor(0x00FFFFFF | (Math.round(18 * tuning(GlassConfig.glossStrength, 0f, 2f)) << 24));
+            canvas.drawRoundRect(0, 0, w, h, radius, radius, mGloss);
+        }
         drawInteractiveHighlight(canvas, w, h, radius);
         float half = mHighlightPaint.getStrokeWidth() * 0.5f;
+        if (half >= radius || half * 2 >= w) return;
         canvas.drawRoundRect(half, half, w - half, h - half,
                 radius - half, radius - half, mHighlightPaint);
     }
@@ -449,10 +475,19 @@ final class LiquidGlassPanel extends View {
         // Every uniform here is a function of the pill's size, so the whole
         // chain only has to be rebuilt when that changes. Building it per frame
         // meant three native effect objects churned on every single frame.
-        if (mChain == null || mChainW != w || mChainH != h) {
-            float blur = BLUR_DP * mDensity;
-            RenderEffect frost = RenderEffect.createBlurEffect(blur, blur, mSaturate,
-                    Shader.TileMode.CLAMP);
+        float blur = (mUseAppTuning ? BLUR_DP * tuning(GlassConfig.blurRadius, 1f, 8f) / 3f : BLUR_DP) * mDensity;
+        float saturation = SATURATION * (mUseAppTuning ? tuning(GlassConfig.saturationBoost, 1f, 1.3f) : 1f);
+        if (mChain == null || mChainW != w || mChainH != h
+                || mChainBlur != blur || mChainSaturation != saturation) {
+            RenderEffect vibrancy = mSaturate;
+            if (mUseAppTuning) {
+                ColorMatrix matrix = new ColorMatrix();
+                matrix.setSaturation(saturation);
+                vibrancy = RenderEffect.createColorFilterEffect(new ColorMatrixColorFilter(matrix));
+            }
+            RenderEffect frost = RenderEffect.createBlurEffect(blur, blur, vibrancy, Shader.TileMode.CLAMP);
+            mChainBlur = blur;
+            mChainSaturation = saturation;
             if (mLens != null) {
                 mLens.setFloatUniform("size", w, h);
                 mLens.setFloatUniform("offset", -mPad, -mPad);

@@ -136,20 +136,12 @@ fun AppsScreen(bottomOverlay: Dp) {
         targets.forEach { t ->
             key(t.key) {
                 cardState.SaveableStateProvider(t.key) {
-                    AppCard(t, identities.getValue(t.key)) card@{
-                        if (t.key == "kugou") {
-                            LSliderRow(
-                                stringResourceCompat(R.string.apps_kugou_player_lift),
-                                Config.kugouPlayerLiftDp.toFloat(),
-                                0f..48f,
-                                steps = 47,
-                            ) { Config.setKugouPlayerLiftDp(it.toInt()) }
-                            return@card
-                        }
+                    AppCard(t, identities.getValue(t.key)) {
                         val cfg = when (t.key) {
                             "mm" -> Config.mm
                             "qq" -> Config.qq
                             "heybox" -> Config.heybox
+                            "kugou" -> Config.kugou
                             else -> Config.bili.base
                         }
                         AppParams(
@@ -157,9 +149,15 @@ fun AppsScreen(bottomOverlay: Dp) {
                             set = { Config.setApp(t.key, it) },
                             // The Heybox pill overruns its frame at a width of 1.0.
                             widthRange = if (t.key == "heybox") 0.2f..0.9f else 0.5f..1.2f,
-                            onEditTabs = { tabDialogKey = t.key },
+                            onEditTabs = if (t.key == "kugou") null else ({ tabDialogKey = t.key }),
                         )
                         when (t.key) {
+                            "kugou" -> LSliderRow(
+                                stringResourceCompat(R.string.apps_kugou_player_lift),
+                                Config.kugouPlayerLiftDp.toFloat(),
+                                0f..48f,
+                                steps = 47,
+                            ) { Config.setKugouPlayerLiftDp(it.toInt()) }
                             "bili" -> PlusParams(Config.bili.plus) { Config.setBili(Config.bili.copy(plus = it)) }
                             "heybox" -> PlusParams(Config.heyboxPlus, Config::setHeyboxPlus)
                             else -> Unit

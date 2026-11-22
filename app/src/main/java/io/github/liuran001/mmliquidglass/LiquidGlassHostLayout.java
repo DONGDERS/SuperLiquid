@@ -417,6 +417,9 @@ final class LiquidGlassHostLayout extends FrameLayout {
     }
 
     void attach() {
+        attach(true);
+    }
+    void attach(boolean reveal) {
         detach();
         mPreDrawListener = () -> {
             if (!mCapturing && isAttachedToWindow()
@@ -426,14 +429,14 @@ final class LiquidGlassHostLayout extends FrameLayout {
             }
             return true;
         };
-        mSampleRoot.getViewTreeObserver().addOnPreDrawListener(mPreDrawListener);
+        getViewTreeObserver().addOnPreDrawListener(mPreDrawListener);
         invalidate();
-        playRevealAnimation();
+        if (reveal) playRevealAnimation();
     }
 
     void detach() {
         if (mPreDrawListener != null) {
-            mSampleRoot.getViewTreeObserver().removeOnPreDrawListener(mPreDrawListener);
+            getViewTreeObserver().removeOnPreDrawListener(mPreDrawListener);
             mPreDrawListener = null;
         }
         mThemeProbe.cancel();

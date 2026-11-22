@@ -1,9 +1,10 @@
 package io.github.liuran001.mmliquidglass;
 
 import android.app.Activity;
-import android.content.res.Configuration;
+import android.graphics.drawable.Drawable;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.graphics.Rect;
-import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -27,7 +28,22 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
     private View section;
     private View player;
     private ViewGroup backdrop;
-    private LiquidGlassPanel glass;
+    private LiquidGlassHostLayout host;
+    private DropletPanel selection;
+    private FrameLayout boundBar;
+    private Drawable rowBackground;
+    private Drawable barBackground;
+    private boolean nativeClipChildren;
+    private boolean nativeClipToPadding;
+    private final int[] barLocation = new int[2];
+    private final Rect windowFrame = new Rect();
+
+    private final Rect pillBounds = new Rect();
+    private final ViewTreeObserver.OnPreDrawListener selectionObserver = () -> {
+        updateSelection();
+        return true;
+    };
+    private final Rect tabContents = new Rect();
     private LinearLayout.LayoutParams liftedParams;
     private int nativeMargin;
     private int appliedMargin;
@@ -83,43 +99,55 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
             restorePlayer();
             player = findShown(section, PLAYER);
         }
-        if (glass != null && glass.getParent() != bar) removeGlass();
-        ViewGroup currentBackdrop = findBackdrop(section);
-        if (currentBackdrop != backdrop) removeGlass();
-        backdrop = currentBackdrop;
         if (row.getOrientation() != LinearLayout.HORIZONTAL || visibleChildren(row) != 5
-                || !row.isShown() || row.getHeight() <= 0 || row.getWidth() <= 0) {
-            removeGlass();
-            restorePlayer();
+                || row.getHeight() <= 0 || row.getWidth() <= 0) {
+            clearBinding();
             return;
         }
-
         float density = root.getResources().getDisplayMetrics().density;
-        int inset = Math.round(8 * density);
-        int height = row.getHeight() - row.getPaddingTop() - row.getPaddingBottom();
-        int width = row.getWidth() - 2 * inset;
-        if (height > 0 && width > 0) {
-            if (glass == null) {
-                boolean night = (root.getResources().getConfiguration().uiMode
-                        & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-                glass = new LiquidGlassPanel(bar.getContext(), backdrop, density, night);
-                glass.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-                bar.addView(glass, bar.indexOfChild(row), new FrameLayout.LayoutParams(0, 0));
-            }
-            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) glass.getLayoutParams();
-            int top = row.getTop() + row.getPaddingTop() - bar.getPaddingTop();
-            int left = row.getLeft() + inset - bar.getPaddingLeft();
-            if (lp.width != width || lp.height != height || lp.topMargin != top || lp.leftMargin != left) {
-                lp.width = width;
-                lp.height = height;
-                lp.gravity = Gravity.TOP | Gravity.LEFT;
-                lp.leftMargin = left;
-                lp.topMargin = top;
-                glass.setLayoutParams(lp);
-            }
-        } else {
-            removeGlass();
+        tabContents.setEmpty();
+        int first = row.getWidth();
+        int last = 0;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View tab = row.getChildAt(i);
+            if (!isVisibleTab(tab)) continue;
+            first = Math.min(first, tab.getLeft());
+            last = Math.max(last, tab.getRight());
+            collectTabContents(tab, tab.getLeft(), tab.getTop());
         }
+        // Only fall back to the tab centres when a skin draws its labels itself.
+        int naturalHeight = Math.round(48 * density);
+        int centerY = (row.getPaddingTop() + row.getHeight() - row.getPaddingBottom()) / 2;
+        if (!tabContents.isEmpty()) {
+            centerY = tabContents.centerY();
+            naturalHeight = Math.max(naturalHeight, tabContents.height() + Math.round(12 * density));
+        }
+        int height = Math.round(naturalHeight * clamp(GlassConfig.pillScale, 0.1f, 3f));
+        int width = Math.round((last - first - 16 * density)
+                * clamp(GlassConfig.widthScale, 0.5f, 1.2f));
+        if (width <= 0 || height <= 0) return;
+        ViewGroup currentBackdrop = findBackdrop(section);
+        if (boundBar != bar || backdrop != currentBackdrop) {
+            removeGlass();
+            backdrop = currentBackdrop;
+            installGlass(bar, density);
+        }
+        rowBackground = clearBackground(row, rowBackground);
+        barBackground = clearBackground(bar, barBackground);
+        // The shared 12dp setting maps to the native icon centre on Kugou.
+        int center = row.getTop() + centerY
+                + Math.round((12f - clamp(GlassConfig.barOffsetDp, 0f, 24f)) * density);
+        bar.getLocationOnScreen(barLocation);
+        bar.getWindowVisibleDisplayFrame(windowFrame);
+        int gap = Math.round(6f * density);
+        int limit = windowFrame.bottom - barLocation[1] - gap - Math.round(row.getTranslationY());
+        // Keep the capsule centred on the icons; trim excess height before
+        // moving its centre. The native row is never translated by the module.
+        if (limit > center) height = Math.min(height, 2 * (limit - center));
+        int left = row.getLeft() + (first + last - width) / 2
+                + Math.round(clamp(GlassConfig.barOffsetXDp, -120f, 120f) * density);
+        int top = Math.min(center - height / 2, limit - height);
+        pillBounds.set(left, top, left + width, top + height);
         updatePlayer(bar, Math.round(GlassConfig.kugouPlayerLiftDp * density));
     }
 
@@ -182,11 +210,127 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         backdrop = null;
     }
 
+    private void installGlass(FrameLayout bar, float density) {
+        boundBar = bar;
+        nativeClipChildren = bar.getClipChildren();
+        nativeClipToPadding = bar.getClipToPadding();
+        bar.setClipChildren(false);
+        bar.setClipToPadding(false);
+        host = new LiquidGlassHostLayout(bar.getContext(), backdrop, row);
+        host.setupShadow(density, host.isDark());
+        host.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
+        LiquidGlassPanel panel = new LiquidGlassPanel(bar.getContext(), backdrop, density, host.isDark());
+        panel.useAppTuning();
+        host.addView(panel, new FrameLayout.LayoutParams(-1, -1));
+        // Only draw the selected wash: native icon/text and touch stay above it.
+        selection = new DropletPanel(bar.getContext(), backdrop, null, density, host.isDark());
+        selection.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+        selection.setVisibility(View.INVISIBLE);
+        host.setGlassTuner(new LiquidGlassHostLayout.GlassTuner() {
+            @Override public void onSize(int w, int h, float radius) { panel.invalidate(); }
+            @Override public void onTheme(boolean dark) {
+                panel.setTheme(dark);
+                if (selection != null) selection.setTheme(dark);
+            }
+        });
+        // Zero-sized layout params keep decorations out of native measurement.
+        bar.addView(host, bar.indexOfChild(row), new FrameLayout.LayoutParams(0, 0));
+        bar.addView(selection, bar.indexOfChild(row), new FrameLayout.LayoutParams(0, 0));
+        host.attach(false);
+        observer.addOnPreDrawListener(selectionObserver);
+    }
+
     private void removeGlass() {
-        if (glass != null && glass.getParent() instanceof ViewGroup) {
-            ((ViewGroup) glass.getParent()).removeView(glass);
+        if (boundBar == null) return;
+        ViewTreeObserver tree = root.getViewTreeObserver();
+        if (tree.isAlive()) tree.removeOnPreDrawListener(selectionObserver);
+        if (row.getBackground() == null && rowBackground != null) row.setBackground(rowBackground);
+        if (boundBar.getBackground() == null && barBackground != null) boundBar.setBackground(barBackground);
+        boundBar.setClipChildren(nativeClipChildren);
+        boundBar.setClipToPadding(nativeClipToPadding);
+        boundBar.removeView(host);
+        boundBar.removeView(selection);
+        boundBar = null;
+        host = null;
+        selection = null;
+        rowBackground = null;
+        barBackground = null;
+    }
+
+    private void updateSelection() {
+        if (selection == null || row == null) return;
+        host.setTranslationX(row.getTranslationX());
+        host.setTranslationY(row.getTranslationY());
+        host.setAlpha(row.getAlpha());
+        selection.setTranslationX(row.getTranslationX());
+        selection.setTranslationY(row.getTranslationY());
+        selection.setAlpha(row.getAlpha());
+        host.setVisibility(row.isShown() ? View.VISIBLE : View.INVISIBLE);
+        int pad = host.shadowPad();
+        position(host, pillBounds.width() + 2 * pad, pillBounds.height() + 2 * pad,
+                pillBounds.left - pad, pillBounds.top - pad);
+        View tab = null;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View child = row.getChildAt(i);
+            if (isVisibleTab(child) && (child.isSelected() || child.isActivated())) {
+                tab = child;
+                break;
+            }
         }
-        glass = null;
+        if (tab == null || !row.isShown() || pillBounds.isEmpty()) {
+            selection.setVisibility(View.INVISIBLE);
+            return;
+        }
+        int left = Math.max(pillBounds.left, row.getLeft() + tab.getLeft());
+        int right = Math.min(pillBounds.right, row.getLeft() + tab.getRight());
+        if (right <= left) {
+            selection.setVisibility(View.INVISIBLE);
+            return;
+        }
+        position(selection, right - left, pillBounds.height(), left, pillBounds.top);
+        selection.setVisibility(View.VISIBLE);
+    }
+
+    private void collectTabContents(View view, int x, int y) {
+        if (view.getVisibility() != View.VISIBLE || view.getWidth() <= 0 || view.getHeight() <= 0) return;
+        if (view instanceof ImageView || view instanceof TextView) {
+            int left = x + view.getPaddingLeft();
+            int top = y + view.getPaddingTop();
+            int right = x + view.getWidth() - view.getPaddingRight();
+            int bottom = y + view.getHeight() - view.getPaddingBottom();
+            if (right > left && bottom > top) tabContents.union(left, top, right, bottom);
+        } else if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View child = group.getChildAt(i);
+                collectTabContents(child, x + child.getLeft(), y + child.getTop());
+            }
+        }
+    }
+
+    private static Drawable clearBackground(View view, Drawable previous) {
+        Drawable current = view.getBackground();
+        if (current == null) return previous;
+        int l = view.getPaddingLeft(), t = view.getPaddingTop();
+        int r = view.getPaddingRight(), b = view.getPaddingBottom();
+        view.setBackground(null);
+        view.setPadding(l, t, r, b);
+        return current;
+    }
+
+    private static float clamp(float value, float min, float max) {
+        return Float.isFinite(value) ? Math.max(min, Math.min(max, value)) : 1f;
+    }
+
+    private static void position(View view, int width, int height, int left, int top) {
+        if (view.isLayoutRequested() || view.getMeasuredWidth() != width || view.getMeasuredHeight() != height) {
+            view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+        }
+        if (view.isLayoutRequested() || view.getLeft() != left || view.getTop() != top
+                || view.getWidth() != width || view.getHeight() != height) {
+            view.layout(left, top, left + width, top + height);
+        }
     }
 
     private ViewGroup findBackdrop(View section) {
@@ -209,10 +353,13 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         int count = 0;
         for (int i = 0; i < group.getChildCount(); i++) {
             View child = group.getChildAt(i);
-            if (child.getVisibility() == View.VISIBLE && child.getWidth() > 0
-                    && isNativeTab(child)) count++;
+            if (isVisibleTab(child)) count++;
         }
         return count;
+    }
+
+    private static boolean isVisibleTab(View tab) {
+        return tab.getVisibility() == View.VISIBLE && tab.getWidth() > 0 && isNativeTab(tab);
     }
 
     private static boolean isNativeTab(View tab) {

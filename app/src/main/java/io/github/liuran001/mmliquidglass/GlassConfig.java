@@ -25,7 +25,7 @@ import io.github.libxposed.api.XposedInterface;
  * "bili_") because each host process only cares about its own app's knobs.
  * Key names are shared with the manager's Config object — keep both in sync.
  */
-final class GlassConfig {
+public final class GlassConfig {
 
     private static final String MODULE_PKG = BuildConfig.APPLICATION_ID;
     private static final String REMOTE_NAME = "superliquid";
@@ -66,7 +66,8 @@ final class GlassConfig {
     static volatile String[] tabHidden = new String[0];
 
     static volatile boolean enabled = true;
-    static volatile int kugouPlayerLiftDp;
+    public static final int DEFAULT_KUGOU_PLAYER_LIFT_DP = 20;
+    static volatile int kugouPlayerLiftDp = DEFAULT_KUGOU_PLAYER_LIFT_DP;
 
     private static volatile String keyPrefix = "";
     private static volatile boolean moduleLayerRead = false;
@@ -103,7 +104,7 @@ final class GlassConfig {
         // Reset to per-app defaults before layering, so a prefix switch in a
         // long-lived process cannot inherit another app's values.
         enabled = true;
-        kugouPlayerLiftDp = 0;
+        kugouPlayerLiftDp = DEFAULT_KUGOU_PLAYER_LIFT_DP;
         barOffsetDp = 12;
         barOffsetXDp = 0;
         // r12 lesson (log-arbitrated): the handoff below OVERWRITES
@@ -184,7 +185,7 @@ final class GlassConfig {
         glossStrength = p.getFloat(k("gloss"), glossStrength);
         borderWidthScale = p.getFloat(k("border"), borderWidthScale);
         if ("kugou".equals(keyPrefix)) {
-            kugouPlayerLiftDp = Math.max(0, Math.min(48, p.getInt(k("player_lift_dp"), 0)));
+            kugouPlayerLiftDp = Math.max(0, Math.min(48, p.getInt(k("player_lift_dp"), DEFAULT_KUGOU_PLAYER_LIFT_DP)));
         }
         if ("bili".equals(keyPrefix) || "heybox".equals(keyPrefix)) {
             pubScale = p.getFloat(k("pub_scale"), pubScale);

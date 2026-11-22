@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
+import io.github.liuran001.mmliquidglass.GlassConfig.DEFAULT_KUGOU_PLAYER_LIFT_DP
 
 /**
  * Config store for the manager.
@@ -97,7 +98,9 @@ object Config {
     private val _bili = mutableStateOf(BiliCfg())
     val bili: BiliCfg get() = _bili.value
 
-    private val _kugouPlayerLiftDp = mutableStateOf(0)
+    private val _kugou = mutableStateOf(AppCfg())
+    val kugou: AppCfg get() = _kugou.value
+    private val _kugouPlayerLiftDp = mutableStateOf(DEFAULT_KUGOU_PLAYER_LIFT_DP)
     val kugouPlayerLiftDp: Int get() = _kugouPlayerLiftDp.value
     private val _heybox = mutableStateOf(AppCfg(widthScale = 0.5f))
     val heybox: AppCfg get() = _heybox.value
@@ -179,6 +182,7 @@ object Config {
             "mm" -> _mm.value = cfg
             "qq" -> _qq.value = cfg
             "heybox" -> _heybox.value = cfg
+            "kugou" -> _kugou.value = cfg
             "bili" -> _bili.value = _bili.value.copy(base = cfg)
         }
         write(key, cfg)
@@ -215,7 +219,8 @@ object Config {
         setBili(BiliCfg())
         setApp("heybox", AppCfg(widthScale = 0.5f))
         setHeyboxPlus(PlusCfg())
-        setKugouPlayerLiftDp(0)
+        setApp("kugou", AppCfg())
+        setKugouPlayerLiftDp(DEFAULT_KUGOU_PLAYER_LIFT_DP)
         for (key in listOf("mm", "qq", "bili", "heybox")) {
             setTabLayout(key, TabLayout())
         }
@@ -272,7 +277,8 @@ object Config {
         _mm.value = app("mm", AppCfg())
         _qq.value = app("qq", AppCfg())
         _heybox.value = app("heybox", AppCfg(widthScale = 0.5f))
-        _kugouPlayerLiftDp.value = p.getInt("kugou_player_lift_dp", 0).coerceIn(0, 48)
+        _kugou.value = app("kugou", AppCfg())
+        _kugouPlayerLiftDp.value = p.getInt("kugou_player_lift_dp", DEFAULT_KUGOU_PLAYER_LIFT_DP).coerceIn(0, 48)
         _heyboxPlus.value = readPlus(p, "heybox")
         _tabs.value = mapOf(
             "mm" to readTabLayout(p, "mm"), "qq" to readTabLayout(p, "qq"),
