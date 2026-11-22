@@ -255,6 +255,12 @@ final class LiquidGlassInstaller {
 
     /** Package-private: BiliHomeBar (bilibili's Compose bar) feeds a self-built row. */
     static void install(ViewGroup tabView) {
+        install(tabView, null);
+    }
+
+    // Kugou's page is not a sibling of the tab view: its sibling is the player.
+    static void install(ViewGroup tabView, ViewGroup page) {
+        boolean kugou = LiquidGlassModule.app() == HostApp.KUGOU;
         ViewGroup parent = tabView.getParent() instanceof ViewGroup
                 ? (ViewGroup) tabView.getParent() : null;
         if (parent == null) {
@@ -264,7 +270,7 @@ final class LiquidGlassInstaller {
             return; // already installed
         }
 
-        ViewGroup backdrop = findBackdrop(parent, tabView);
+        ViewGroup backdrop = page != null ? page : findBackdrop(parent, tabView);
         if (backdrop == null) {
             LiquidGlassModule.log(android.util.Log.WARN,
                     "no backdrop sibling found, glass would refract nothing");
@@ -293,7 +299,7 @@ final class LiquidGlassInstaller {
         // cells for the reparented hosts. heybox/bili run their own self-drawn
         // paths and never reach here.
         String appKey = GlassConfig.key();
-        if ("mm".equals(appKey) || "qq".equals(appKey)) {
+        if ("mm".equals(appKey) || "qq".equals(appKey) || kugou) {
             TabLayoutApplier.apply(tabRow, appKey);
         }
         int barHeight = contentBarHeight(tabRow, tabView.getHeight() - navReserve);
@@ -317,6 +323,11 @@ final class LiquidGlassInstaller {
         // margins and any anchor that pinned it to the bottom, whatever the
         // parent type is.
         ViewGroup.LayoutParams hostLp = originalLp;
+        if (kugou && originalLp instanceof android.widget.LinearLayout.LayoutParams) {
+            android.widget.LinearLayout.LayoutParams stackLp = new android.widget.LinearLayout.LayoutParams((android.widget.LinearLayout.LayoutParams) originalLp);
+            stackLp.gravity = android.view.Gravity.CENTER_HORIZONTAL;
+            hostLp = stackLp;
+        }
         hostLp.width = ViewGroup.LayoutParams.MATCH_PARENT;
         hostLp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
         if (hostLp instanceof FrameLayout.LayoutParams) {
@@ -437,7 +448,7 @@ final class LiquidGlassInstaller {
         // and report the degraded effect rather than trying to tear it back out.
         try {
             hideOwnBlurLayers(parent, tabView);
-            hideBarHairline(parent, tabView);
+            if (!kugou) hideBarHairline(parent, tabView);
             stripSolidBackgrounds(tabView);
             disableTabWidgetStrips(tabView);
         } catch (Throwable t) {
@@ -449,8 +460,8 @@ final class LiquidGlassInstaller {
         // why), but QQ already lays its own decor out edge to edge, so the
         // pill's parent does reach under the gesture bar and the correction is
         // owed all the same.
-        boolean insetCounts = extendUnderNavBar(ctx)
-                || LiquidGlassModule.app() == HostApp.QQ;
+        boolean insetCounts = !kugou && (extendUnderNavBar(ctx)
+                || LiquidGlassModule.app() == HostApp.QQ);
         if (insetCounts && hostLp instanceof ViewGroup.MarginLayoutParams) {
             ((ViewGroup.MarginLayoutParams) hostLp).bottomMargin =
                     bottomOffset - shadowPad + navigationInset;
@@ -1630,6 +1641,9 @@ final class LiquidGlassInstaller {
             // host around the row.
             stripSolidBackgrounds(tabView);
             disableTabWidgetStrips(tabView);
+            if (LiquidGlassModule.app() == HostApp.KUGOU && tabRow != sTabRowRef.get()) {
+                TabLayoutApplier.apply(tabRow, "kugou");
+            }
             dropNavReserve(tabView);
             ViewGroup.LayoutParams tabLp = tabView.getLayoutParams();
             if (tabLp != null && sBarHeight > 0 && tabLp.height != sBarHeight) {

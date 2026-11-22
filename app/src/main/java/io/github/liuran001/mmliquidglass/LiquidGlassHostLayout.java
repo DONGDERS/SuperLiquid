@@ -197,6 +197,14 @@ final class LiquidGlassHostLayout extends FrameLayout {
     }
 
     @Override
+    public void requestDisallowInterceptTouchEvent(boolean disallow) {
+        // BottomTabView requests this before dispatching every event. The
+        // shared gesture handler already protects the stream from ancestors.
+        if (disallow && mDragHandler != null && LiquidGlassModule.app() == HostApp.KUGOU) return;
+        super.requestDisallowInterceptTouchEvent(disallow);
+    }
+
+    @Override
     public boolean onInterceptTouchEvent(android.view.MotionEvent ev) {
         protectGestureFromAncestors(ev);
         try {

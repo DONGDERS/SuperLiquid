@@ -125,7 +125,7 @@ public class LiquidGlassModule extends XposedModule {
                                                 "home activity onResume #" + sResumeHits);
                                     }
                                     if (app == HostApp.KUGOU) {
-                                        // Keep the native vertical stack out of stretch/reparent.
+                                        // Resolve the real page and bottom bar in separate branches.
                                         KugouHomeBar.onHomeResume(activity);
                                         return result;
                                     }
@@ -197,9 +197,7 @@ public class LiquidGlassModule extends XposedModule {
                 // went dark); surface clinit/whatever under our own tag.
                 logErr("heybox install threw", t);
             }
-        } else if (app == HostApp.KUGOU) {
-            KugouHomeBar.install(param.getDefaultClassLoader());
-        } else {
+        } else if (app != HostApp.KUGOU) {
             TabBarBridge.install(app, param.getDefaultClassLoader());
         }
     }

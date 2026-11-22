@@ -261,7 +261,8 @@ final class DropletPanel extends View {
                 || tab.getWidth() <= 0 || tab.getHeight() <= 0) {
             return;
         }
-        if (tab.isSelected()) {
+        if (tab.isSelected() || (LiquidGlassModule.app() == HostApp.KUGOU
+                && tab == TabBarBridge.tabAt(mTabRowRef.get(), mConfirmedIndex))) {
             // The selected tab is already painted in the accent colour by the
             // app itself, so the tint has nothing to add — and QQ's selected
             // glyph is not one flat colour but a blue disc with a white mark
@@ -612,9 +613,7 @@ final class DropletPanel extends View {
             c.scale(1f / viewScale, 1f / viewScale,
                     nw * 0.5f, nh * 0.5f);
         }
-        if (mPagerRef.get() != null) {
-            c.drawRenderNode(mBackdropNode);
-        }
+        c.drawRenderNode(mBackdropNode);
         c.restoreToCount(pageSave);
 
         // The glass wash belongs to the growing droplet itself, so it is not
@@ -689,9 +688,7 @@ final class DropletPanel extends View {
     private boolean drawLens(Canvas canvas, int w, int h, float radius, float p) {
         ViewGroup pager = mPagerRef.get();
         ViewGroup tabRow = mTabRowRef.get();
-        // Kugou can reserve its bottom strip outside the page. The same lens
-        // can still refract the glass surface and tabs without a page capture.
-        if (pager == null && LiquidGlassModule.app() != HostApp.KUGOU) {
+        if (pager == null) {
             return false;
         }
 

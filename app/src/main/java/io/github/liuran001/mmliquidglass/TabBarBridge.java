@@ -308,6 +308,9 @@ final class TabBarBridge {
         if (tabView == null) {
             return null;
         }
+        if (LiquidGlassModule.app() == HostApp.KUGOU) {
+            return KugouHomeBar.tabRow(tabView);
+        }
         ViewGroup hiddenFallback = null;
         for (int i = 0; i < tabView.getChildCount(); i++) {
             View c = tabView.getChildAt(i);
@@ -455,6 +458,9 @@ final class TabBarBridge {
     static int selectedIndex(ViewGroup tabRow) {
         if (tabRow == null) {
             return -1;
+        }
+        if (LiquidGlassModule.app() == HostApp.KUGOU) {
+            return KugouHomeBar.selectedSlot(tabRow);
         }
         int slot = 0;
         for (int i = 0; i < tabRow.getChildCount(); i++) {
