@@ -1230,6 +1230,10 @@ final class LiquidGlassInstaller {
      * width.
      */
     private static int hugContentWidth(ViewGroup tabRow, float density) {
+        return hugContentWidth(tabRow, density, Integer.MAX_VALUE);
+    }
+
+    static int hugContentWidth(ViewGroup tabRow, float density, int availableWidth) {
         if (tabRow == null || tabRow.getChildCount() == 0) {
             return 0;
         }
@@ -1297,10 +1301,11 @@ final class LiquidGlassInstaller {
             }
         }
         int screen = tabRow.getResources().getDisplayMetrics().widthPixels;
-        int maxTotal = screen - Math.round(density * 24f);
+        int maxTotal = Math.min(availableWidth, screen - Math.round(density * 24f));
         if (tabWidth * count + pad * 2 > maxTotal) {
             tabWidth = (maxTotal - pad * 2) / count;
         }
+        if (tabWidth <= 0) return 0;
         for (int i = 0; i < childCount; i++) {
             View tab = tabRow.getChildAt(i);
             if (tab.getVisibility() == View.GONE) {
@@ -2100,6 +2105,14 @@ final class LiquidGlassInstaller {
      * height stands.
      */
     private static int contentBarHeight(ViewGroup tabRow, int fallback) {
+        return contentBarHeight(tabRow, fallback, tabRow == null ? 0 : tabRow.getTop());
+    }
+
+    static int contentRowHeight(ViewGroup tabRow) {
+        return contentBarHeight(tabRow, tabRow.getHeight(), 0);
+    }
+
+    private static int contentBarHeight(ViewGroup tabRow, int fallback, int rowTop) {
         if (tabRow == null || fallback <= 0) {
             return fallback;
         }
@@ -2113,7 +2126,7 @@ final class LiquidGlassInstaller {
             int[] b = {Integer.MAX_VALUE, 0};
             leafBounds(tab, 0, b);
             if (b[0] < b[1]) {
-                int base = tabRow.getTop() + tab.getTop();
+                int base = rowTop + tab.getTop();
                 top = Math.min(top, base + b[0]);
                 bottom = Math.max(bottom, base + b[1]);
             }

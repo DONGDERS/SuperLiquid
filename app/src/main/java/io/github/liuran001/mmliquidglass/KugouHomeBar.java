@@ -2,8 +2,6 @@ package io.github.liuran001.mmliquidglass;
 
 import android.app.Activity;
 import android.graphics.drawable.Drawable;
-import android.widget.ImageView;
-import android.widget.TextView;
 import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
@@ -42,6 +40,12 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
     private String[] tabOrder, tabHidden;
     private View[] nativeOrder;
     private int[] nativeVisibility;
+    private LinearLayout.LayoutParams[] nativeColumns;
+    private FrameLayout.LayoutParams nativeRowParams;
+    private Rect nativeRowPadding;
+    private int huggedWidth;
+    private int lastAvailableWidth;
+    private float lastWidthScale;
     private final View root;
 
     static void install(ClassLoader loader) {
@@ -87,7 +91,12 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
                     live.drag.onTouch(event);
                     return true;
                 }
-                return chain.proceed();
+                if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    live.trackingTouch = false;
+                }
+                Object result = chain.proceed();
+                if (action == MotionEvent.ACTION_UP) live.root.invalidate();
+                return result;
             });
         } catch (ReflectiveOperationException | RuntimeException e) {
             LiquidGlassModule.logErr("kugou touch bridge", e);
@@ -113,7 +122,6 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         updateSelection();
         return true;
     };
-    private final Rect tabContents = new Rect();
     private LinearLayout.LayoutParams liftedParams;
     private int nativeMargin;
     private int appliedMargin;
@@ -169,6 +177,13 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
             restorePlayer();
             player = findShown(section, PLAYER);
         }
+        float density = root.getResources().getDisplayMetrics().density;
+        bar.getLocationOnScreen(barLocation);
+        bar.getWindowVisibleDisplayFrame(windowFrame);
+        int gap = Math.round(6f * density);
+        int availableWidth = Math.min(bar.getWidth(), windowFrame.right - barLocation[0])
+                - Math.max(0, windowFrame.left - barLocation[0]) - 2 * gap;
+        if (availableWidth <= 0) return;
         if (row.getOrientation() != LinearLayout.HORIZONTAL
                 || row.getHeight() <= 0 || row.getWidth() <= 0) return;
         // The host can rebuild the row in place when its tab list changes.
@@ -180,45 +195,48 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         if (cells.size() < 2 || cells.size() != row.getChildCount()) return;
         if (!cells.equals(configuredCells) || !Arrays.equals(tabOrder, GlassConfig.tabOrder)
                 || !Arrays.equals(tabHidden, GlassConfig.tabHidden)) {
-            if (cells.equals(configuredCells)) {
-                restoreTabLayout();
-            }
+            restoreTabLayout();
             configuredCells = cells;
             nativeOrder = new View[row.getChildCount()];
             nativeVisibility = new int[nativeOrder.length];
+            nativeColumns = new LinearLayout.LayoutParams[nativeOrder.length];
             for (int i = 0; i < nativeOrder.length; i++) {
                 nativeOrder[i] = row.getChildAt(i);
                 nativeVisibility[i] = nativeOrder[i].getVisibility();
+                nativeColumns[i] = new LinearLayout.LayoutParams((LinearLayout.LayoutParams) nativeOrder[i].getLayoutParams());
             }
             tabOrder = GlassConfig.tabOrder;
             tabHidden = GlassConfig.tabHidden;
             TabLayoutApplier.apply(row, "kugou");
             if (drag != null) drag.setTabRow(row);
             confirmed = -1;
-            if (row.isLayoutRequested()) return;
         }
-        if (visibleChildren(row) == 0) return;
-        float density = root.getResources().getDisplayMetrics().density;
-        tabContents.setEmpty();
-        int first = row.getWidth();
-        int last = 0;
-        for (int i = 0; i < row.getChildCount(); i++) {
-            View tab = row.getChildAt(i);
-            if (!isVisibleTab(tab)) continue;
-            first = Math.min(first, tab.getLeft());
-            last = Math.max(last, tab.getRight());
-            collectTabContents(tab, tab.getLeft(), tab.getTop());
+        if (huggedWidth == 0 || availableWidth != lastAvailableWidth
+                || Float.compare(lastWidthScale, GlassConfig.widthScale) != 0) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) row.getLayoutParams();
+            if (nativeRowParams == null) {
+                nativeRowParams = new FrameLayout.LayoutParams(lp);
+                nativeRowPadding = new Rect(row.getPaddingLeft(), row.getPaddingTop(),
+                        row.getPaddingRight(), row.getPaddingBottom());
+            }
+            huggedWidth = LiquidGlassInstaller.hugContentWidth(row, density, availableWidth);
+            if (huggedWidth > 0) {
+                lp.width = huggedWidth;
+                lp.gravity = (lp.gravity == -1 ? 0 : lp.gravity & ~android.view.Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK)
+                        | android.view.Gravity.CENTER_HORIZONTAL;
+                row.setLayoutParams(lp);
+                lastAvailableWidth = availableWidth;
+                lastWidthScale = GlassConfig.widthScale;
+                return;
+            }
+            pillBounds.setEmpty();
+            return;
         }
-        // Only fall back to the tab centres when a skin draws its labels itself.
-        int naturalHeight = Math.round(48 * density);
-        int centerY = (row.getPaddingTop() + row.getHeight() - row.getPaddingBottom()) / 2;
-        if (!tabContents.isEmpty()) {
-            centerY = tabContents.centerY();
-            naturalHeight = Math.max(naturalHeight, tabContents.height() + Math.round(12 * density));
-        }
+        if (row.isLayoutRequested() || row.getWidth() != huggedWidth || visibleChildren(row) == 0) return;
+        int naturalHeight = LiquidGlassInstaller.contentRowHeight(row);
+        int centerY = naturalHeight / 2;
         int height = Math.round(naturalHeight * clamp(GlassConfig.pillScale, 0.1f, 3f));
-        int width = Math.round((last - first - 16 * density)
-                * clamp(GlassConfig.widthScale, 0.5f, 1.2f));
+        int width = huggedWidth;
         if (width <= 0 || height <= 0) return;
         ViewGroup currentBackdrop = findBackdrop(section);
         if (boundBar != bar || backdrop != currentBackdrop) {
@@ -230,11 +248,8 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         barBackground = clearBackground(bar, barBackground);
         int center = row.getTop() + centerY
                 + Math.round((12f - clamp(GlassConfig.barOffsetDp, 0f, 24f)) * density);
-        bar.getLocationOnScreen(barLocation);
-        bar.getWindowVisibleDisplayFrame(windowFrame);
         int tx = Math.round(row.getTranslationX());
         int ty = Math.round(row.getTranslationY());
-        int gap = Math.round(6f * density);
         int minX = Math.max(0, windowFrame.left - barLocation[0]) + gap - tx;
         int maxX = Math.min(bar.getWidth(), windowFrame.right - barLocation[0]) - gap - tx;
         int minY = windowFrame.top - barLocation[1] + gap - ty;
@@ -248,7 +263,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         // Prefer trimming the surface to shifting it away from the native labels.
         int centeredHeight = 2 * Math.min(center - minY, maxY - center);
         if (centeredHeight > 0) height = Math.min(height, centeredHeight);
-        int left = row.getLeft() + (first + last - width) / 2
+        int left = row.getLeft()
                 + Math.round(clamp(GlassConfig.barOffsetXDp, -120f, 120f) * density);
         left = Math.max(minX, Math.min(left, maxX - width));
         int top = Math.max(minY, Math.min(center - height / 2, maxY - height));
@@ -307,14 +322,31 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
     }
 
     private void restoreTabLayout() {
-        if (row == null || nativeOrder == null || row.getChildCount() != nativeOrder.length) return;
-        for (View child : nativeOrder) if (child.getParent() != row) return;
+        if (row == null || nativeOrder == null) return;
+        if (nativeRowParams != null) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) row.getLayoutParams();
+            lp.width = nativeRowParams.width;
+            lp.gravity = nativeRowParams.gravity;
+            row.setLayoutParams(lp);
+            row.setPadding(nativeRowPadding.left, nativeRowPadding.top,
+                    nativeRowPadding.right, nativeRowPadding.bottom);
+        }
+        nativeRowParams = null;
+        nativeRowPadding = null;
+        huggedWidth = 0;
+        boolean sameChildren = row.getChildCount() == nativeOrder.length;
+        for (View child : nativeOrder) sameChildren &= child.getParent() == row;
         for (int i = 0; i < nativeOrder.length; i++) {
             View child = nativeOrder[i];
-            if (row.getChildAt(i) != child) {
+            if (child.getParent() != row) continue;
+            if (sameChildren && row.getChildAt(i) != child) {
                 row.removeView(child);
                 row.addView(child, i);
             }
+            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) child.getLayoutParams();
+            lp.width = nativeColumns[i].width;
+            lp.weight = nativeColumns[i].weight;
+            child.setLayoutParams(lp);
             child.setVisibility(nativeVisibility[i]);
         }
     }
@@ -325,6 +357,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         configuredCells = null;
         nativeOrder = null;
         nativeVisibility = null;
+        nativeColumns = null;
         restorePlayer();
         row = null;
         section = null;
@@ -344,7 +377,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         LiquidGlassPanel panel = new LiquidGlassPanel(bar.getContext(), backdrop, density, host.isDark());
         panel.useAppTuning();
         host.addView(panel, new FrameLayout.LayoutParams(-1, -1));
-        // Only draw the selected wash: native icon/text and touch stay above it.
+        // Like QQ/WeChat, draw the refracted tab copy above the native labels.
         selection = new DropletPanel(bar.getContext(), backdrop, null, density, host.isDark());
         selection.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         selection.setVisibility(View.INVISIBLE);
@@ -357,7 +390,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         });
         // Zero-sized layout params keep decorations out of native measurement.
         bar.addView(host, bar.indexOfChild(row), new FrameLayout.LayoutParams(0, 0));
-        bar.addView(selection, bar.indexOfChild(row), new FrameLayout.LayoutParams(0, 0));
+        bar.addView(selection, bar.indexOfChild(row) + 1, new FrameLayout.LayoutParams(0, 0));
         pill = panel;
         selection.setTabRow(row);
         selection.setPill(panel);
@@ -459,8 +492,6 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         float tx = row.getTranslationX(), ty = row.getTranslationY();
         // At rest keep the entire selection inside the pill. When pressed, allow
         // the same expansion as QQ/WeChat, bounded by the visible window.
-        int centeredWidth = (int) (2f * Math.min(center - pillBounds.left, pillBounds.right - center));
-        if (centeredWidth >= height) width = Math.min(width, centeredWidth);
         center = clamp(center, pillBounds.left + width / 2f, pillBounds.right - width / 2f);
         float minX = windowFrame.left - barLocation[0] - tx;
         float maxX = windowFrame.right - barLocation[0] - tx;
@@ -478,22 +509,6 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         pill.setInteraction(progress, center - pillBounds.left);
     }
 
-    private void collectTabContents(View view, int x, int y) {
-        if (view.getVisibility() != View.VISIBLE || view.getWidth() <= 0 || view.getHeight() <= 0) return;
-        if (view instanceof ImageView || view instanceof TextView) {
-            int left = x + view.getPaddingLeft();
-            int top = y + view.getPaddingTop();
-            int right = x + view.getWidth() - view.getPaddingRight();
-            int bottom = y + view.getHeight() - view.getPaddingBottom();
-            if (right > left && bottom > top) tabContents.union(left, top, right, bottom);
-        } else if (view instanceof ViewGroup) {
-            ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) {
-                View child = group.getChildAt(i);
-                collectTabContents(child, x + child.getLeft(), y + child.getTop());
-            }
-        }
-    }
 
     private static Drawable clearBackground(View view, Drawable previous) {
         Drawable current = view.getBackground();

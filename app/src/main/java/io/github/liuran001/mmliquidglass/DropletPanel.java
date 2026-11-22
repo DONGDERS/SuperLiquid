@@ -186,6 +186,13 @@ final class DropletPanel extends View {
         if (app != null && app.accentOverride != 0) {
             return app.accentOverride;
         }
+        // Kugou reports the selected cell by tag, not always by View.isSelected().
+        if (app == HostApp.KUGOU) {
+            View selected = TabBarBridge.tabAt(tabRow, mConfirmedIndex);
+            int c = selected == null ? 0 : firstLabelColour(selected, 0);
+            if (c != 0) return c;
+        }
+
         for (int i = 0; i < tabRow.getChildCount(); i++) {
             View tab = tabRow.getChildAt(i);
             if (!tab.isSelected()) {
@@ -200,6 +207,7 @@ final class DropletPanel extends View {
                 return c;
             }
         }
+        if (app == HostApp.KUGOU) return mNight ? 0xFFFFFFFF : 0xFF1C1C1E;
         return mAccentCache != 0 ? mAccentCache : 0xFF07C160; // WeChat green
     }
 
@@ -604,7 +612,9 @@ final class DropletPanel extends View {
             c.scale(1f / viewScale, 1f / viewScale,
                     nw * 0.5f, nh * 0.5f);
         }
-        c.drawRenderNode(mBackdropNode);
+        if (mPagerRef.get() != null) {
+            c.drawRenderNode(mBackdropNode);
+        }
         c.restoreToCount(pageSave);
 
         // The glass wash belongs to the growing droplet itself, so it is not
@@ -679,7 +689,9 @@ final class DropletPanel extends View {
     private boolean drawLens(Canvas canvas, int w, int h, float radius, float p) {
         ViewGroup pager = mPagerRef.get();
         ViewGroup tabRow = mTabRowRef.get();
-        if (pager == null) {
+        // Kugou can reserve its bottom strip outside the page. The same lens
+        // can still refract the glass surface and tabs without a page capture.
+        if (pager == null && LiquidGlassModule.app() != HostApp.KUGOU) {
             return false;
         }
 
