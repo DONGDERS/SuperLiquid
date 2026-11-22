@@ -1,0 +1,2 @@
+# Release APKs land here as SuperLiquid-<shortsha>.apk (ignored by git).
+# Drop the signed artifact from the release workflow here, never the debug build.

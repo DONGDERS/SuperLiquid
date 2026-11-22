@@ -4,6 +4,9 @@ build/
 tools/
 local.properties
 *.apk
+# CI release artifacts land here (metadata only; binaries stay ignored)
+!apk/.gitkeep
+apk/*.sha256
 *.idsig
 *.keystore
 *.jks
