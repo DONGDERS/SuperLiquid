@@ -43,6 +43,7 @@ final class TabLayoutApplier {
         LOCKED.put("bili", new HashSet<>(java.util.Arrays.asList("首页", "我的")));
         LOCKED.put("heybox", new HashSet<>(java.util.Arrays.asList("首页", "我")));
         LOCKED.put("kugou", new HashSet<>(java.util.Arrays.asList("首页", "我")));
+        LOCKED.put("pinduoduo", new HashSet<>(java.util.Arrays.asList("首页", "个人中心")));
     }
 
     /** Basics that the given host keeps, whatever the manager says. */
@@ -85,6 +86,9 @@ final class TabLayoutApplier {
         } else if (cell instanceof TextView) {
             CharSequence c = ((TextView) cell).getText();
             if (c != null && c.length() > 0) return c.toString().trim();
+        }
+        if (cell instanceof PinduoduoHomeBar.TabCopy) {
+            return ((PinduoduoHomeBar.TabCopy) cell).layoutTitle();
         }
         // Some bars label cells only via accessibility (TabWidget does).
         CharSequence cd = cell.getContentDescription();

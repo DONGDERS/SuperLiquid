@@ -114,6 +114,7 @@ final class PinduoduoHomeBar {
         int accessibility = bar.getImportantForAccessibility();
         try {
             parent.addView(row, lp);
+            TabLayoutApplier.apply(row, "pinduoduo");
             LiquidGlassInstaller.install(row, (ViewGroup) page);
             if (!(row.getParent() instanceof LiquidGlassHostLayout)) return false;
             host = (LiquidGlassHostLayout) row.getParent();
@@ -176,7 +177,7 @@ final class PinduoduoHomeBar {
         }
     }
 
-    private static final class TabCopy extends View {
+    static final class TabCopy extends View {
         final View source;
         private final int naturalWidth;
         final TextView title;
@@ -198,6 +199,10 @@ final class PinduoduoHomeBar {
                 }
             });
             sync();
+        }
+
+        String layoutTitle() {
+            return title.getText().toString().trim();
         }
 
         void sync() {
