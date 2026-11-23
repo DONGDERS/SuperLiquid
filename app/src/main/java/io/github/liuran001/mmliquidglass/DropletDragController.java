@@ -420,7 +420,8 @@ final class DropletDragController implements LiquidGlassHostLayout.DragHandler {
         // highlight that follows the droplet across it.
         View pill = mPillRef.get();
         if (pill != null && pill.getWidth() > 0) {
-            float grow = 1f + (PILL_GROWTH_DP * mDensity / pill.getWidth()) * p;
+            float grow = LiquidGlassInstaller.isTaobaoCartSelected() ? 1f
+                    : 1f + (PILL_GROWTH_DP * mDensity / pill.getWidth()) * p;
             View host = mHostRef.get();
             View grown = host != null ? host : pill;
             // Base pill-scale must ride on EVERY frame — a bare grow reset the

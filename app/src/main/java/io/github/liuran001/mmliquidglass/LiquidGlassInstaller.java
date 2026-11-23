@@ -323,7 +323,9 @@ final class LiquidGlassInstaller {
         // cells for the reparented hosts. heybox/bili run their own self-drawn
         // paths and never reach here.
         String appKey = GlassConfig.key();
-        if ("mm".equals(appKey) || "qq".equals(appKey) || kugou) {
+        if ("taobao".equals(appKey)) {
+            TaobaoTabLayout.apply(tabRow);
+        } else if ("mm".equals(appKey) || "qq".equals(appKey) || kugou) {
             TabLayoutApplier.apply(tabRow, appKey);
         }
         int barHeight = contentBarHeight(tabRow, tabView.getHeight() - navReserve);
@@ -1514,8 +1516,11 @@ final class LiquidGlassInstaller {
         }
         holdHidden(sHairlineRef.get(), false);
         if (app == HostApp.TAOBAO) {
+            ViewGroup row = sTabRowRef.get();
             hideTaobaoTabChrome(sTabViewRef.get());
-            centerTaobaoHomeIcon(sTabRowRef.get());
+            TaobaoTabLayout.place(row);
+            centerTaobaoHomeIcon(row);
+            setMaterialOnly(host, sPagerRef.get(), isTaobaoCartSelected());
         }
     }
 
@@ -1710,7 +1715,9 @@ final class LiquidGlassInstaller {
             // host around the row.
             stripSolidBackgrounds(tabView);
             disableTabWidgetStrips(tabView);
-            if (LiquidGlassModule.app() == HostApp.KUGOU && tabRow != sTabRowRef.get()) {
+            if (LiquidGlassModule.app() == HostApp.TAOBAO) {
+                TaobaoTabLayout.apply(tabRow);
+            } else if (LiquidGlassModule.app() == HostApp.KUGOU && tabRow != sTabRowRef.get()) {
                 TabLayoutApplier.apply(tabRow, "kugou");
             }
             dropNavReserve(tabView);
@@ -1794,7 +1801,14 @@ final class LiquidGlassInstaller {
         TabBarBridge.tracePagerState(sPagerRef.get());
         int sel = visibleTabSelection(tabRow);
         traceSelection(host, tabRow, sel);
-        if (sel < 0 || sDrag == null) return;
+        if (sel < 0 || sDrag == null) {
+            if (sel < 0 && TaobaoTabLayout.hasOrder(tabRow)) {
+                sLastIndex = -1;
+                View droplet = sDropletRef.get();
+                if (droplet != null) droplet.setVisibility(View.INVISIBLE);
+            }
+            return;
+        }
         boolean firstSelection = sLastIndex < 0;
         if (firstSelection && LiquidGlassModule.app() == HostApp.KUGOU) {
             View tab = TabBarBridge.tabAt(tabRow, sel);
@@ -2165,6 +2179,14 @@ final class LiquidGlassInstaller {
         }
     }
 
+    static boolean isTaobaoCartSelected() {
+        if (LiquidGlassModule.app() != HostApp.TAOBAO) return false;
+        View bar = sTabViewRef.get();
+        if (!(bar instanceof android.widget.TabHost)) return false;
+        android.widget.TabHost tabs = (android.widget.TabHost) bar;
+        return "cart".equals(tabs.getCurrentTabTag()) || tabs.getCurrentTab() == 3;
+    }
+
     private static void hideTaobaoTabChrome(View tabView) {
         if (!(tabView instanceof android.widget.TabHost)) return;
         View chrome = tabView.findViewById(0x7f0a192c);
@@ -2180,9 +2202,12 @@ final class LiquidGlassInstaller {
         if (background == null || !(background.getParent() instanceof View)) return;
         View icon = (View) background.getParent();
         if (icon.getParent() != home || icon.getHeight() <= 0 || home.getHeight() <= 0) return;
-        // The wrapper carries the native animation. Centre it as a unit.
-        float offset = (home.getHeight() - icon.getHeight()) * 0.5f - icon.getTop();
-        if (icon.getTranslationY() != offset) icon.setTranslationY(offset);
+        // The glyph sits below the centre of its own artwork.
+        float opticalLift = 3f * home.getResources().getDisplayMetrics().density;
+        float offset = (home.getHeight() - icon.getHeight()) * 0.5f - icon.getTop() - opticalLift;
+        boolean iconOnly = home.isSelected() && icon.getVisibility() == View.VISIBLE
+                && !hasUsableTabTitle(home);
+        setIconOnlyTranslation(icon, iconOnly, offset);
     }
 
     /**

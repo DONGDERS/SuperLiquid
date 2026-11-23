@@ -208,7 +208,8 @@ final class DropletPanel extends View {
             }
         }
         if (app == HostApp.KUGOU) return mNight ? 0xFFFFFFFF : 0xFF1C1C1E;
-        return mAccentCache != 0 ? mAccentCache : 0xFF07C160; // WeChat green
+        if (mAccentCache != 0) return mAccentCache;
+        return app == HostApp.TAOBAO ? 0xFFFF5000 : 0xFF07C160;
     }
 
     private static boolean isNeutral(int c) {
