@@ -665,8 +665,11 @@ final class LiquidGlassInstaller {
      * layout listener that re-stretches it whenever that happens.
      */
     private static void extendPagesToBottom(ViewGroup pager) {
-        if (LiquidGlassModule.app() == HostApp.PINDUODUO
-                || LiquidGlassModule.app() == HostApp.TAOBAO) return;
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
+        if (LiquidGlassModule.app() == HostApp.TAOBAO) {
+            extendTaobaoPages(pager);
+            return;
+        }
         if (pager == null) {
             return;
         }
@@ -694,6 +697,22 @@ final class LiquidGlassInstaller {
                 dropBottomFrost(page);
                 stretchToBottom(page, target);
                 extendOnePage((ViewGroup) page, target);
+            }
+        }
+    }
+
+    private static void extendTaobaoPages(ViewGroup pager) {
+        if (pager == null || pager.getId() != 0x7f0a1504
+                || !(pager.getParent() instanceof android.widget.FrameLayout)) return;
+        View parent = (View) pager.getParent();
+        if (parent.getId() != 0x7f0a150c) return;
+        // Fill the old docked-bar reserve without changing window insets.
+        stretchToBottom(pager, parent.getHeight());
+        for (int i = 0; i < pager.getChildCount(); i++) {
+            View page = pager.getChildAt(i);
+            if (page.getVisibility() == View.VISIBLE && page.getTop() == 0
+                    && page.getHeight() > 0) {
+                stretchToBottom(page, pager.getHeight());
             }
         }
     }
@@ -1494,6 +1513,10 @@ final class LiquidGlassInstaller {
             holdHidden(sBlurLayerRef.get(), true);
         }
         holdHidden(sHairlineRef.get(), false);
+        if (app == HostApp.TAOBAO) {
+            hideTaobaoTabChrome(sTabViewRef.get());
+            centerTaobaoHomeIcon(sTabRowRef.get());
+        }
     }
 
     /**
@@ -1589,18 +1612,22 @@ final class LiquidGlassInstaller {
         signature = signature * 31 + tabRow.getVisibility();
         signature = signature * 31 + tabRow.getChildCount();
         signature = signature * 31 + (isQqIconOnlyRow(tabRow) ? 1 : 0);
+        boolean taobao = LiquidGlassModule.app() == HostApp.TAOBAO;
         for (int i = 0; i < tabRow.getChildCount(); i++) {
             View tab = tabRow.getChildAt(i);
             signature = signature * 31 + System.identityHashCode(tab);
             signature = signature * 31 + tab.getVisibility();
             ViewGroup.LayoutParams lp = tab.getLayoutParams();
-            signature = signature * 31 + System.identityHashCode(lp);
+            int layoutSignature = taobao && lp != null ? lp.width : System.identityHashCode(lp);
+            signature = signature * 31 + layoutSignature;
             boolean equalWeight = lp != null && lp.width == 0;
             if (lp instanceof android.widget.LinearLayout.LayoutParams) {
                 equalWeight |= ((android.widget.LinearLayout.LayoutParams) lp).weight != 0f;
             }
             signature = signature * 31 + (equalWeight ? 1 : 0);
-            if (tab instanceof ViewGroup) {
+            // Taobao switches icon and badge visibility as part of selection.
+            // These content changes must leave the active spring intact.
+            if (!taobao && tab instanceof ViewGroup) {
                 ViewGroup group = (ViewGroup) tab;
                 signature = signature * 31 + group.getChildCount();
                 for (int j = 0; j < group.getChildCount(); j++) {
@@ -2128,8 +2155,7 @@ final class LiquidGlassInstaller {
      */
     private static void disableTabWidgetStrips(View tabView) {
         if (LiquidGlassModule.app() == HostApp.TAOBAO && tabView instanceof android.widget.TabHost) {
-            View chrome = tabView.findViewById(0x7f0a192c);
-            if (chrome != null && chrome.getParent() == tabView) chrome.setAlpha(0f);
+            hideTaobaoTabChrome(tabView);
             tabView = ((android.widget.TabHost) tabView).getTabWidget();
         }
         if (tabView instanceof android.widget.TabWidget) {
@@ -2137,6 +2163,26 @@ final class LiquidGlassInstaller {
             tw.setStripEnabled(false);
             tw.setDividerDrawable(null);
         }
+    }
+
+    private static void hideTaobaoTabChrome(View tabView) {
+        if (!(tabView instanceof android.widget.TabHost)) return;
+        View chrome = tabView.findViewById(0x7f0a192c);
+        if (chrome != null && chrome.getParent() == tabView && chrome.getAlpha() != 0f) {
+            chrome.setAlpha(0f);
+        }
+    }
+
+    private static void centerTaobaoHomeIcon(ViewGroup row) {
+        if (row == null || row.getChildCount() == 0) return;
+        View home = row.getChildAt(0);
+        View background = home.findViewById(0x7f0a0914);
+        if (background == null || !(background.getParent() instanceof View)) return;
+        View icon = (View) background.getParent();
+        if (icon.getParent() != home || icon.getHeight() <= 0 || home.getHeight() <= 0) return;
+        // The wrapper carries the native animation. Centre it as a unit.
+        float offset = (home.getHeight() - icon.getHeight()) * 0.5f - icon.getTop();
+        if (icon.getTranslationY() != offset) icon.setTranslationY(offset);
     }
 
     /**
