@@ -129,6 +129,10 @@ public class LiquidGlassModule extends XposedModule {
                                         KugouHomeBar.onHomeResume(activity);
                                         return result;
                                     }
+                                    if (app == HostApp.PINDUODUO) {
+                                        PinduoduoHomeBar.onHomeResume(activity);
+                                        return result;
+                                    }
                                     LiquidGlassInstaller.scheduleInstall(activity);
                                     log(android.util.Log.ERROR, "resume dispatch step2");
                                     if (app == HostApp.BILIBILI) {
@@ -197,7 +201,7 @@ public class LiquidGlassModule extends XposedModule {
                 // went dark); surface clinit/whatever under our own tag.
                 logErr("heybox install threw", t);
             }
-        } else if (app != HostApp.KUGOU) {
+        } else if (app != HostApp.KUGOU && app != HostApp.PINDUODUO) {
             TabBarBridge.install(app, param.getDefaultClassLoader());
         }
     }

@@ -626,7 +626,8 @@ final class TabBarBridge {
     static void tryHookPager(ViewGroup pager) {
         // Kugou updates its bottom bar through the native page callbacks.
         // Turning a native jump into a slide can publish intermediate tab tags.
-        if (LiquidGlassModule.app() == HostApp.KUGOU) return;
+        if (LiquidGlassModule.app() == HostApp.KUGOU
+                || LiquidGlassModule.app() == HostApp.PINDUODUO) return;
         installPagerDiagnostics(pager);
         if (sHookedPager || pager == null) return;
         try {

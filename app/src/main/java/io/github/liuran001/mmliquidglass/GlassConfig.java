@@ -87,6 +87,7 @@ public final class GlassConfig {
         if (HostApp.QQ.pkg.equals(pkg)) return "qq";
         if (HostApp.HEYBOX.pkg.equals(pkg)) return "heybox";
         if (HostApp.KUGOU.pkg.equals(pkg)) return "kugou";
+        if (HostApp.PINDUODUO.pkg.equals(pkg)) return "pinduoduo";
         return "";
     }
 

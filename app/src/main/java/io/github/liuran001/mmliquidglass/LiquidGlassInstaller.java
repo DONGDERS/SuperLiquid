@@ -448,7 +448,7 @@ final class LiquidGlassInstaller {
         // and report the degraded effect rather than trying to tear it back out.
         try {
             hideOwnBlurLayers(parent, tabView);
-            if (!kugou) hideBarHairline(parent, tabView);
+            if (!kugou && LiquidGlassModule.app() != HostApp.PINDUODUO) hideBarHairline(parent, tabView);
             stripSolidBackgrounds(tabView);
             disableTabWidgetStrips(tabView);
         } catch (Throwable t) {
@@ -641,6 +641,7 @@ final class LiquidGlassInstaller {
      * layout listener that re-stretches it whenever that happens.
      */
     private static void extendPagesToBottom(ViewGroup pager) {
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
         if (pager == null) {
             return;
         }
@@ -699,6 +700,7 @@ final class LiquidGlassInstaller {
      * NoSuchMethod path once and are never probed again.
      */
     private static void dropBottomFrostAll() {
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
         ViewGroup pager = sPagerRef.get();
         if (pager == null) {
             return;
@@ -1524,6 +1526,7 @@ final class LiquidGlassInstaller {
      * show it again, and this runs first in every one of them.
      */
     private static void keepNavBarClear() {
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
         Activity a = sActivityRef.get();
         if (a == null) {
             return;
@@ -1889,6 +1892,7 @@ final class LiquidGlassInstaller {
      */
     private static int visibleTabSelection(ViewGroup tabRow) {
         int selected = TabBarBridge.selectedIndex(tabRow);
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return selected;
         int page = TabBarBridge.pageSlot(sPagerRef.get(), tabRow);
         LiquidGlassHostLayout host = sHostRef.get();
         if (page < 0 || page == selected) {
@@ -2223,6 +2227,7 @@ final class LiquidGlassInstaller {
      * @return whether the window was actually grown
      */
     private static boolean extendUnderNavBar(Context ctx) {
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return false;
         if (Build.VERSION.SDK_INT < 30) {
             return false;
         }
@@ -2291,6 +2296,7 @@ final class LiquidGlassInstaller {
      * pager's layout and the window's focus catches it whenever it happens.
      */
     private static void watchBottomInset(LiquidGlassHostLayout host, ViewGroup backdrop) {
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
         backdrop.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or2, ob) -> {
             extendPagesToBottom(backdrop);
             // Catches the transition frame itself rather than waiting for the

@@ -261,6 +261,10 @@ final class DropletPanel extends View {
                 || tab.getWidth() <= 0 || tab.getHeight() <= 0) {
             return;
         }
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO) {
+            tab.draw(c);
+            return;
+        }
         if (tab.isSelected() || (LiquidGlassModule.app() == HostApp.KUGOU
                 && tab == TabBarBridge.tabAt(mTabRowRef.get(), mConfirmedIndex))) {
             // The selected tab is already painted in the accent colour by the
