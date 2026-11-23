@@ -311,6 +311,10 @@ final class TabBarBridge {
         if (LiquidGlassModule.app() == HostApp.KUGOU) {
             return KugouHomeBar.tabRow(tabView);
         }
+        if (LiquidGlassModule.app() == HostApp.TAOBAO) {
+            if (!(tabView instanceof android.widget.TabHost)) return null;
+            return ((android.widget.TabHost) tabView).getTabWidget();
+        }
         ViewGroup hiddenFallback = null;
         for (int i = 0; i < tabView.getChildCount(); i++) {
             View c = tabView.getChildAt(i);
@@ -627,7 +631,8 @@ final class TabBarBridge {
         // Kugou updates its bottom bar through the native page callbacks.
         // Turning a native jump into a slide can publish intermediate tab tags.
         if (LiquidGlassModule.app() == HostApp.KUGOU
-                || LiquidGlassModule.app() == HostApp.PINDUODUO) return;
+                || LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.TAOBAO) return;
         installPagerDiagnostics(pager);
         if (sHookedPager || pager == null) return;
         try {

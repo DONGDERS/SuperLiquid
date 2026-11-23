@@ -67,6 +67,7 @@ private val TARGETS = listOf(
     Target("heybox", "小黑盒", "com.max.xiaoheihe"),
     Target("kugou", "酷狗音乐", "com.kugou.android"),
     Target("pinduoduo", "拼多多", "com.xunmeng.pinduoduo"),
+    Target("taobao", "淘宝", "com.taobao.taobao"),
 )
 
 private data class AppIdentity(val installed: Boolean, val label: String?, val icon: ImageBitmap?)
@@ -144,6 +145,7 @@ fun AppsScreen(bottomOverlay: Dp) {
                             "heybox" -> Config.heybox
                             "kugou" -> Config.kugou
                             "pinduoduo" -> Config.pinduoduo
+                            "taobao" -> Config.taobao
                             else -> Config.bili.base
                         }
                         AppParams(
@@ -151,7 +153,7 @@ fun AppsScreen(bottomOverlay: Dp) {
                             set = { Config.setApp(t.key, it) },
                             // The Heybox pill overruns its frame at a width of 1.0.
                             widthRange = if (t.key == "heybox") 0.2f..0.9f else 0.5f..1.2f,
-                            onEditTabs = { tabDialogKey = t.key },
+                            onEditTabs = if (t.key == "taobao") null else ({ tabDialogKey = t.key }),
                         )
                         when (t.key) {
                             "kugou" -> LSliderRow(

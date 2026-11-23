@@ -157,7 +157,7 @@ final class LiquidGlassInstaller {
         sSelectionTraceUntil = android.os.SystemClock.uptimeMillis() + 5000L;
         sSelectionTraceNext = 0L;
         View decor = activity.getWindow().getDecorView();
-        if (sHostRef.get() == null) {
+        if (sHostRef.get() == null && LiquidGlassModule.app() != HostApp.TAOBAO) {
             hideStockBarUntilInstalled(decor);
         }
         decor.post(() -> tryInstall(activity, decor, 0));
@@ -186,6 +186,13 @@ final class LiquidGlassInstaller {
                 resetState();
             }
             ViewGroup tabView = TabBarBridge.locateTabView(decor);
+            if (LiquidGlassModule.app() == HostApp.TAOBAO && tabView != null) {
+                ViewGroup row = TabBarBridge.findTabRow(tabView);
+                if (!tabView.isShown() || row == null || !row.isShown() || row.getChildCount() < 2
+                        || row.getWidth() <= 0 || row.getHeight() <= 0) {
+                    tabView = null;
+                }
+            }
             if (tabView == null) {
                 if (attempt < MAX_ATTEMPTS) {
                     decor.postDelayed(
@@ -280,7 +287,14 @@ final class LiquidGlassInstaller {
             return; // already installed
         }
 
-        ViewGroup backdrop = page != null ? page : findBackdrop(parent, tabView);
+        ViewGroup candidateBackdrop = page != null ? page : findBackdrop(parent, tabView);
+        if (LiquidGlassModule.app() == HostApp.TAOBAO) {
+            // The real page is a sibling; the TabHost also contains empty placeholders.
+            View taobaoPage = parent.findViewById(0x7f0a1504);
+            if (!(taobaoPage instanceof ViewGroup) || taobaoPage.getParent() != parent) return;
+            candidateBackdrop = (ViewGroup) taobaoPage;
+        }
+        final ViewGroup backdrop = candidateBackdrop;
         if (backdrop == null) {
             LiquidGlassModule.log(android.util.Log.WARN,
                     "no backdrop sibling found, glass would refract nothing");
@@ -651,7 +665,8 @@ final class LiquidGlassInstaller {
      * layout listener that re-stretches it whenever that happens.
      */
     private static void extendPagesToBottom(ViewGroup pager) {
-        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.TAOBAO) return;
         if (pager == null) {
             return;
         }
@@ -710,7 +725,8 @@ final class LiquidGlassInstaller {
      * NoSuchMethod path once and are never probed again.
      */
     private static void dropBottomFrostAll() {
-        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.TAOBAO) return;
         ViewGroup pager = sPagerRef.get();
         if (pager == null) {
             return;
@@ -1536,7 +1552,8 @@ final class LiquidGlassInstaller {
      * show it again, and this runs first in every one of them.
      */
     private static void keepNavBarClear() {
-        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.TAOBAO) return;
         Activity a = sActivityRef.get();
         if (a == null) {
             return;
@@ -2110,6 +2127,11 @@ final class LiquidGlassInstaller {
      * background does not touch them, and they would run right across the pill.
      */
     private static void disableTabWidgetStrips(View tabView) {
+        if (LiquidGlassModule.app() == HostApp.TAOBAO && tabView instanceof android.widget.TabHost) {
+            View chrome = tabView.findViewById(0x7f0a192c);
+            if (chrome != null && chrome.getParent() == tabView) chrome.setAlpha(0f);
+            tabView = ((android.widget.TabHost) tabView).getTabWidget();
+        }
         if (tabView instanceof android.widget.TabWidget) {
             android.widget.TabWidget tw = (android.widget.TabWidget) tabView;
             tw.setStripEnabled(false);
@@ -2237,7 +2259,8 @@ final class LiquidGlassInstaller {
      * @return whether the window was actually grown
      */
     private static boolean extendUnderNavBar(Context ctx) {
-        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return false;
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.TAOBAO) return false;
         if (Build.VERSION.SDK_INT < 30) {
             return false;
         }
@@ -2306,7 +2329,8 @@ final class LiquidGlassInstaller {
      * pager's layout and the window's focus catches it whenever it happens.
      */
     private static void watchBottomInset(LiquidGlassHostLayout host, ViewGroup backdrop) {
-        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.TAOBAO) return;
         backdrop.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or2, ob) -> {
             extendPagesToBottom(backdrop);
             // Catches the transition frame itself rather than waiting for the

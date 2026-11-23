@@ -8,6 +8,7 @@
         <package android:name="com.max.xiaoheihe" />
         <package android:name="com.kugou.android" />
         <package android:name="com.xunmeng.pinduoduo" />
+        <package android:name="com.taobao.taobao" />
     </queries>
 
     <application

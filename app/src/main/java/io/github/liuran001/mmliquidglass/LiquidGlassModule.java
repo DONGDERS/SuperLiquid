@@ -137,6 +137,11 @@ public class LiquidGlassModule extends XposedModule {
                                         PinduoduoHomeBar.onHomeResume(activity);
                                         return result;
                                     }
+                                    if (app == HostApp.TAOBAO && (!GlassConfig.enabled
+                                            || activity.getPackageManager().getPackageInfo(
+                                                    app.pkg, 0).getLongVersionCode() != 849L)) {
+                                        return result;
+                                    }
                                     LiquidGlassInstaller.scheduleInstall(activity);
                                     log(android.util.Log.ERROR, "resume dispatch step2");
                                     if (app == HostApp.BILIBILI) {

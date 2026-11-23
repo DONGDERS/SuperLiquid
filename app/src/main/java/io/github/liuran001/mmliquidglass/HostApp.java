@@ -144,11 +144,22 @@ final class HostApp {
             "com.xunmeng.pinduoduo", "com.xunmeng.pinduoduo.ui.activity.HomeActivity",
             new String[0], new String[0], "", new String[0], new String[0],
             false, "com.xunmeng.pinduoduo.");
-    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX, KUGOU, PINDUODUO};
+    static final HostApp TAOBAO = new HostApp(
+            "com.taobao.taobao",
+            "com.taobao.tao.TBMainActivity",
+            new String[]{"com.taobao.tao.navigation.TBFragmentTabHost"},
+            new String[]{"setCurrentTab"},
+            "getCurrentTab",
+            new String[0],
+            new String[]{"TUrlImageView", "HImageView"},
+            true,
+            "com.taobao.");
+    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX, KUGOU, PINDUODUO, TAOBAO};
 
     static {
         KUGOU.allowShapeFallback = false;
         PINDUODUO.allowShapeFallback = false;
+        TAOBAO.allowShapeFallback = false;
         // Bilibili is full of tab-shaped rows (feed tabs, channel strips), so
         // the shape fallback would latch onto the wrong one. Its bar is found
         // by class name instead.
