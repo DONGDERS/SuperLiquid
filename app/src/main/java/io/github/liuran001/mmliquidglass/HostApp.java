@@ -141,7 +141,7 @@ final class HostApp {
             false, "com.kugou.android.");
 
     static final HostApp PINDUODUO = new HostApp(
-            "com.xunmeng.pinduoduo", "com.xunmeng.pinduoduo.ui.activity.MainFrameActivity",
+            "com.xunmeng.pinduoduo", "com.xunmeng.pinduoduo.ui.activity.HomeActivity",
             new String[0], new String[0], "", new String[0], new String[0],
             false, "com.xunmeng.pinduoduo.");
     private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX, KUGOU, PINDUODUO};

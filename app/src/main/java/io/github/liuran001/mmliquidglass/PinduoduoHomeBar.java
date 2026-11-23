@@ -12,6 +12,8 @@ import android.widget.TextView;
 
 final class PinduoduoHomeBar {
     private static final String PREFIX = "com.xunmeng.pinduoduo.ui_home_activity.widget.tab.";
+    private static final int PAGE = 0x7f090236; // Native page sibling, excluding bar and divider.
+    private static final String FRAME = "com.xunmeng.pinduoduo.ui_home_activity.widget.MainFrameContainerView";
     private static final int TITLE = 0x7f09023d; // 7.96.0
     private static final int VERSION = 79600;
     private static java.lang.ref.WeakReference<Activity> pending = new java.lang.ref.WeakReference<>(null);
@@ -84,10 +86,12 @@ final class PinduoduoHomeBar {
         if (tabs.size() < 3 || tabs.size() > 6 || bar.getHeight() <= 0) return false;
         for (View tab : tabs) if (tab.getWidth() <= 0 || tab.getHeight() <= 0) return false;
         View content = activity.findViewById(android.R.id.content);
-        if (!(content instanceof FrameLayout) || ((FrameLayout) content).getChildCount() != 1) return false;
+        if (!(content instanceof FrameLayout) || !(bar.getParent() instanceof ViewGroup)) return false;
         FrameLayout parent = (FrameLayout) content;
-        View root = parent.getChildAt(0);
-        if (!(root instanceof ViewGroup)) return false;
+        ViewGroup frame = (ViewGroup) bar.getParent();
+        if (!FRAME.equals(frame.getClass().getName()) || frame.getParent() != parent) return false;
+        View page = frame.findViewById(PAGE);
+        if (!(page instanceof ViewGroup) || page.getParent() != frame || page.getHeight() <= 0) return false;
         int[] location = new int[2];
         int[] origin = new int[2];
         bar.getLocationInWindow(location);
@@ -110,7 +114,7 @@ final class PinduoduoHomeBar {
         int accessibility = bar.getImportantForAccessibility();
         try {
             parent.addView(row, lp);
-            LiquidGlassInstaller.install(row, (ViewGroup) root);
+            LiquidGlassInstaller.install(row, (ViewGroup) page);
             if (!(row.getParent() instanceof LiquidGlassHostLayout)) return false;
             host = (LiquidGlassHostLayout) row.getParent();
             final LiquidGlassHostLayout live = host;
@@ -158,6 +162,8 @@ final class PinduoduoHomeBar {
                 }
             });
             installed = new java.lang.ref.WeakReference<>(host);
+            LiquidGlassModule.log(android.util.Log.INFO,
+                    "pinduoduo: mirror installed, tabs=" + tabs.size() + " reserve=" + reserve);
             return true;
         } finally {
             if (installed.get() != host || host == null) {
