@@ -236,11 +236,11 @@ final class PinduoduoHomeBar {
             }
             if (title.isSelected()) HostApp.PINDUODUO.accentOverride = title.getCurrentTextColor();
             if (campaign) {
-                String label = title.getText().toString().trim();
-                if (!label.isEmpty() && !label.equals(reportedLabel)) {
-                    reportedLabel = label;
+                String campaignLabel = title.getText().toString().trim();
+                if (!campaignLabel.isEmpty() && !campaignLabel.equals(reportedLabel)) {
+                    reportedLabel = campaignLabel;
                     try {
-                        PinduoduoTabLabelProvider.publish(getContext(), label);
+                        PinduoduoTabLabelProvider.publish(getContext(), campaignLabel);
                     } catch (RuntimeException e) {
                         LiquidGlassModule.logErr("pinduoduo: campaign label sync failed", e);
                     }
