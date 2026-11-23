@@ -227,7 +227,6 @@ final class LiquidGlassInstaller {
     private static void resetState() {
         if (LiquidGlassModule.app() == HostApp.TAOBAO) {
             restoreTaobaoCartReserve();
-            Backdrop.setMaterialOnly(sPagerRef.get(), false);
         }
         sHostRef = new WeakReference<>(null);
         sTabViewRef = new WeakReference<>(null);
@@ -511,6 +510,9 @@ final class LiquidGlassInstaller {
         unclipAncestors(parent);
         attachRenderer(ctx, host, backdrop, density);
         installSelectionWatcher(host);
+        if (LiquidGlassModule.app() == HostApp.TAOBAO) {
+            watchTaobaoCartReserve(host, backdrop);
+        }
         watchBottomInset(host, backdrop);
 
         host.getViewTreeObserver().addOnGlobalLayoutListener(
@@ -1528,12 +1530,6 @@ final class LiquidGlassInstaller {
             hideTaobaoTabChrome(sTabViewRef.get());
             TaobaoTabLayout.place(row);
             centerTaobaoHomeIcon(row);
-            ViewGroup pager = sPagerRef.get();
-            if (pager != null) {
-                // Video and its overlay have their own TextureView producers.
-                setMaterialOnly(host, pager, isTaobaoVideoSelected());
-                updateTaobaoCartReserve(host, pager);
-            }
         }
     }
 
@@ -2192,7 +2188,7 @@ final class LiquidGlassInstaller {
         }
     }
 
-    static boolean isTaobaoCartSelected() {
+    private static boolean isTaobaoCartSelected() {
         return isTaobaoTabSelected("cart", 3);
     }
 
@@ -2207,6 +2203,27 @@ final class LiquidGlassInstaller {
         android.widget.TabHost tabs = (android.widget.TabHost) bar;
         String selected = tabs.getCurrentTabTag();
         return selected == null ? tabs.getCurrentTab() == index : tag.equals(selected);
+    }
+
+    private static void watchTaobaoCartReserve(LiquidGlassHostLayout host, ViewGroup pager) {
+        ViewTreeObserver observer = host.getViewTreeObserver();
+        ViewTreeObserver.OnGlobalLayoutListener listener = () -> {
+            if (host == sHostRef.get() && host.isAttachedToWindow()) {
+                updateTaobaoCartReserve(host, pager);
+            }
+        };
+        observer.addOnGlobalLayoutListener(listener);
+        host.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override
+            public void onViewAttachedToWindow(View v) { }
+
+            @Override
+            public void onViewDetachedFromWindow(View v) {
+                if (observer.isAlive()) observer.removeOnGlobalLayoutListener(listener);
+                v.removeOnAttachStateChangeListener(this);
+                if (host == sHostRef.get()) restoreTaobaoCartReserve();
+            }
+        });
     }
 
     private static void updateTaobaoCartReserve(LiquidGlassHostLayout host, ViewGroup pager) {
@@ -2229,11 +2246,14 @@ final class LiquidGlassInstaller {
                 || !(page.getLayoutParams() instanceof FrameLayout.LayoutParams)) return;
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) page.getLayoutParams();
         if (lp.height != ViewGroup.LayoutParams.MATCH_PARENT) return;
-        ViewGeom.unscaledScreenPos(host, sLoc);
-        float top = sLoc[1] - host.getTranslationY() + host.getPaddingTop();
-        ViewGeom.unscaledScreenPos(pager, sLoc);
+        if (host.getParent() != pager.getParent()) return;
+        // Both views share a layout parent. Use the configured resting scale
+        // so the press spring and the native bar's translation cannot resize iCart.
+        float pivot = GlassConfig.pillScale == 1f ? host.getHeight() / 2f : host.getHeight();
+        float top = host.getTop() + pivot
+                + (host.getPaddingTop() - pivot) * GlassConfig.pillScale;
         int gap = Math.round(4f * pager.getResources().getDisplayMetrics().density);
-        int reserve = Math.round(sLoc[1] + pager.getHeight() - top) + gap;
+        int reserve = (int) Math.ceil(pager.getBottom() - top) + gap;
         if (reserve <= 0 || reserve >= pager.getHeight()) return;
         if (previous != page || lp.bottomMargin != sTaobaoCartAppliedMargin) {
             sTaobaoCartPageRef = new WeakReference<>(page);
