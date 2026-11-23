@@ -55,6 +55,9 @@ final class LiquidGlassInstaller {
     private static WeakReference<View> sTabViewRef = new WeakReference<>(null);
     private static WeakReference<View> sGlassRef = new WeakReference<>(null);
     private static DropletDragController sDrag;
+    private static WeakReference<View> sTaobaoCartPageRef = new WeakReference<>(null);
+    private static int sTaobaoCartOriginalMargin;
+    private static int sTaobaoCartAppliedMargin;
     /** Identity/children fingerprint of the row the renderer is currently bound to. */
     private static int sTabStructureSignature;
     private static boolean sTabStructureRefreshPosted;
@@ -222,6 +225,10 @@ final class LiquidGlassInstaller {
 
     /** Drops references to a previous Activity's views so a relaunch reinstalls. */
     private static void resetState() {
+        if (LiquidGlassModule.app() == HostApp.TAOBAO) {
+            restoreTaobaoCartReserve();
+            Backdrop.setMaterialOnly(sPagerRef.get(), false);
+        }
         sHostRef = new WeakReference<>(null);
         sTabViewRef = new WeakReference<>(null);
         sGlassRef = new WeakReference<>(null);
@@ -710,6 +717,7 @@ final class LiquidGlassInstaller {
         if (parent.getId() != 0x7f0a150c) return;
         // Fill the old docked-bar reserve without changing window insets.
         stretchToBottom(pager, parent.getHeight());
+        if (isTaobaoCartSelected() || isTaobaoVideoSelected()) return;
         for (int i = 0; i < pager.getChildCount(); i++) {
             View page = pager.getChildAt(i);
             if (page.getVisibility() == View.VISIBLE && page.getTop() == 0
@@ -1520,7 +1528,12 @@ final class LiquidGlassInstaller {
             hideTaobaoTabChrome(sTabViewRef.get());
             TaobaoTabLayout.place(row);
             centerTaobaoHomeIcon(row);
-            setMaterialOnly(host, sPagerRef.get(), isTaobaoCartSelected());
+            ViewGroup pager = sPagerRef.get();
+            if (pager != null) {
+                // Video and its overlay have their own TextureView producers.
+                setMaterialOnly(host, pager, isTaobaoVideoSelected());
+                updateTaobaoCartReserve(host, pager);
+            }
         }
     }
 
@@ -2180,11 +2193,70 @@ final class LiquidGlassInstaller {
     }
 
     static boolean isTaobaoCartSelected() {
+        return isTaobaoTabSelected("cart", 3);
+    }
+
+    private static boolean isTaobaoVideoSelected() {
+        return isTaobaoTabSelected("tab2", 1);
+    }
+
+    private static boolean isTaobaoTabSelected(String tag, int index) {
         if (LiquidGlassModule.app() != HostApp.TAOBAO) return false;
         View bar = sTabViewRef.get();
         if (!(bar instanceof android.widget.TabHost)) return false;
         android.widget.TabHost tabs = (android.widget.TabHost) bar;
-        return "cart".equals(tabs.getCurrentTabTag()) || tabs.getCurrentTab() == 3;
+        String selected = tabs.getCurrentTabTag();
+        return selected == null ? tabs.getCurrentTab() == index : tag.equals(selected);
+    }
+
+    private static void updateTaobaoCartReserve(LiquidGlassHostLayout host, ViewGroup pager) {
+        View page = null;
+        if (isTaobaoCartSelected()) {
+            // The checkout button is part of the full-height Unicorn surface.
+            // Let its native layout anchor it inside a shorter cart viewport.
+            for (int i = 0; i < pager.getChildCount(); i++) {
+                View child = pager.getChildAt(i);
+                View cartRoot = child.findViewById(0x7f0a21c8); // icart_weex_root_view
+                if (child.getVisibility() == View.VISIBLE && cartRoot != null) {
+                    page = child;
+                    break;
+                }
+            }
+        }
+        View previous = sTaobaoCartPageRef.get();
+        if (previous != page) restoreTaobaoCartReserve();
+        if (page == null || pager.getHeight() <= 0 || host.getHeight() <= 0
+                || !(page.getLayoutParams() instanceof FrameLayout.LayoutParams)) return;
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) page.getLayoutParams();
+        if (lp.height != ViewGroup.LayoutParams.MATCH_PARENT) return;
+        ViewGeom.unscaledScreenPos(host, sLoc);
+        float top = sLoc[1] - host.getTranslationY() + host.getPaddingTop();
+        ViewGeom.unscaledScreenPos(pager, sLoc);
+        int gap = Math.round(4f * pager.getResources().getDisplayMetrics().density);
+        int reserve = Math.round(sLoc[1] + pager.getHeight() - top) + gap;
+        if (reserve <= 0 || reserve >= pager.getHeight()) return;
+        if (previous != page || lp.bottomMargin != sTaobaoCartAppliedMargin) {
+            sTaobaoCartPageRef = new WeakReference<>(page);
+            sTaobaoCartOriginalMargin = lp.bottomMargin;
+        }
+        sTaobaoCartAppliedMargin = Math.max(sTaobaoCartOriginalMargin, reserve);
+        if (lp.bottomMargin != sTaobaoCartAppliedMargin) {
+            lp.bottomMargin = sTaobaoCartAppliedMargin;
+            page.setLayoutParams(lp);
+        }
+    }
+
+    private static void restoreTaobaoCartReserve() {
+        View page = sTaobaoCartPageRef.get();
+        if (page != null && page.getLayoutParams() instanceof FrameLayout.LayoutParams) {
+            FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) page.getLayoutParams();
+            if (lp.bottomMargin == sTaobaoCartAppliedMargin
+                    && lp.bottomMargin != sTaobaoCartOriginalMargin) {
+                lp.bottomMargin = sTaobaoCartOriginalMargin;
+                page.setLayoutParams(lp);
+            }
+        }
+        sTaobaoCartPageRef.clear();
     }
 
     private static void hideTaobaoTabChrome(View tabView) {
