@@ -16,6 +16,9 @@ LSPosed 模块（libxposed API 102）：iOS 26 风格液态玻璃底部导航栏
 | **小黑盒** | `com.max.xiaoheihe` | 主页底栏 View 版 | **GLM 新增**：真栏原地隐藏 + 自绘三 pill（左 4 tab 快照 + 右发布键），快照借原生帧动画，宽度默认 0.5（管理器 0.2-0.9 可调） |
 | **酷狗音乐** | `com.kugou.android` | 20.5.3 (20539) | 复用共享液态玻璃底栏与动效，保留原生页面切换 |
 
+| **淘宝** | `com.taobao.taobao` | 10.62.20 (849) | 接入原生 TabHost，复用共享液态玻璃底栏与动效 |
+| **拼多多** | `com.xunmeng.pinduoduo` | 7.96.0 (79600) | 接入原生底栏，复用共享液态玻璃底栏与动效 |
+
 ## 构建
 
 ```bash
@@ -28,6 +31,9 @@ LSPosed 模块（libxposed API 102）：iOS 26 风格液态玻璃底部导航栏
 MIT（继承自原项目 [liuran001/WeChat-LiquidGlass](https://github.com/liuran001/WeChat-LiquidGlass)）—
 另致谢参考项目 [sjtt2/HeyBox-LiquidGlass](https://github.com/sjtt2/HeyBox-LiquidGlass)、[tiann/KernelSU](https://github.com/tiann/KernelSU)
 
+
+## v0.5.2-R1
+- 添加了对淘宝与拼多多的支持
 
 ## v0.5.1-R1
 - 修复了已知 Bug
