@@ -511,7 +511,7 @@ final class LiquidGlassInstaller {
         attachRenderer(ctx, host, backdrop, density);
         installSelectionWatcher(host);
         if (LiquidGlassModule.app() == HostApp.TAOBAO) {
-            watchTaobaoCartReserve(host, backdrop);
+            watchTaobaoLayout(host, backdrop);
         }
         watchBottomInset(host, backdrop);
 
@@ -2205,11 +2205,12 @@ final class LiquidGlassInstaller {
         return selected == null ? tabs.getCurrentTab() == index : tag.equals(selected);
     }
 
-    private static void watchTaobaoCartReserve(LiquidGlassHostLayout host, ViewGroup pager) {
+    private static void watchTaobaoLayout(LiquidGlassHostLayout host, ViewGroup pager) {
         ViewTreeObserver observer = host.getViewTreeObserver();
         ViewTreeObserver.OnGlobalLayoutListener listener = () -> {
             if (host == sHostRef.get() && host.isAttachedToWindow()) {
                 updateTaobaoCartReserve(host, pager);
+                if (isTaobaoVideoSelected()) TaobaoVideoLayout.onLayout(host, pager);
             }
         };
         observer.addOnGlobalLayoutListener(listener);
@@ -2249,7 +2250,7 @@ final class LiquidGlassInstaller {
         if (host.getParent() != pager.getParent()) return;
         // Both views share a layout parent. Use the configured resting scale
         // so the press spring and the native bar's translation cannot resize iCart.
-        float pivot = GlassConfig.pillScale == 1f ? host.getHeight() / 2f : host.getHeight();
+        float pivot = host.getHeight();
         float top = host.getTop() + pivot
                 + (host.getPaddingTop() - pivot) * GlassConfig.pillScale;
         int gap = Math.round(4f * pager.getResources().getDisplayMetrics().density);
