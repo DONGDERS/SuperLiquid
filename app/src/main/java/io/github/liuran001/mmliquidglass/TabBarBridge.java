@@ -624,6 +624,9 @@ final class TabBarBridge {
      * redundant chains on the same executable.
      */
     static void tryHookPager(ViewGroup pager) {
+        // Kugou updates its bottom bar through the native page callbacks.
+        // Turning a native jump into a slide can publish intermediate tab tags.
+        if (LiquidGlassModule.app() == HostApp.KUGOU) return;
         installPagerDiagnostics(pager);
         if (sHookedPager || pager == null) return;
         try {

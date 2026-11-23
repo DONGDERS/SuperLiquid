@@ -493,7 +493,9 @@ final class LiquidGlassInstaller {
                         host.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                         try {
                             host.attach();
-                            syncDropletSize(TabBarBridge.currentIndex(tabView));
+                            if (!kugou) {
+                                syncDropletSize(TabBarBridge.currentIndex(tabView));
+                            }
                             extendPagesToBottom(backdrop);
                         } catch (Throwable t) {
                             // First-layout surgery runs on the app's main
@@ -1736,8 +1738,17 @@ final class LiquidGlassInstaller {
         int sel = visibleTabSelection(tabRow);
         traceSelection(host, tabRow, sel);
         if (sel < 0 || sDrag == null) return;
+        boolean firstSelection = sLastIndex < 0;
+        if (firstSelection && LiquidGlassModule.app() == HostApp.KUGOU) {
+            View tab = TabBarBridge.tabAt(tabRow, sel);
+            if (tab == null || host.isLayoutRequested() || tabRow.isLayoutRequested()
+                    || tab.isLayoutRequested()) return;
+            // The shared controller centres using the new LayoutParams width.
+            // Prepare it while hidden, then snap and reveal the confirmed slot.
+            if (!syncDropletSize(sel)) return;
+        }
         // Do not mark a rejected observation as delivered during a gesture.
-        if (!sDrag.animateToIndex(sel, sLastIndex < 0)) return;
+        if (!sDrag.animateToIndex(sel, firstSelection)) return;
         boolean changed = sel != sLastIndex;
         sLastIndex = sel;
         syncDropletSize(sel);
@@ -2543,24 +2554,24 @@ final class LiquidGlassInstaller {
      * right of — the tab it belongs to, visibly outside the pill. Walking the
      * parents and subtracting the padding is correct for both shapes.
      */
-    private static void syncDropletSize(int index) {
+    private static boolean syncDropletSize(int index) {
         try {
             View droplet = sDropletRef.get();
             ViewGroup tabRow = sTabRowRef.get();
             LiquidGlassHostLayout host = sHostRef.get();
             if (droplet == null || tabRow == null || host == null || index < 0) {
-                return;
+                return false;
             }
             View tab = TabBarBridge.tabAt(tabRow, index);
             if (tab == null || tab.getWidth() == 0) {
-                return;
+                return false;
             }
             // The pill's inner box. Everything outside it is our own shadow
             // padding, which the droplet must neither include nor overhang.
             int pillTop = host.getPaddingTop();
             int pillBottom = host.getHeight() - host.getPaddingBottom();
             if (pillBottom <= pillTop || !ViewGeom.positionIn(tab, host, sPos)) {
-                return;
+                return false;
             }
             float density = host.getResources().getDisplayMetrics().density;
             // KernelSU sizes the droplet to the full tab column: width = tabWidth,
@@ -2574,7 +2585,7 @@ final class LiquidGlassInstaller {
             int slot = Math.min(tab.getHeight(), pillBottom - pillTop);
             int h = slot - inset * 2;
             if (w <= 0 || h <= 0) {
-                return;
+                return false;
             }
             int top = sPos[1] + inset;
             if (top + h > pillBottom) {
@@ -2591,7 +2602,9 @@ final class LiquidGlassInstaller {
             }
             sDropletBaseY = top - pillTop;
             droplet.setTranslationY(sDropletBaseY);
-            droplet.setVisibility(View.VISIBLE);
+            if (LiquidGlassModule.app() != HostApp.KUGOU || sLastIndex >= 0) {
+                droplet.setVisibility(View.VISIBLE);
+            }
             sDropletGeometryKey = dropletGeometryKey(host, tab);
             if (!sDropletLogged) {
                 sDropletLogged = true;
@@ -2603,8 +2616,10 @@ final class LiquidGlassInstaller {
                                 + "," + host.getPaddingTop()
                                 + " tabH=" + tab.getHeight());
             }
+            return true;
         } catch (Throwable t) {
             LiquidGlassModule.logErr("droplet sizing failed", t);
+            return false;
         }
     }
 
