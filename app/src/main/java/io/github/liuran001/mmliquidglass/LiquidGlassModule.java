@@ -111,7 +111,11 @@ public class LiquidGlassModule extends XposedModule {
                                     log(android.util.Log.WARN,
                                             "resume seen: " + name);
                                 }
-                                if (app.launcherActivity.equals(name)) {
+                                // Both Pinduoduo activities can host the same native tab bar.
+                                if (app.launcherActivity.equals(name)
+                                        || (app == HostApp.PINDUODUO
+                                        && "com.xunmeng.pinduoduo.ui.activity.MainFrameActivity"
+                                                .equals(name))) {
                                     // All dispatch probes at ERROR: INFO/WARN
                                     // lines after the first class-init call
                                     // vanish on this device (see r1/r2 logs)
