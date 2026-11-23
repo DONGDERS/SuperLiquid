@@ -227,6 +227,7 @@ final class LiquidGlassInstaller {
     private static void resetState() {
         if (LiquidGlassModule.app() == HostApp.TAOBAO) {
             restoreTaobaoCartReserve();
+            Backdrop.setMaterialOnly(sPagerRef.get(), false);
         }
         sHostRef = new WeakReference<>(null);
         sTabViewRef = new WeakReference<>(null);
@@ -1476,7 +1477,11 @@ final class LiquidGlassInstaller {
         }
         View droplet = sDropletRef.get();
         if (droplet != null) {
-            droplet.setTranslationY(sDropletBaseY + ty);
+            float offset = sDropletBaseY + ty;
+            if (droplet.getTranslationY() != offset) {
+                droplet.setTranslationY(offset);
+                if (LiquidGlassModule.app() == HostApp.TAOBAO) droplet.invalidate();
+            }
             droplet.setAlpha(gone ? 0f : alpha);
         }
         if (glass != null) {
@@ -1530,6 +1535,8 @@ final class LiquidGlassInstaller {
             hideTaobaoTabChrome(sTabViewRef.get());
             TaobaoTabLayout.place(row);
             centerTaobaoHomeIcon(row);
+            ViewGroup pager = sPagerRef.get();
+            if (pager != null) setMaterialOnly(host, pager, isTaobaoCartSelected());
         }
     }
 
@@ -2805,7 +2812,12 @@ final class LiquidGlassInstaller {
                 droplet.setLayoutParams(lp);
             }
             sDropletBaseY = top - pillTop;
-            droplet.setTranslationY(sDropletBaseY);
+            // A relayout during Taobao's show animation must carry the same
+            // translation as the native row on this frame.
+            View tabView = sTabViewRef.get();
+            float nativeOffset = LiquidGlassModule.app() == HostApp.TAOBAO && tabView != null
+                    ? tabView.getTranslationY() : 0f;
+            droplet.setTranslationY(sDropletBaseY + nativeOffset);
             if (LiquidGlassModule.app() != HostApp.KUGOU || sLastIndex >= 0) {
                 droplet.setVisibility(View.VISIBLE);
             }

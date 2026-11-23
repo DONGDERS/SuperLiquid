@@ -571,6 +571,11 @@ final class DropletPanel extends View {
             return;
         }
         int save = canvas.save();
+        if (LiquidGlassModule.app() == HostApp.TAOBAO) {
+            // Native hide/show animates the row. Keep its sampled icon inside
+            // the capsule even if the row is between two layout positions.
+            canvas.clipPath(mClip);
+        }
         canvas.translate(mSrc[0] - mSelf[0], mSrc[1] - mSelf[1]);
         tab.draw(canvas);
         canvas.restoreToCount(save);
