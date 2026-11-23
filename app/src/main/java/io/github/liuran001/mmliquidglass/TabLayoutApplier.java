@@ -70,6 +70,9 @@ final class TabLayoutApplier {
     }
 
     private static String normalizeTitle(String appKey, String title) {
+        if ("pinduoduo".equals(appKey) && PinduoduoTabLabelProvider.LEGACY_CAMPAIGN_KEY.equals(title)) {
+            return PinduoduoTabLabelProvider.CAMPAIGN_KEY;
+        }
         if (!"kugou".equals(appKey)) return title;
         if ("金币".equals(title)) return "赚钱";
         if ("我的".equals(title)) return "我";

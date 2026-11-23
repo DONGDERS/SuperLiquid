@@ -18,6 +18,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SuperLiquid">
 
+        <provider
+            android:name=".PinduoduoTabLabelProvider"
+            android:authorities="${applicationId}.pdd_tab_label"
+            android:exported="true" />
+
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"

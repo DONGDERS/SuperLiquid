@@ -17,7 +17,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
+import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,7 +32,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import io.github.liuran001.mmliquidglass.PinduoduoTabLabelProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.MaterialTheme
@@ -65,7 +69,7 @@ object TabLayoutEditor {
         "bili" to listOf("首页", "动态", "会员购", "我的"),
         "heybox" to listOf("首页", "热点", "游戏库", "我"),
         "kugou" to listOf("首页", "直播", "K歌", "赚钱", "我"),
-        "pinduoduo" to listOf("首页", "多多视频", "周一大领券", "聊天", "个人中心"),
+        "pinduoduo" to listOf("首页", "多多视频", PinduoduoTabLabelProvider.CAMPAIGN_KEY, "聊天", "个人中心"),
     )
 
     /** Basics per app: never hideable, never reorderable away from slot 0. */
@@ -92,8 +96,18 @@ object TabLayoutEditor {
         // Entry tab (slot 0) is pinned to the front regardless of what an
         // older config stored there.
         DEFAULTS[key]?.firstOrNull()?.let { out.add(it) }
-        for (t in cfg.order + (DEFAULTS[key] ?: emptyList())) if (t !in out) out.add(t)
+        for (entry in cfg.order + (DEFAULTS[key] ?: emptyList())) {
+            val title = configKey(key, entry)
+            if (title !in out) out.add(title)
+        }
         return out
+    }
+
+    fun configKey(appKey: String, title: String): String = when {
+        appKey == "kugou" -> kugouTitle(title)
+        appKey == "pinduoduo" && title == PinduoduoTabLabelProvider.LEGACY_CAMPAIGN_KEY ->
+            PinduoduoTabLabelProvider.CAMPAIGN_KEY
+        else -> title
     }
 
     fun kugouTitle(title: String): String = when (title) {
@@ -122,11 +136,23 @@ fun TabLayoutDialog(
 ) {
     if (!show) return
     val initial = Config.tabLayout(appKey)
-    // entries: (title, hidden) in working order.
-    val start = TabLayoutEditor.candidates(appKey, initial).map { t ->
-        val hidden = if (appKey == "kugou") initial.hidden.map(TabLayoutEditor::kugouTitle) else initial.hidden
-        t to (t in hidden && (appKey != "kugou" || !TabLayoutEditor.locked(appKey, t)))
-
+    val hiddenKeys = initial.hidden.map { TabLayoutEditor.configKey(appKey, it) }.toSet()
+    val start = TabLayoutEditor.candidates(appKey, initial).map { key ->
+        key to (key in hiddenKeys && (appKey != "kugou" || !TabLayoutEditor.locked(appKey, key)))
+    }
+    var campaignLabel by remember(appKey) { mutableStateOf("活动入口") }
+    if (appKey == "pinduoduo") {
+        val context = LocalContext.current
+        val prefs = remember(context) { PinduoduoTabLabelProvider.preferences(context) }
+        DisposableEffect(prefs) {
+            val labelKey = PinduoduoTabLabelProvider.LABEL_KEY
+            val listener = SharedPreferences.OnSharedPreferenceChangeListener { updated, key ->
+                if (key == labelKey) campaignLabel = updated.getString(labelKey, "活动入口") ?: "活动入口"
+            }
+            prefs.registerOnSharedPreferenceChangeListener(listener)
+            campaignLabel = prefs.getString(labelKey, "活动入口") ?: "活动入口"
+            onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+        }
     }
     var items by remember(show) { mutableStateOf(start) }
     var dragging by remember(show) { mutableStateOf<String?>(null) }
@@ -215,7 +241,10 @@ fun TabLayoutDialog(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        title, fontSize = 16.sp, color = baseColor,
+                        if (appKey == "pinduoduo" && title == PinduoduoTabLabelProvider.CAMPAIGN_KEY) {
+                            campaignLabel
+                        } else title,
+                        fontSize = 16.sp, color = baseColor,
                         modifier = Modifier.weight(1f),
                     )
                     if (isLockedRow) {

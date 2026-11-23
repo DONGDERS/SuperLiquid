@@ -81,6 +81,22 @@ final class PinduoduoHomeBar {
         return tabs;
     }
 
+    private static View campaignTab(java.util.List<View> tabs) {
+        // Only classify the extra slot when all four regular tabs are present.
+        if (tabs.size() != 5) return null;
+        java.util.Set<String> regular = new java.util.HashSet<>(
+                java.util.Arrays.asList("首页", "多多视频", "聊天", "个人中心"));
+        View campaign = null;
+        for (View tab : tabs) {
+            TextView title = tab.findViewById(TITLE);
+            if (!regular.remove(title.getText().toString().trim())) {
+                if (campaign != null) return null;
+                campaign = tab;
+            }
+        }
+        return regular.isEmpty() ? campaign : null;
+    }
+
     private static boolean install(Activity activity, ViewGroup bar) {
         java.util.ArrayList<View> tabs = tabs(bar);
         if (tabs.size() < 3 || tabs.size() > 6 || bar.getHeight() <= 0) return false;
@@ -99,8 +115,9 @@ final class PinduoduoHomeBar {
         int reserve = Math.max(0, parent.getHeight() - (location[1] - origin[1] + bar.getHeight()));
         LinearLayout row = new LinearLayout(activity);
         row.setOrientation(LinearLayout.HORIZONTAL);
+        View campaign = campaignTab(tabs);
         for (View tab : tabs) {
-            View copy = new TabCopy(tab);
+            View copy = new TabCopy(tab, tab == campaign);
             row.addView(copy, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, tab.getHeight()));
         }
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
@@ -182,9 +199,13 @@ final class PinduoduoHomeBar {
         private final int naturalWidth;
         final TextView title;
 
-        TabCopy(View source) {
+        private final boolean campaign;
+        private String reportedLabel;
+
+        TabCopy(View source, boolean campaign) {
             super(source.getContext());
             this.source = source;
+            this.campaign = campaign;
             title = source.findViewById(TITLE);
             naturalWidth = Math.round(44f * getResources().getDisplayMetrics().density);
             setOnClickListener(v -> {
@@ -202,7 +223,8 @@ final class PinduoduoHomeBar {
         }
 
         String layoutTitle() {
-            return title.getText().toString().trim();
+            return campaign ? PinduoduoTabLabelProvider.CAMPAIGN_KEY
+                    : title.getText().toString().trim();
         }
 
         void sync() {
@@ -213,6 +235,17 @@ final class PinduoduoHomeBar {
                 setContentDescription(label);
             }
             if (title.isSelected()) HostApp.PINDUODUO.accentOverride = title.getCurrentTextColor();
+            if (campaign) {
+                String label = title.getText().toString().trim();
+                if (!label.isEmpty() && !label.equals(reportedLabel)) {
+                    reportedLabel = label;
+                    try {
+                        PinduoduoTabLabelProvider.publish(getContext(), label);
+                    } catch (RuntimeException e) {
+                        LiquidGlassModule.logErr("pinduoduo: campaign label sync failed", e);
+                    }
+                }
+            }
         }
 
         @Override protected void onMeasure(int widthSpec, int heightSpec) {
