@@ -15,6 +15,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
     private static final String PREFIX = "com.kugou.android.app.additionalui.";
     private static final String BAR = PREFIX + "playingbar.BottomTabView";
     private static final String ROW = PREFIX + "playingbar.BottomMainTabLayout";
+    private static final String BOTTOM_BACKGROUND = PREFIX + "playingbar.BottomBackgroundView";
     private static final String PLAYER = PREFIX + "playingbar.PlayingBarRootLayout";
     private static final String SECTION = PREFIX + "AdditionalLayout";
     private static final String PAGER = "com.kugou.common.base.MainFragmentViewPage";
@@ -23,6 +24,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
 
     private final View root;
     private ViewTreeObserver observer;
+    private View hiddenBackground;
     private View player;
     private LinearLayout.LayoutParams liftedParams;
     private int nativeMargin;
@@ -50,6 +52,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
     @Override public void onViewDetachedFromWindow(View view) {
         if (observer != null && observer.isAlive()) observer.removeOnGlobalLayoutListener(this);
         observer = null;
+        restoreBottomBackground();
         restorePlayer();
         player = null;
     }
@@ -68,6 +71,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         View section = findShown(root, SECTION);
         View bar = findShown(section, BAR);
         if (!(bar instanceof ViewGroup) || bar.getWidth() <= 0 || bar.getHeight() <= 0) {
+            restoreBottomBackground();
             restorePlayer();
             return;
         }
@@ -75,6 +79,7 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         if (!(row instanceof LinearLayout) || row.getHeight() <= 0
                 || ((LinearLayout) row).getOrientation() != LinearLayout.HORIZONTAL
                 || TabBarBridge.tabCount(row) < 2) {
+            restoreBottomBackground();
             restorePlayer();
             return;
         }
@@ -86,9 +91,11 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
             }
         }
         if (!(bar.getParent() instanceof LiquidGlassHostLayout)) {
+            restoreBottomBackground();
             restorePlayer();
             return;
         }
+        hideBottomBackground((ViewGroup) section);
         View nextPlayer = findShown(section, PLAYER);
         if (player != nextPlayer) {
             restorePlayer();
@@ -96,6 +103,32 @@ final class KugouHomeBar implements ViewTreeObserver.OnGlobalLayoutListener,
         }
         float density = root.getResources().getDisplayMetrics().density;
         updatePlayer((View) bar.getParent(), Math.round(GlassConfig.kugouPlayerLiftDp * density));
+    }
+
+    private void hideBottomBackground(ViewGroup section) {
+        View background = null;
+        for (int i = 0; i < section.getChildCount(); i++) {
+            View child = section.getChildAt(i);
+            if (BOTTOM_BACKGROUND.equals(child.getClass().getName())) {
+                background = child;
+                break;
+            }
+        }
+        if (background != hiddenBackground) restoreBottomBackground();
+        if (background != null && background.getVisibility() == View.VISIBLE) {
+            // This layer contains both the fade and the opaque fill. Keep its
+            // layout slot while removing its drawing and touch targets.
+            background.setVisibility(View.INVISIBLE);
+            if (background.getVisibility() == View.INVISIBLE) hiddenBackground = background;
+        }
+    }
+
+    private void restoreBottomBackground() {
+        View background = hiddenBackground;
+        hiddenBackground = null;
+        if (background != null && background.getVisibility() == View.INVISIBLE) {
+            background.setVisibility(View.VISIBLE);
+        }
     }
 
     static ViewGroup tabRow(ViewGroup bar) {
