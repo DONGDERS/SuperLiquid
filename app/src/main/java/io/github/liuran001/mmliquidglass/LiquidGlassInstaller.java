@@ -253,6 +253,16 @@ final class LiquidGlassInstaller {
         return sPagerRef.get();
     }
 
+    static void setMaterialOnly(LiquidGlassHostLayout host, ViewGroup backdrop, boolean enabled) {
+        if (!Backdrop.setMaterialOnly(backdrop, enabled)) return;
+        for (int i = 0; i < host.getChildCount(); i++) {
+            View child = host.getChildAt(i);
+            if (child instanceof LiquidGlassPanel || child instanceof DropletPanel) {
+                child.invalidate();
+            }
+        }
+    }
+
     /** Package-private: BiliHomeBar (bilibili's Compose bar) feeds a self-built row. */
     static void install(ViewGroup tabView) {
         install(tabView, null);

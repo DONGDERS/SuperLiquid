@@ -30,6 +30,14 @@ import java.lang.reflect.Method;
  */
 final class Backdrop {
 
+    // Some hosts embed a WebView whose display list cannot be replayed offscreen.
+    private static final java.util.Set<ViewGroup> MATERIAL_ONLY =
+            java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+
+    static boolean setMaterialOnly(ViewGroup pager, boolean enabled) {
+        return enabled ? MATERIAL_ONLY.add(pager) : MATERIAL_ONLY.remove(pager);
+    }
+
     private static Method sDrawChild;
     private static boolean sDrawChildResolved;
 
@@ -66,7 +74,8 @@ final class Backdrop {
         // Night base = dark surface-container tone (KSU uses the themed surface):
     // #111111 sampled through the lens read as "dim glass" — the base IS
     // most of what the shader shows when content is sparse.
-            c.drawColor(night ? 0xFF111111 : 0xFFF7F7F7);
+        c.drawColor(night ? 0xFF111111 : 0xFFF7F7F7);
+        if (MATERIAL_ONLY.contains(pager)) return;
         // Minify the page content about the capture centre; the base fill above
         // stays full-size so the outer band keeps a colour under the blur.
         if (Math.abs(contentScale - 1f) > 0.001f) {

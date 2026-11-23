@@ -13,6 +13,8 @@ import android.widget.TextView;
 final class PinduoduoHomeBar {
     private static final String PREFIX = "com.xunmeng.pinduoduo.ui_home_activity.widget.tab.";
     private static final int PAGE = 0x7f090236; // Native page sibling, excluding bar and divider.
+    private static final int DIVIDER = 0x7f090235;
+    private static final int WEB_VIEW = 0x7f090605;
     private static final String FRAME = "com.xunmeng.pinduoduo.ui_home_activity.widget.MainFrameContainerView";
     private static final int TITLE = 0x7f09023d; // 7.96.0
     private static final int VERSION = 79600;
@@ -97,6 +99,15 @@ final class PinduoduoHomeBar {
         return regular.isEmpty() ? campaign : null;
     }
 
+    private static boolean needsMaterialOnly(ViewGroup page, View campaign) {
+        if (campaign != null) {
+            TextView title = campaign.findViewById(TITLE);
+            if (title.isSelected()) return true;
+        }
+        View web = page.findViewById(WEB_VIEW);
+        return web != null && web.isShown() && web.getWidth() > 0 && web.getHeight() > 0;
+    }
+
     private static boolean install(Activity activity, ViewGroup bar) {
         java.util.ArrayList<View> tabs = tabs(bar);
         if (tabs.size() < 3 || tabs.size() > 6 || bar.getHeight() <= 0) return false;
@@ -108,6 +119,11 @@ final class PinduoduoHomeBar {
         if (!FRAME.equals(frame.getClass().getName()) || frame.getParent() != parent) return false;
         View page = frame.findViewById(PAGE);
         if (!(page instanceof ViewGroup) || page.getParent() != frame || page.getHeight() <= 0) return false;
+        ViewGroup backdrop = (ViewGroup) page;
+        View line = frame.findViewById(DIVIDER);
+        final View divider = line != null && line.getParent() == frame && line.getClass() == View.class
+                ? line : null;
+        float dividerAlpha = divider == null ? 0f : divider.getAlpha();
         int[] location = new int[2];
         int[] origin = new int[2];
         bar.getLocationInWindow(location);
@@ -132,14 +148,16 @@ final class PinduoduoHomeBar {
         try {
             parent.addView(row, lp);
             TabLayoutApplier.apply(row, "pinduoduo");
-            LiquidGlassInstaller.install(row, (ViewGroup) page);
+            LiquidGlassInstaller.install(row, backdrop);
             if (!(row.getParent() instanceof LiquidGlassHostLayout)) return false;
             host = (LiquidGlassHostLayout) row.getParent();
             final LiquidGlassHostLayout live = host;
             FrameLayout.LayoutParams glassLp = (FrameLayout.LayoutParams) host.getLayoutParams();
             glassLp.bottomMargin += reserve;
             host.setLayoutParams(glassLp);
+            LiquidGlassInstaller.setMaterialOnly(host, backdrop, needsMaterialOnly(backdrop, campaign));
             bar.setAlpha(0f);
+            if (divider != null) divider.setAlpha(0f);
             bar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
             ViewTreeObserver observer = host.getViewTreeObserver();
             ViewTreeObserver.OnPreDrawListener sync = () -> {
@@ -154,6 +172,8 @@ final class PinduoduoHomeBar {
                 boolean visible = bar.isShown();
                 live.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
                 if (visible && bar.getAlpha() != 0f) bar.setAlpha(0f);
+                if (visible && divider != null && divider.getAlpha() != 0f) divider.setAlpha(0f);
+                LiquidGlassInstaller.setMaterialOnly(live, backdrop, needsMaterialOnly(backdrop, campaign));
                 for (int i = 0; i < row.getChildCount(); i++) ((TabCopy) row.getChildAt(i)).sync();
                 return true;
             };
@@ -174,6 +194,8 @@ final class PinduoduoHomeBar {
                 @Override public void onViewAttachedToWindow(View v) {}
                 @Override public void onViewDetachedFromWindow(View v) {
                     bar.setAlpha(alpha);
+                    if (divider != null) divider.setAlpha(dividerAlpha);
+                    LiquidGlassInstaller.setMaterialOnly(live, backdrop, false);
                     if (observer.isAlive()) observer.removeOnPreDrawListener(sync);
                     live.removeCallbacks(refreshArt);
                     bar.setImportantForAccessibility(accessibility);
@@ -189,6 +211,8 @@ final class PinduoduoHomeBar {
                         ? (View) row.getParent() : row;
                 parent.removeView(attached);
                 if (bar.getAlpha() != alpha) bar.setAlpha(alpha);
+                if (divider != null && divider.getAlpha() != dividerAlpha) divider.setAlpha(dividerAlpha);
+                if (host != null) LiquidGlassInstaller.setMaterialOnly(host, backdrop, false);
                 bar.setImportantForAccessibility(accessibility);
             }
         }
