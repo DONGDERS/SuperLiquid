@@ -11,6 +11,8 @@ import android.widget.TextView;
 final class AlipayHomeBar {
     private static final int BAR = 0x45070020;
     private static final int BACKGROUND = 0x4507001f;
+    private static final int SELECTED_ICON_CONTAINER = 0x4507001d;
+    private static final int SELECTED_ICON_SIZE_DP = 36;
     private static final int TAB_DESCRIPTION = 0x45070022;
     private static final String HOME_LABEL = "首页";
 
@@ -41,6 +43,23 @@ final class AlipayHomeBar {
         if (!TextUtils.equals(HOME_LABEL, description.getText())) description.setText(HOME_LABEL);
         if (description.getVisibility() != View.VISIBLE) description.setVisibility(View.VISIBLE);
         if (description.getAlpha() != 1f) description.setAlpha(1f);
+    }
+
+    static void keepSelectedHomeIconSize(View home) {
+        if (!home.isSelected()) return;
+        View selected = home.findViewById(SELECTED_ICON_CONTAINER);
+        if (!(selected instanceof FrameLayout) || selected.getParent() != home
+                || selected.getVisibility() != View.VISIBLE) return;
+        ViewGroup.LayoutParams lp = selected.getLayoutParams();
+        if (lp == null) return;
+        // The native home feed switches selected_fl between 36dp and 50dp.
+        // Keep its compact size without replacing the icon or its layout rules.
+        int size = Math.round(SELECTED_ICON_SIZE_DP * selected.getResources().getDisplayMetrics().density);
+        if (lp.width != size || lp.height != size) {
+            lp.width = size;
+            lp.height = size;
+            selected.setLayoutParams(lp);
+        }
     }
 
     static void hideChrome(View bar) {
