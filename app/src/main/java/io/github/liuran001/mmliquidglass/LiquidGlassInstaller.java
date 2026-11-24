@@ -1534,6 +1534,9 @@ final class LiquidGlassInstaller {
             ViewGroup row = sTabRowRef.get();
             hideTaobaoTabChrome(sTabViewRef.get());
             TaobaoTabLayout.place(row);
+            if (rawParent instanceof FrameLayout && ((View) rawParent).getId() == 0x7f0a150c) {
+                TaobaoTabLayout.hideOrphanVideoPromotion(row, (ViewGroup) rawParent);
+            }
             centerTaobaoHomeIcon(row);
             ViewGroup pager = sPagerRef.get();
             if (pager != null) setMaterialOnly(host, pager, isTaobaoCartSelected());

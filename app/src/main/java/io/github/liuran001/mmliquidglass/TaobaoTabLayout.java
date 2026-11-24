@@ -59,6 +59,32 @@ final class TaobaoTabLayout {
         return slots(row) != null;
     }
 
+    static void hideOrphanVideoPromotion(ViewGroup row, ViewGroup parent) {
+        // Taobao mounts this promotion beside the TabHost rather than inside the video cell.
+        if (!hasOrder(row) || slotForIndex(row, 1) >= 0) return;
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            View view = parent.getChildAt(i);
+            if (view.getClass() != android.widget.FrameLayout.class
+                    || view.getId() != View.NO_ID || view.getVisibility() != View.VISIBLE
+                    || view.getTop() <= parent.getHeight() / 2
+                    || view.getBottom() != parent.getHeight()) continue;
+            ViewGroup overlay = (ViewGroup) view;
+            if (overlay.getChildCount() != 2
+                    || !(overlay.getChildAt(0) instanceof android.widget.ViewAnimator)
+                    || overlay.getChildAt(1).getClass() != android.widget.FrameLayout.class) continue;
+            ViewGroup images = (ViewGroup) overlay.getChildAt(0);
+            ViewGroup badge = (ViewGroup) overlay.getChildAt(1);
+            if (images.getChildCount() == 0 || badge.getChildCount() != 1
+                    || !"com.taobao.uikit.extend.feature.view.TUrlImageView"
+                            .equals(images.getChildAt(0).getClass().getName())
+                    || !(badge.getChildAt(0) instanceof android.widget.ViewAnimator)) continue;
+            ViewGroup labels = (ViewGroup) badge.getChildAt(0);
+            if (labels.getChildCount() > 0 && labels.getChildAt(0) instanceof android.widget.TextView) {
+                overlay.setVisibility(View.INVISIBLE);
+            }
+        }
+    }
+
     static View tabAt(ViewGroup row, int slot) {
         int[] slots = slots(row);
         return slots != null && slot >= 0 && slot < slots.length ? row.getChildAt(slots[slot]) : null;
