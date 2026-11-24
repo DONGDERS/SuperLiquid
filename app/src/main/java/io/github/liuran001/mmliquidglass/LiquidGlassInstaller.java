@@ -1547,7 +1547,7 @@ final class LiquidGlassInstaller {
             View home = row != null ? row.getChildAt(0) : null;
             if (home != null) {
                 AlipayHomeBar.keepHomeLabelVisible(home);
-                AlipayHomeBar.keepSelectedHomeIconStill(home);
+                AlipayHomeBar.keepSelectedHomeIconStill(row, home);
                 View icon = home.findViewById(0x45070023);
                 if (icon != null && icon.getParent() == home && icon.getHeight() > 0) {
                     float dy = (home.getHeight() - icon.getHeight()) * 0.5f - icon.getTop();

@@ -14,6 +14,7 @@ final class AlipayHomeBar {
     private static final int BACKGROUND = 0x4507001f;
     private static final int SELECTED_ICON_CONTAINER = 0x4507001d;
     private static final int SELECTED_ICON_SIZE_DP = 36;
+    private static final int TAB_ICON = 0x45070023;
     private static final int TAB_DESCRIPTION = 0x45070022;
     private static final String HOME_LABEL = "首页";
 
@@ -46,7 +47,7 @@ final class AlipayHomeBar {
         if (description.getAlpha() != 1f) description.setAlpha(1f);
     }
 
-    static void keepSelectedHomeIconStill(View home) {
+    static void keepSelectedHomeIconStill(ViewGroup row, View home) {
         if (!home.isSelected()) return;
         View selected = home.findViewById(SELECTED_ICON_CONTAINER);
         if (!(selected instanceof FrameLayout) || selected.getParent() != home
@@ -65,7 +66,8 @@ final class AlipayHomeBar {
         // properties in pre-draw, scoped to this selected home indicator.
         if (selected.getScaleX() != 1f) selected.setScaleX(1f);
         if (selected.getScaleY() != 1f) selected.setScaleY(1f);
-        float offset = -selected.getTop(); // Compact layout starts at the cell's top.
+        float offset = peerIconCenterY(row, home) - selected.getHeight() * 0.5f
+                - selected.getTop();
         if (selected.getTranslationY() != offset) selected.setTranslationY(offset);
         FrameLayout indicator = (FrameLayout) selected;
         for (int i = 0; i < indicator.getChildCount(); i++) {
@@ -73,6 +75,19 @@ final class AlipayHomeBar {
             if (icon instanceof ImageView && icon.getVisibility() == View.VISIBLE
                     && icon.getTranslationY() != 0f) icon.setTranslationY(0f);
         }
+    }
+
+    private static float peerIconCenterY(ViewGroup row, View home) {
+        for (int i = 1; i < row.getChildCount(); i++) {
+            View cell = row.getChildAt(i);
+            if (cell.getVisibility() != View.VISIBLE || cell.isSelected()) continue;
+            View icon = cell.findViewById(TAB_ICON);
+            if (icon == null || icon.getParent() != cell
+                    || icon.getVisibility() != View.VISIBLE || icon.getHeight() <= 0) continue;
+            return cell.getTop() - home.getTop() + icon.getTop() + icon.getHeight() * 0.5f;
+        }
+        // The native compact row puts the peer icon center 16dp below its top.
+        return 16f * home.getResources().getDisplayMetrics().density;
     }
 
     static void hideChrome(View bar) {
