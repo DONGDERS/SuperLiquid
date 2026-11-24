@@ -368,7 +368,7 @@ final class TabBarBridge {
 
     /** Tab occupying a visible layout slot; GONE placeholders do not count. */
     static View tabAt(ViewGroup tabRow, int slot) {
-        if (TaobaoTabLayout.hasOrder(tabRow)) return TaobaoTabLayout.tabAt(tabRow, slot);
+        if (NativeTabLayout.hasOrder(tabRow)) return NativeTabLayout.tabAt(tabRow, slot);
         if (tabRow == null || slot < 0) {
             return null;
         }
@@ -396,7 +396,7 @@ final class TabBarBridge {
         if (tabRow == null || index < 0) {
             return -1;
         }
-        if (TaobaoTabLayout.hasOrder(tabRow)) return TaobaoTabLayout.slotForIndex(tabRow, index);
+        if (NativeTabLayout.hasOrder(tabRow)) return NativeTabLayout.slotForIndex(tabRow, index);
         if (TabLayoutApplier.hasMapping(tabRow)) {
             return TabLayoutApplier.slotForLogicalIndex(tabRow, index);
         }
@@ -469,7 +469,7 @@ final class TabBarBridge {
         if (LiquidGlassModule.app() == HostApp.KUGOU) {
             return KugouHomeBar.selectedSlot(tabRow);
         }
-        if (TaobaoTabLayout.hasOrder(tabRow)) return TaobaoTabLayout.selectedSlot(tabRow);
+        if (NativeTabLayout.hasOrder(tabRow)) return NativeTabLayout.selectedSlot(tabRow);
         int slot = 0;
         for (int i = 0; i < tabRow.getChildCount(); i++) {
             View c = tabRow.getChildAt(i);

@@ -333,7 +333,9 @@ final class LiquidGlassInstaller {
         // paths and never reach here.
         String appKey = GlassConfig.key();
         if ("taobao".equals(appKey)) {
-            TaobaoTabLayout.apply(tabRow);
+            NativeTabLayout.applyTaobao(tabRow);
+        } else if ("alipay".equals(appKey)) {
+            NativeTabLayout.applyAlipay(tabRow);
         } else if ("mm".equals(appKey) || "qq".equals(appKey) || kugou) {
             TabLayoutApplier.apply(tabRow, appKey);
         }
@@ -1541,8 +1543,10 @@ final class LiquidGlassInstaller {
         if (app == HostApp.ALIPAY) {
             AlipayHomeBar.hideChrome(sTabViewRef.get());
             ViewGroup row = sTabRowRef.get();
+            NativeTabLayout.place(row);
             View home = row != null ? row.getChildAt(0) : null;
             if (home != null) {
+                AlipayHomeBar.keepHomeLabelVisible(home);
                 View icon = home.findViewById(0x45070023);
                 if (icon != null && icon.getParent() == home && icon.getHeight() > 0) {
                     float dy = (home.getHeight() - icon.getHeight()) * 0.5f - icon.getTop();
@@ -1553,9 +1557,9 @@ final class LiquidGlassInstaller {
         if (app == HostApp.TAOBAO) {
             ViewGroup row = sTabRowRef.get();
             hideTaobaoTabChrome(sTabViewRef.get());
-            TaobaoTabLayout.place(row);
+            NativeTabLayout.place(row);
             if (rawParent instanceof FrameLayout && ((View) rawParent).getId() == 0x7f0a150c) {
-                TaobaoTabLayout.hideOrphanVideoPromotion(row, (ViewGroup) rawParent);
+                NativeTabLayout.hideOrphanVideoPromotion(row, (ViewGroup) rawParent);
             }
             centerTaobaoHomeIcon(row);
             ViewGroup pager = sPagerRef.get();
@@ -1757,7 +1761,9 @@ final class LiquidGlassInstaller {
             stripSolidBackgrounds(tabView);
             disableTabWidgetStrips(tabView);
             if (LiquidGlassModule.app() == HostApp.TAOBAO) {
-                TaobaoTabLayout.apply(tabRow);
+                NativeTabLayout.applyTaobao(tabRow);
+            } else if (LiquidGlassModule.app() == HostApp.ALIPAY) {
+                NativeTabLayout.applyAlipay(tabRow);
             } else if (LiquidGlassModule.app() == HostApp.KUGOU && tabRow != sTabRowRef.get()) {
                 TabLayoutApplier.apply(tabRow, "kugou");
             }
@@ -1856,7 +1862,7 @@ final class LiquidGlassInstaller {
         int sel = visibleTabSelection(tabRow);
         traceSelection(host, tabRow, sel);
         if (sel < 0 || sDrag == null) {
-            if (sel < 0 && TaobaoTabLayout.hasOrder(tabRow)) {
+            if (sel < 0 && NativeTabLayout.hasOrder(tabRow)) {
                 sLastIndex = -1;
                 View droplet = sDropletRef.get();
                 if (droplet != null) droplet.setVisibility(View.INVISIBLE);

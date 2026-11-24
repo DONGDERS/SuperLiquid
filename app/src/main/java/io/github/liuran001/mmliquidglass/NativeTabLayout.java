@@ -10,49 +10,65 @@ import java.util.Arrays;
 import java.util.List;
 
 /** Keeps the native TabWidget indices stable while changing the on-screen order. */
-final class TaobaoTabLayout {
-    private static final String[] TITLES = {"首页", "视频", "消息", "购物车", "我的淘宝"};
+final class NativeTabLayout {
+    private static final String[] TAOBAO_TITLES = {"首页", "视频", "消息", "购物车", "我的淘宝"};
+    private static final String[] ALIPAY_TITLES = {"首页", "理财", "生活", "消息", "我的"};
     private static final int ORDER_TAG = 0x7e534c54;
-    private static final String CELL = "com.taobao.tao.navigation.NavigationTabIndicatorView";
+    private static final String TAOBAO_CELL = "com.taobao.tao.navigation.NavigationTabIndicatorView";
 
-    private TaobaoTabLayout() {}
+    private NativeTabLayout() {}
 
-    static void apply(ViewGroup row) {
-        if (!(row instanceof TabWidget) || row.getChildCount() != TITLES.length) return;
-        if (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0) return;
-        for (int index = 0; index < TITLES.length; index++) {
-            if (!CELL.equals(row.getChildAt(index).getClass().getName())) return;
+    static void applyTaobao(ViewGroup row) {
+        if (!(row instanceof TabWidget) || row.getChildCount() != TAOBAO_TITLES.length) return;
+        for (int index = 0; index < TAOBAO_TITLES.length; index++) {
+            if (!TAOBAO_CELL.equals(row.getChildAt(index).getClass().getName())) return;
         }
+        apply(row, TAOBAO_TITLES);
+    }
+    static void applyAlipay(ViewGroup row) {
+        if (!(row instanceof TabWidget) || row.getChildCount() != ALIPAY_TITLES.length) return;
+        View home = row.getChildAt(0);
+        if (!"HomeTabWidgetItemView".equals(home.getClass().getSimpleName())) return;
+        AlipayHomeBar.keepHomeLabelVisible(home);
+        apply(row, ALIPAY_TITLES);
+    }
+    private static void apply(ViewGroup row, String[] titles) {
+        if (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0) return;
         List<String> hidden = Arrays.asList(GlassConfig.tabHidden);
-        List<Integer> order = new ArrayList<>(TITLES.length);
+        List<Integer> order = new ArrayList<>(titles.length);
         order.add(0);
         for (String title : GlassConfig.tabOrder) {
-            int index = Arrays.asList(TITLES).indexOf(title);
-            if (index > 0 && !order.contains(index) && isVisible(index, hidden)) {
+            int index = Arrays.asList(titles).indexOf(title);
+            if (index > 0 && !order.contains(index) && isVisible(index, titles, hidden)) {
                 order.add(index);
             }
         }
-        for (int index = 1; index < TITLES.length; index++) {
-            if (!order.contains(index) && isVisible(index, hidden)) order.add(index);
+        for (int index = 1; index < titles.length; index++) {
+            if (!order.contains(index) && isVisible(index, titles, hidden)) order.add(index);
         }
         int[] slots = new int[order.size()];
         for (int slot = 0; slot < slots.length; slot++) slots[slot] = order.get(slot);
         row.setTag(ORDER_TAG, slots);
-        for (int index = 0; index < TITLES.length; index++) {
+        for (int index = 0; index < titles.length; index++) {
             int visibility = order.contains(index) ? View.VISIBLE : View.GONE;
             View cell = row.getChildAt(index);
             if (cell.getVisibility() != visibility) cell.setVisibility(visibility);
         }
     }
 
-    private static boolean isVisible(int index, List<String> hidden) {
-        return index == TITLES.length - 1 || !hidden.contains(TITLES[index]);
+    private static boolean isVisible(int index, String[] titles, List<String> hidden) {
+        return index == titles.length - 1 || !hidden.contains(titles[index]);
     }
 
     private static int[] slots(ViewGroup row) {
-        if (row == null || row.getChildCount() != TITLES.length) return null;
+        if (row == null) return null;
         Object order = row.getTag(ORDER_TAG);
-        return order instanceof int[] ? (int[]) order : null;
+        if (!(order instanceof int[])) return null;
+        int[] slots = (int[]) order;
+        for (int index : slots) {
+            if (index >= row.getChildCount()) return null;
+        }
+        return slots;
     }
 
     static boolean hasOrder(ViewGroup row) {

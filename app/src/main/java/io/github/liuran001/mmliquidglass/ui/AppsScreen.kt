@@ -155,7 +155,7 @@ fun AppsScreen(bottomOverlay: Dp) {
                             set = { Config.setApp(t.key, it) },
                             // The Heybox pill overruns its frame at a width of 1.0.
                             widthRange = if (t.key == "heybox") 0.2f..0.9f else 0.5f..1.2f,
-                            onEditTabs = if (t.key == "alipay") null else ({ tabDialogKey = t.key }),
+                            onEditTabs = { tabDialogKey = t.key },
                         )
                         when (t.key) {
                             "kugou" -> LSliderRow(

@@ -71,6 +71,7 @@ object TabLayoutEditor {
         "kugou" to listOf("首页", "直播", "K歌", "赚钱", "我"),
         "pinduoduo" to listOf("首页", "多多视频", PinduoduoTabLabelProvider.CAMPAIGN_KEY, "聊天", "个人中心"),
         "taobao" to listOf("首页", "视频", "消息", "购物车", "我的淘宝"),
+        "alipay" to listOf("首页", "理财", "生活", "消息", "我的"),
     )
 
     /** Basics per app: never hideable, never reorderable away from slot 0. */
@@ -82,6 +83,7 @@ object TabLayoutEditor {
         "kugou" to setOf("首页", "我"),
         "pinduoduo" to setOf("首页", "个人中心"),
         "taobao" to setOf("首页", "我的淘宝"),
+        "alipay" to setOf("首页", "我的"),
     )
 
     fun locked(appKey: String, title: String): Boolean =

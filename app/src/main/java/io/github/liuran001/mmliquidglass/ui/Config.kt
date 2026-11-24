@@ -119,6 +119,7 @@ object Config {
         "bili" to TabLayout(), "heybox" to TabLayout(),
         "kugou" to TabLayout(),
         "pinduoduo" to TabLayout(),
+        "alipay" to TabLayout(),
     ))
     fun tabLayout(key: String): TabLayout = _tabs.value[key] ?: TabLayout()
 
@@ -235,7 +236,7 @@ object Config {
         setApp("taobao", AppCfg())
         setApp("alipay", AppCfg())
         setKugouPlayerLiftDp(DEFAULT_KUGOU_PLAYER_LIFT_DP)
-        for (key in listOf("mm", "qq", "bili", "heybox", "kugou", "pinduoduo")) {
+        for (key in listOf("mm", "qq", "bili", "heybox", "kugou", "pinduoduo", "alipay")) {
             setTabLayout(key, TabLayout())
         }
     }
@@ -302,6 +303,7 @@ object Config {
             "bili" to readTabLayout(p, "bili"), "heybox" to readTabLayout(p, "heybox"),
             "kugou" to readTabLayout(p, "kugou"),
             "pinduoduo" to readTabLayout(p, "pinduoduo"),
+            "alipay" to readTabLayout(p, "alipay"),
         )
         _bili.value = BiliCfg(
             base = app("bili", AppCfg(widthScale = 0.7f)),
