@@ -4,6 +4,7 @@ import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TabHost;
 import android.widget.TabWidget;
 import android.widget.TextView;
@@ -45,7 +46,7 @@ final class AlipayHomeBar {
         if (description.getAlpha() != 1f) description.setAlpha(1f);
     }
 
-    static void keepSelectedHomeIconSize(View home) {
+    static void keepSelectedHomeIconStill(View home) {
         if (!home.isSelected()) return;
         View selected = home.findViewById(SELECTED_ICON_CONTAINER);
         if (!(selected instanceof FrameLayout) || selected.getParent() != home
@@ -59,6 +60,18 @@ final class AlipayHomeBar {
             lp.width = size;
             lp.height = size;
             selected.setLayoutParams(lp);
+        }
+        // Native animators write these after layout. Correct the rendered
+        // properties in pre-draw, scoped to this selected home indicator.
+        if (selected.getScaleX() != 1f) selected.setScaleX(1f);
+        if (selected.getScaleY() != 1f) selected.setScaleY(1f);
+        float offset = -selected.getTop(); // Compact layout starts at the cell's top.
+        if (selected.getTranslationY() != offset) selected.setTranslationY(offset);
+        FrameLayout indicator = (FrameLayout) selected;
+        for (int i = 0; i < indicator.getChildCount(); i++) {
+            View icon = indicator.getChildAt(i);
+            if (icon instanceof ImageView && icon.getVisibility() == View.VISIBLE
+                    && icon.getTranslationY() != 0f) icon.setTranslationY(0f);
         }
     }
 
