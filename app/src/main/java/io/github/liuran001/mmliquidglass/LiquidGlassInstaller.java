@@ -363,8 +363,12 @@ final class LiquidGlassInstaller {
             stackLp.gravity = android.view.Gravity.CENTER_HORIZONTAL;
             hostLp = stackLp;
         }
+        if (LiquidGlassModule.app() == HostApp.ALIPAY && originalLp instanceof FrameLayout.LayoutParams) {
+            hostLp = new FrameLayout.LayoutParams((FrameLayout.LayoutParams) originalLp);
+        }
         hostLp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-        hostLp.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        hostLp.height = LiquidGlassModule.app() == HostApp.ALIPAY && barHeight > 0
+                ? barHeight + shadowPad * 2 : ViewGroup.LayoutParams.WRAP_CONTENT;
         if (hostLp instanceof FrameLayout.LayoutParams) {
             ((FrameLayout.LayoutParams) hostLp).gravity =
                     android.view.Gravity.BOTTOM | android.view.Gravity.CENTER_HORIZONTAL;
@@ -1534,7 +1538,18 @@ final class LiquidGlassInstaller {
             holdHidden(sBlurLayerRef.get(), true);
         }
         holdHidden(sHairlineRef.get(), false);
-        if (app == HostApp.ALIPAY) AlipayHomeBar.hideChrome(sTabViewRef.get());
+        if (app == HostApp.ALIPAY) {
+            AlipayHomeBar.hideChrome(sTabViewRef.get());
+            ViewGroup row = sTabRowRef.get();
+            View home = row != null ? row.getChildAt(0) : null;
+            if (home != null) {
+                View icon = home.findViewById(0x45070023);
+                if (icon != null && icon.getParent() == home && icon.getHeight() > 0) {
+                    float dy = (home.getHeight() - icon.getHeight()) * 0.5f - icon.getTop();
+                    setIconOnlyTranslation(icon, home.isSelected(), dy);
+                }
+            }
+        }
         if (app == HostApp.TAOBAO) {
             ViewGroup row = sTabRowRef.get();
             hideTaobaoTabChrome(sTabViewRef.get());
@@ -1642,22 +1657,23 @@ final class LiquidGlassInstaller {
         signature = signature * 31 + tabRow.getVisibility();
         signature = signature * 31 + tabRow.getChildCount();
         signature = signature * 31 + (isQqIconOnlyRow(tabRow) ? 1 : 0);
-        boolean taobao = LiquidGlassModule.app() == HostApp.TAOBAO;
+        boolean stableNativeCells = LiquidGlassModule.app() == HostApp.TAOBAO
+                || LiquidGlassModule.app() == HostApp.ALIPAY;
         for (int i = 0; i < tabRow.getChildCount(); i++) {
             View tab = tabRow.getChildAt(i);
             signature = signature * 31 + System.identityHashCode(tab);
             signature = signature * 31 + tab.getVisibility();
             ViewGroup.LayoutParams lp = tab.getLayoutParams();
-            int layoutSignature = taobao && lp != null ? lp.width : System.identityHashCode(lp);
+            int layoutSignature = stableNativeCells && lp != null ? lp.width : System.identityHashCode(lp);
             signature = signature * 31 + layoutSignature;
             boolean equalWeight = lp != null && lp.width == 0;
             if (lp instanceof android.widget.LinearLayout.LayoutParams) {
                 equalWeight |= ((android.widget.LinearLayout.LayoutParams) lp).weight != 0f;
             }
             signature = signature * 31 + (equalWeight ? 1 : 0);
-            // Taobao switches icon and badge visibility as part of selection.
+            // Taobao and Alipay switch icon and badge visibility as part of selection.
             // These content changes must leave the active spring intact.
-            if (!taobao && tab instanceof ViewGroup) {
+            if (!stableNativeCells && tab instanceof ViewGroup) {
                 ViewGroup group = (ViewGroup) tab;
                 signature = signature * 31 + group.getChildCount();
                 for (int j = 0; j < group.getChildCount(); j++) {
@@ -1803,6 +1819,19 @@ final class LiquidGlassInstaller {
         }
         boolean changed = dropNavReserve(tabView) > 0;
         ViewGroup.LayoutParams lp = tabView.getLayoutParams();
+        if (LiquidGlassModule.app() == HostApp.ALIPAY && sBarHeight > 0
+                && lp instanceof FrameLayout.LayoutParams) {
+            FrameLayout.LayoutParams bar = (FrameLayout.LayoutParams) lp;
+            int gravity = android.view.Gravity.TOP | android.view.Gravity.FILL_HORIZONTAL;
+            if (bar.width != ViewGroup.LayoutParams.MATCH_PARENT || bar.height != sBarHeight
+                    || bar.gravity != gravity || bar.leftMargin != 0 || bar.rightMargin != 0
+                    || bar.topMargin != 0 || bar.bottomMargin != 0) {
+                // The life page reapplies the docked bar's frame to our reparented child.
+                tabView.setLayoutParams(new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, sBarHeight, gravity));
+                return true;
+            }
+        }
         if (lp != null && sBarHeight > 0 && lp.height != sBarHeight) {
             lp.height = sBarHeight;
             tabView.setLayoutParams(lp);
