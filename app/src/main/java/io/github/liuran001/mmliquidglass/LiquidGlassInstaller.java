@@ -685,7 +685,10 @@ final class LiquidGlassInstaller {
      * layout listener that re-stretches it whenever that happens.
      */
     private static void extendPagesToBottom(ViewGroup pager) {
-        if (LiquidGlassModule.app() == HostApp.ALIPAY) return;
+        if (LiquidGlassModule.app() == HostApp.ALIPAY) {
+            AlipayHomeBar.extendSecondaryPage(pager);
+            return;
+        }
         if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
         if (LiquidGlassModule.app() == HostApp.TAOBAO) {
             extendTaobaoPages(pager);
@@ -1522,7 +1525,7 @@ final class LiquidGlassInstaller {
      * wrapper. Re-scan the small sibling list before every draw so both a
      * re-shown instance and a replacement instance are caught before rendering.
      */
-    private static void holdOwnBarChromeHidden(LiquidGlassHostLayout host) {
+    private static boolean holdOwnBarChromeHidden(LiquidGlassHostLayout host) {
         android.view.ViewParent rawParent = host.getParent();
         HostApp app = LiquidGlassModule.app();
         if (rawParent instanceof ViewGroup
@@ -1547,12 +1550,14 @@ final class LiquidGlassInstaller {
             View home = row != null ? row.getChildAt(0) : null;
             if (home != null) {
                 AlipayHomeBar.keepHomeLabelVisible(home);
-                AlipayHomeBar.keepSelectedHomeIconStill(row, home);
+                AlipayHomeBar.hookHomeIconSizing(home);
+                boolean iconRelayout = AlipayHomeBar.keepSelectedHomeIconStill(row, home);
                 View icon = home.findViewById(0x45070023);
                 if (icon != null && icon.getParent() == home && icon.getHeight() > 0) {
                     float dy = (home.getHeight() - icon.getHeight()) * 0.5f - icon.getTop();
                     setIconOnlyTranslation(icon, home.isSelected(), dy);
                 }
+                return iconRelayout;
             }
         }
         if (app == HostApp.TAOBAO) {
@@ -1566,6 +1571,7 @@ final class LiquidGlassInstaller {
             ViewGroup pager = sPagerRef.get();
             if (pager != null) setMaterialOnly(host, pager, isTaobaoCartSelected());
         }
+        return false;
     }
 
     /**
@@ -1956,7 +1962,7 @@ final class LiquidGlassInstaller {
             try {
                 keepNavBarClear();
                 dropBottomFrostAll();
-                holdOwnBarChromeHidden(host);
+                if (holdOwnBarChromeHidden(host)) return false;
             } catch (Throwable t) {
                 // Once only: this sits on a per-frame path.
                 if (!sKeepFailed) {
