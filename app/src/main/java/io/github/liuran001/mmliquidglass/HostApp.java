@@ -154,7 +154,10 @@ final class HostApp {
             new String[]{"TUrlImageView", "HImageView"},
             true,
             "com.taobao.");
-    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX, KUGOU, PINDUODUO, TAOBAO};
+    static final HostApp ALIPAY = new HostApp(
+            "com.eg.android.AlipayGphone", "com.eg.android.AlipayGphone.AlipayLogin",
+            new String[0], new String[0], "", new String[0], new String[0], true, "com.alipay.");
+    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX, KUGOU, PINDUODUO, TAOBAO, ALIPAY};
 
     static {
         KUGOU.allowShapeFallback = false;

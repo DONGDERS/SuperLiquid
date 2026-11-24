@@ -9,6 +9,7 @@
         <package android:name="com.kugou.android" />
         <package android:name="com.xunmeng.pinduoduo" />
         <package android:name="com.taobao.taobao" />
+        <package android:name="com.eg.android.AlipayGphone" />
     </queries>
 
     <application

@@ -142,6 +142,11 @@ public class LiquidGlassModule extends XposedModule {
                                                     app.pkg, 0).getLongVersionCode() != 849L)) {
                                         return result;
                                     }
+                                    if (app == HostApp.ALIPAY && (!GlassConfig.enabled
+                                            || activity.getPackageManager().getPackageInfo(
+                                                    app.pkg, 0).getLongVersionCode() != 212210L)) {
+                                        return result;
+                                    }
                                     LiquidGlassInstaller.scheduleInstall(activity);
                                     log(android.util.Log.ERROR, "resume dispatch step2");
                                     if (app == HostApp.BILIBILI) {
@@ -210,7 +215,7 @@ public class LiquidGlassModule extends XposedModule {
                 // went dark); surface clinit/whatever under our own tag.
                 logErr("heybox install threw", t);
             }
-        } else if (app != HostApp.KUGOU && app != HostApp.PINDUODUO) {
+        } else if (app != HostApp.KUGOU && app != HostApp.PINDUODUO && app != HostApp.ALIPAY) {
             TabBarBridge.install(app, param.getDefaultClassLoader());
         }
     }

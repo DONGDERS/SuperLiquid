@@ -141,6 +141,7 @@ final class TabBarBridge {
      * control into a floating pill and break the app.
      */
     static ViewGroup locateTabView(View root) {
+        if (LiquidGlassModule.app() == HostApp.ALIPAY) return AlipayHomeBar.findBar(root);
         ViewGroup byName = findTabView(root);
         if (byName != null) {
             return byName;

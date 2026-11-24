@@ -160,7 +160,8 @@ final class LiquidGlassInstaller {
         sSelectionTraceUntil = android.os.SystemClock.uptimeMillis() + 5000L;
         sSelectionTraceNext = 0L;
         View decor = activity.getWindow().getDecorView();
-        if (sHostRef.get() == null && LiquidGlassModule.app() != HostApp.TAOBAO) {
+        if (sHostRef.get() == null && LiquidGlassModule.app() != HostApp.TAOBAO
+                && LiquidGlassModule.app() != HostApp.ALIPAY) {
             hideStockBarUntilInstalled(decor);
         }
         decor.post(() -> tryInstall(activity, decor, 0));
@@ -301,6 +302,7 @@ final class LiquidGlassInstaller {
             if (!(taobaoPage instanceof ViewGroup) || taobaoPage.getParent() != parent) return;
             candidateBackdrop = (ViewGroup) taobaoPage;
         }
+        if (LiquidGlassModule.app() == HostApp.ALIPAY) candidateBackdrop = AlipayHomeBar.backdrop(parent);
         final ViewGroup backdrop = candidateBackdrop;
         if (backdrop == null) {
             LiquidGlassModule.log(android.util.Log.WARN,
@@ -677,6 +679,7 @@ final class LiquidGlassInstaller {
      * layout listener that re-stretches it whenever that happens.
      */
     private static void extendPagesToBottom(ViewGroup pager) {
+        if (LiquidGlassModule.app() == HostApp.ALIPAY) return;
         if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
         if (LiquidGlassModule.app() == HostApp.TAOBAO) {
             extendTaobaoPages(pager);
@@ -758,7 +761,8 @@ final class LiquidGlassInstaller {
      */
     private static void dropBottomFrostAll() {
         if (LiquidGlassModule.app() == HostApp.PINDUODUO
-                || LiquidGlassModule.app() == HostApp.TAOBAO) return;
+                || LiquidGlassModule.app() == HostApp.TAOBAO
+                || LiquidGlassModule.app() == HostApp.ALIPAY) return;
         ViewGroup pager = sPagerRef.get();
         if (pager == null) {
             return;
@@ -1530,6 +1534,7 @@ final class LiquidGlassInstaller {
             holdHidden(sBlurLayerRef.get(), true);
         }
         holdHidden(sHairlineRef.get(), false);
+        if (app == HostApp.ALIPAY) AlipayHomeBar.hideChrome(sTabViewRef.get());
         if (app == HostApp.TAOBAO) {
             ViewGroup row = sTabRowRef.get();
             hideTaobaoTabChrome(sTabViewRef.get());
@@ -1600,7 +1605,8 @@ final class LiquidGlassInstaller {
      */
     private static void keepNavBarClear() {
         if (LiquidGlassModule.app() == HostApp.PINDUODUO
-                || LiquidGlassModule.app() == HostApp.TAOBAO) return;
+                || LiquidGlassModule.app() == HostApp.TAOBAO
+                || LiquidGlassModule.app() == HostApp.ALIPAY) return;
         Activity a = sActivityRef.get();
         if (a == null) {
             return;
@@ -2187,6 +2193,10 @@ final class LiquidGlassInstaller {
      * background does not touch them, and they would run right across the pill.
      */
     private static void disableTabWidgetStrips(View tabView) {
+        if (LiquidGlassModule.app() == HostApp.ALIPAY) {
+            AlipayHomeBar.hideChrome(tabView);
+            tabView = tabView.findViewById(android.R.id.tabs);
+        }
         if (LiquidGlassModule.app() == HostApp.TAOBAO && tabView instanceof android.widget.TabHost) {
             hideTaobaoTabChrome(tabView);
             tabView = ((android.widget.TabHost) tabView).getTabWidget();
@@ -2434,7 +2444,8 @@ final class LiquidGlassInstaller {
      */
     private static boolean extendUnderNavBar(Context ctx) {
         if (LiquidGlassModule.app() == HostApp.PINDUODUO
-                || LiquidGlassModule.app() == HostApp.TAOBAO) return false;
+                || LiquidGlassModule.app() == HostApp.TAOBAO
+                || LiquidGlassModule.app() == HostApp.ALIPAY) return false;
         if (Build.VERSION.SDK_INT < 30) {
             return false;
         }
@@ -2504,7 +2515,8 @@ final class LiquidGlassInstaller {
      */
     private static void watchBottomInset(LiquidGlassHostLayout host, ViewGroup backdrop) {
         if (LiquidGlassModule.app() == HostApp.PINDUODUO
-                || LiquidGlassModule.app() == HostApp.TAOBAO) return;
+                || LiquidGlassModule.app() == HostApp.TAOBAO
+                || LiquidGlassModule.app() == HostApp.ALIPAY) return;
         backdrop.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or2, ob) -> {
             extendPagesToBottom(backdrop);
             // Catches the transition frame itself rather than waiting for the

@@ -209,6 +209,7 @@ final class DropletPanel extends View {
         }
         if (app == HostApp.KUGOU) return mNight ? 0xFFFFFFFF : 0xFF1C1C1E;
         if (mAccentCache != 0) return mAccentCache;
+        if (app == HostApp.ALIPAY) return 0xFF1677FF;
         return app == HostApp.TAOBAO ? 0xFFFF5000 : 0xFF07C160;
     }
 

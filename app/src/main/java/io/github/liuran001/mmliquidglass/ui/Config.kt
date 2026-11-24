@@ -103,7 +103,9 @@ object Config {
     private val _pinduoduo = mutableStateOf(AppCfg())
     val pinduoduo: AppCfg get() = _pinduoduo.value
     private val _taobao = mutableStateOf(AppCfg())
+    private val _alipay = mutableStateOf(AppCfg())
     val taobao: AppCfg get() = _taobao.value
+    val alipay: AppCfg get() = _alipay.value
     private val _kugouPlayerLiftDp = mutableStateOf(DEFAULT_KUGOU_PLAYER_LIFT_DP)
     val kugouPlayerLiftDp: Int get() = _kugouPlayerLiftDp.value
     private val _heybox = mutableStateOf(AppCfg(widthScale = 0.5f))
@@ -191,6 +193,7 @@ object Config {
             "kugou" -> _kugou.value = cfg
             "pinduoduo" -> _pinduoduo.value = cfg
             "taobao" -> _taobao.value = cfg
+            "alipay" -> _alipay.value = cfg
             "bili" -> _bili.value = _bili.value.copy(base = cfg)
         }
         write(key, cfg)
@@ -230,6 +233,7 @@ object Config {
         setApp("kugou", AppCfg())
         setApp("pinduoduo", AppCfg())
         setApp("taobao", AppCfg())
+        setApp("alipay", AppCfg())
         setKugouPlayerLiftDp(DEFAULT_KUGOU_PLAYER_LIFT_DP)
         for (key in listOf("mm", "qq", "bili", "heybox", "kugou", "pinduoduo")) {
             setTabLayout(key, TabLayout())
@@ -290,6 +294,7 @@ object Config {
         _kugou.value = app("kugou", AppCfg())
         _pinduoduo.value = app("pinduoduo", AppCfg())
         _taobao.value = app("taobao", AppCfg())
+        _alipay.value = app("alipay", AppCfg())
         _kugouPlayerLiftDp.value = p.getInt("kugou_player_lift_dp", DEFAULT_KUGOU_PLAYER_LIFT_DP).coerceIn(0, 48)
         _heyboxPlus.value = readPlus(p, "heybox")
         _tabs.value = mapOf(
