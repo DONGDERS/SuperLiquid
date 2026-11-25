@@ -1,7 +1,6 @@
 package io.github.liuran001.mmliquidglass;
 
 import android.app.Activity;
-import android.app.Application;
 import android.app.Instrumentation;
 
 import io.github.libxposed.api.XposedInterface;
@@ -20,7 +19,6 @@ public class LiquidGlassModule extends XposedModule {
     private static volatile int sResumeHits;
     private static volatile int sResumeSeen;
     private static volatile LiquidGlassModule sSelf;
-    private static PlayHomeBar sPlay;
 
     public LiquidGlassModule() {
         super();
@@ -130,15 +128,6 @@ public class LiquidGlassModule extends XposedModule {
                                         log(android.util.Log.ERROR,
                                                 "home activity onResume #" + sResumeHits);
                                     }
-                                    if (app == HostApp.PLAY) {
-                                        if (sPlay != null) {
-                                            sPlay.resume(activity);
-                                            log(android.util.Log.INFO, "Play bottom-bar home matched; resume dispatched");
-                                        } else {
-                                            log(android.util.Log.WARN, "Play home matched but Compose bridge is unavailable");
-                                        }
-                                        return result;
-                                    }
                                     if (app == HostApp.KUGOU) {
                                         // Resolve the real page and bottom bar in separate branches.
                                         KugouHomeBar.onHomeResume(activity);
@@ -206,33 +195,6 @@ public class LiquidGlassModule extends XposedModule {
         if (!GlassConfig.enabled) {
             log(android.util.Log.INFO,
                     "manager config: disabled for " + app + ", skipping install");
-            return;
-        }
-        if (app == HostApp.PLAY) {
-            try {
-                Method create = Instrumentation.class.getMethod("callApplicationOnCreate", Application.class);
-                hookIntercept(create, chain -> {
-                    if (!(chain.getArg(0) instanceof Application appContext)) return chain.proceed();
-                    if (sPlay == null && app.pkg.equals(appContext.getPackageName())) {
-                        try {
-                            long version = appContext.getPackageManager().getPackageInfo(app.pkg, 0)
-                                    .getLongVersionCode();
-                            if (version == PlayComposeSymbols.VERSION_CODE) {
-                                ClassLoader loader = appContext.getClassLoader();
-                                PlayHomeBar bar = new PlayHomeBar(loader);
-                                bar.install(loader);
-                                sPlay = bar;
-                                log(android.util.Log.INFO, "Play bottom-bar Compose hooks installed");
-                            }
-                        } catch (Exception | LinkageError failure) {
-                            logErr("Play Store bottom-bar ABI unavailable; retaining native bar", failure);
-                        }
-                    }
-                    return chain.proceed();
-                });
-            } catch (Exception | LinkageError failure) {
-                logErr("Play Store application hook unavailable", failure);
-            }
             return;
         }
         // The tab bar bridge needs the app's own classes, so it can only be

@@ -69,7 +69,6 @@ private val TARGETS = listOf(
     Target("pinduoduo", "拼多多", "com.xunmeng.pinduoduo"),
     Target("taobao", "淘宝", "com.taobao.taobao"),
     Target("alipay", "支付宝", "com.eg.android.AlipayGphone"),
-    Target("play", "Google Play", "com.android.vending"),
 )
 
 private data class AppIdentity(val installed: Boolean, val label: String?, val icon: ImageBitmap?)
@@ -149,20 +148,9 @@ fun AppsScreen(bottomOverlay: Dp) {
                             "pinduoduo" -> Config.pinduoduo
                             "taobao" -> Config.taobao
                             "alipay" -> Config.alipay
-                            "play" -> Config.play
                             else -> Config.bili.base
                         }
-                        if (t.key == "play") {
-                            LSliderRow(stringResourceCompat(R.string.apps_tint), cfg.tint, 0.85f..1.12f) {
-                                Config.setApp(t.key, cfg.copy(tint = it))
-                            }
-                            LSliderRow(stringResourceCompat(R.string.apps_gloss), cfg.gloss, 0f..2f) {
-                                Config.setApp(t.key, cfg.copy(gloss = it))
-                            }
-                            LSliderRow(stringResourceCompat(R.string.apps_border), cfg.border, 0.5f..2f) {
-                                Config.setApp(t.key, cfg.copy(border = it))
-                            }
-                        } else AppParams(
+                        AppParams(
                             cfg = cfg,
                             set = { Config.setApp(t.key, it) },
                             // The Heybox pill overruns its frame at a width of 1.0.

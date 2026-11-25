@@ -90,7 +90,6 @@ public final class GlassConfig {
         if (HostApp.PINDUODUO.pkg.equals(pkg)) return "pinduoduo";
         if (HostApp.TAOBAO.pkg.equals(pkg)) return "taobao";
         if (HostApp.ALIPAY.pkg.equals(pkg)) return "alipay";
-        if (HostApp.PLAY.pkg.equals(pkg)) return "play";
         return "";
     }
 
