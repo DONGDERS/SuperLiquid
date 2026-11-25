@@ -94,9 +94,11 @@ final class PlayHomeBar {
         surfaceDraw.install(() -> ready && insideSurface, XposedInterface.Chain::proceed);
         LiquidGlassModule.hookIntercept(touchDispatch, c -> {
             PlayBarBinding live = binding;
-            if (!ready || !GlassConfig.enabled || !mainThread() || !backgrounds.isEnabled() || live == null) return c.proceed();
-            return live.dispatch((View) c.getThisObject(), c.getArg(0),
-                    event -> event == c.getArg(0) ? c.proceed() : c.proceed(new Object[]{event}));
+            if (!ready || !GlassConfig.enabled || !mainThread() || !backgrounds.isEnabled()
+                    || live == null || !(c.getThisObject() instanceof View view)
+                    || !(c.getArg(0) instanceof MotionEvent original)) return c.proceed();
+            return live.dispatch(view, original,
+                    event -> event == original ? c.proceed() : c.proceed(new Object[]{event}));
         });
         ready = true;
     }

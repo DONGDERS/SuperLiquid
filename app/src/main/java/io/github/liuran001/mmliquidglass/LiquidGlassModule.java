@@ -207,7 +207,7 @@ public class LiquidGlassModule extends XposedModule {
             try {
                 Method create = Instrumentation.class.getMethod("callApplicationOnCreate", Application.class);
                 hookIntercept(create, chain -> {
-                    Application appContext = chain.getArg(0);
+                    if (!(chain.getArg(0) instanceof Application appContext)) return chain.proceed();
                     if (sPlay == null && app.pkg.equals(appContext.getPackageName())) {
                         try {
                             long version = appContext.getPackageManager().getPackageInfo(app.pkg, 0)

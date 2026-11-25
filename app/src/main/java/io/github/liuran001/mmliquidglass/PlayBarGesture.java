@@ -9,14 +9,8 @@ import android.view.ViewConfiguration;
 /** Leaves taps/vertical gestures native; takes over only a horizontal capsule drag. */
 final class PlayBarGesture {
     interface NativeDispatch {
-        private boolean rowMoved() {
-        return Math.abs(activeRow.left - row.left) > 1f || Math.abs(activeRow.top - row.top) > 1f
-                || Math.abs(activeRow.right - row.right) > 1f || Math.abs(activeRow.bottom - row.bottom) > 1f;
+        Object dispatch(MotionEvent event) throws Throwable;
     }
-
-    Object dispatch(MotionEvent event) throws Throwable;
-    }
-
     interface Commit {
         boolean select(int index);
     }
