@@ -105,19 +105,23 @@ final class PlayBarBinding implements View.OnAttachStateChangeListener {
         float scale = motion.scale();
         int capsuleWidth = Math.round((cell - 2f * inset) * scale);
         int capsuleHeight = Math.round((height - 4f * inset) * scale);
+        float capsuleX = (motion.slot() + .5f) * cell - capsuleWidth * .5f;
+        float capsuleY = (height - capsuleHeight) * .5f;
+        LiquidGlassPanel.EmbeddedBackdrop backdrop = bridge.backdrop(view);
         int save = canvas.save();
         try {
             canvas.translate(0f, inset);
-            plate.drawEmbeddedMaterial(canvas, Math.round(width), Math.round(height - 2f * inset));
+            plate.drawEmbeddedMaterial(canvas, Math.round(width), Math.round(height - 2f * inset),
+                    x, y + inset, backdrop);
         } finally {
             canvas.restoreToCount(save);
         }
         save = canvas.save();
         try {
-            canvas.translate((motion.slot() + .5f) * cell - capsuleWidth * .5f,
-                    (height - capsuleHeight) * .5f);
+            canvas.translate(capsuleX, capsuleY);
             capsule.setInteraction(Math.max(0f, Math.min(1f, (scale - 1f) / .39f)), capsuleWidth * .5f);
-            capsule.drawEmbeddedMaterial(canvas, capsuleWidth, capsuleHeight);
+            capsule.drawEmbeddedMaterial(canvas, capsuleWidth, capsuleHeight,
+                    x + capsuleX, y + capsuleY, backdrop);
         } finally {
             canvas.restoreToCount(save);
         }

@@ -388,12 +388,18 @@ final class LiquidGlassPanel extends View {
         drawPanel(canvas, w, h, h * 0.5f, mEmbeddedNode, mSelf, captureScale);
     }
 
-    /** Draws shared material in a Compose-owned slot without capturing its owner. */
-    void drawEmbeddedMaterial(Canvas canvas, int width, int height) {
+    interface EmbeddedBackdrop {
+        boolean draw(RecordingCanvas target, int left, int top, int width, int height, int pad);
+    }
+
+    void drawEmbeddedMaterial(Canvas canvas, int width, int height, float x, float y,
+                              EmbeddedBackdrop backdrop) {
         if (width <= 0 || height <= 0) return;
         updateClip(width, height);
+        mSelf[0] = Math.round(x);
+        mSelf[1] = Math.round(y);
         drawPanel(canvas, width, height, Math.min(width, height) * 0.5f,
-                mEmbeddedNode, mSelf, 1f);
+                mEmbeddedNode, mSelf, 1f, backdrop);
     }
 
     /**
@@ -404,9 +410,16 @@ final class LiquidGlassPanel extends View {
      */
     private void drawPanel(Canvas canvas, int w, int h, float radius,
                            RenderNode node, int[] self, float captureScale) {
+        drawPanel(canvas, w, h, radius, node, self, captureScale, null);
+    }
+
+    private void drawPanel(Canvas canvas, int w, int h, float radius,
+                           RenderNode node, int[] self, float captureScale,
+                           EmbeddedBackdrop backdrop) {
+        boolean captured = false;
         if (mSupported && canvas.isHardwareAccelerated()) {
             try {
-                drawGlass(canvas, w, h, radius, node, self, captureScale);
+                captured = drawGlass(canvas, w, h, radius, node, self, captureScale, backdrop);
             } catch (Throwable t) {
                 mSupported = false;
                 LiquidGlassModule.logErr("glass draw failed, flat fallback", t);
@@ -417,7 +430,7 @@ final class LiquidGlassPanel extends View {
         // this is what carries legibility, not a heavy blur.
         if (mUseAppTuning) {
             int color = mNight ? 0x002C2C2E : 0x00F2F2F7;
-            int baseAlpha = mBackdropRef.get() == null ? 176 : 102;
+            int baseAlpha = captured || mBackdropRef.get() != null ? 102 : 176;
             int alpha = Math.min(255, Math.round(baseAlpha * tuning(GlassConfig.tintStrength, 0.2f, 2f)));
             mSurfacePaint.setColor(color | (alpha << 24));
             mHighlightPaint.setStrokeWidth(mDensity * tuning(GlassConfig.borderWidthScale, 0.5f, 2f));
@@ -465,12 +478,11 @@ final class LiquidGlassPanel extends View {
         canvas.restoreToCount(save);
     }
 
-    private void drawGlass(Canvas canvas, int w, int h, float radius,
-                           RenderNode node, int[] self, float captureScale) {
+    private boolean drawGlass(Canvas canvas, int w, int h, float radius,
+                              RenderNode node, int[] self, float captureScale,
+                              EmbeddedBackdrop backdrop) {
         ViewGroup pager = mBackdropRef.get();
-        if (pager == null || pager.getWidth() <= 0) {
-            return;
-        }
+        if (backdrop == null && (pager == null || pager.getWidth() <= 0)) return false;
 
         int nw = w + mPad * 2;
         int nh = h + mPad * 2;
@@ -485,7 +497,12 @@ final class LiquidGlassPanel extends View {
                 rc.scale(1f / captureScale, 1f / captureScale,
                         nw * 0.5f, nh * 0.5f);
             }
-            Backdrop.draw(rc, pager, mNight, self[0] - mPad, self[1] - mPad, nw, nh);
+            if (backdrop != null) {
+                rc.drawColor(mNight ? 0xFF111111 : 0xFFF7F7F7);
+                if (!backdrop.draw(rc, self[0] - mPad, self[1] - mPad, nw, nh, mPad)) return false;
+            } else {
+                Backdrop.draw(rc, pager, mNight, self[0] - mPad, self[1] - mPad, nw, nh);
+            }
         } finally {
             node.endRecording();
         }
@@ -534,5 +551,6 @@ final class LiquidGlassPanel extends View {
         canvas.translate(-mPad, -mPad);
         canvas.drawRenderNode(node);
         canvas.restore();
+        return true;
     }
 }

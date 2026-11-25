@@ -24,6 +24,7 @@ final class PlayHomeBar {
     private PlayBarBinding binding;
     private Object currentModel;
     private final PlayBackgroundNodes backgrounds;
+    private PlayPageBackdrop pageBackdrop;
     private final Method legacySurface;
     private final Method materialFill;
     private final Method materialSurface;
@@ -70,6 +71,13 @@ final class PlayHomeBar {
         Method makeSurface = type(loader, "fvt").getDeclaredMethod("a", modifier,
                 type(loader, "iye"), long.class, type(loader, "bdd"), float.class);
         backgrounds.install(loader);
+        try {
+            pageBackdrop = new PlayPageBackdrop(loader, this::invalidate);
+            pageBackdrop.install(loader);
+        } catch (ReflectiveOperationException | RuntimeException unavailable) {
+            pageBackdrop = null;
+            LiquidGlassModule.logErr("Play page capture hooks unavailable", unavailable);
+        }
         LiquidGlassModule.hookIntercept(symbols.legacyBar, c -> composeBar(c, true));
         LiquidGlassModule.hookIntercept(symbols.materialBar, c -> composeBar(c, false));
         LiquidGlassModule.hookIntercept(legacySurface, c -> {
@@ -118,6 +126,7 @@ final class PlayHomeBar {
     void unbind(PlayBarBinding value) {
         if (binding != value) return;
         binding = null;
+        if (pageBackdrop != null) pageBackdrop.clear();
         currentModel = null;
         currentSelection = PlayTabSelection.UNKNOWN;
         bind(null, null);
@@ -133,6 +142,10 @@ final class PlayHomeBar {
         if (listener != null && currentSelection != PlayTabSelection.UNKNOWN) {
             listener.onSelection(currentSelection);
         }
+    }
+
+    LiquidGlassPanel.EmbeddedBackdrop backdrop(View owner) {
+        return pageBackdrop == null ? null : pageBackdrop.forBar(owner);
     }
 
     void invalidate(View owner) {
