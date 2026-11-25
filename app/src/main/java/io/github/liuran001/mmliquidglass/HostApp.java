@@ -157,7 +157,11 @@ final class HostApp {
     static final HostApp ALIPAY = new HostApp(
             "com.eg.android.AlipayGphone", "com.eg.android.AlipayGphone.AlipayLogin",
             new String[0], new String[0], "", new String[0], new String[0], true, "com.alipay.");
-    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX, KUGOU, PINDUODUO, TAOBAO, ALIPAY};
+    static final HostApp PLAY = new HostApp(
+            "com.android.vending", "com.android.vending.AssetBrowserActivity",
+            new String[0], new String[0], "", new String[0], new String[0],
+            true, "com.google.android.finsky.");
+    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX, KUGOU, PINDUODUO, TAOBAO, ALIPAY, PLAY};
 
     static {
         KUGOU.allowShapeFallback = false;

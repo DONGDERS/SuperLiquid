@@ -1,0 +1,163 @@
+package io.github.liuran001.mmliquidglass;
+
+import android.app.Activity;
+import android.content.res.Configuration;
+import android.graphics.Canvas;
+import android.os.SystemClock;
+import android.view.Choreographer;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+
+import java.lang.ref.WeakReference;
+
+/** Activity-scoped foreground, geometry and frame lifecycle for the Play bar. */
+final class PlayBarBinding implements View.OnAttachStateChangeListener {
+    private static final int TABS = 5;
+    private final PlayHomeBar bridge;
+    private final View decor;
+    private final PlayBarMotion motion = new PlayBarMotion();
+    private final PlayBarSurface surface = new PlayBarSurface();
+    private final Choreographer choreographer = Choreographer.getInstance();
+    private final Choreographer.FrameCallback frame = this::onFrame;
+    private final Runnable timeout = this::requestFrame;
+    private final android.graphics.RectF surfaceBounds = new android.graphics.RectF();
+    private final int[] location = new int[2];
+    private WeakReference<View> owner = new WeakReference<>(null);
+    private PlayBarGesture gesture;
+    private boolean scheduled;
+    private boolean closed;
+    private long lastFrame;
+    private long scheduledDeadline;
+
+    PlayBarBinding(Activity activity, PlayHomeBar bridge) {
+        this.bridge = bridge;
+        decor = activity.getWindow().getDecorView();
+        decor.addOnAttachStateChangeListener(this);
+        bridge.bind(this::observe, this::draw);
+    }
+
+    Object dispatch(View view, MotionEvent event, PlayBarGesture.NativeDispatch dispatch) throws Throwable {
+        if (closed || view != owner.get() || gesture == null) return dispatch.dispatch(event);
+        if (event.getActionMasked() == MotionEvent.ACTION_DOWN
+                && (!view.hasWindowFocus() || !hasNativeIcons(view, surfaceBounds.left,
+                surfaceBounds.top, surfaceBounds.width(), surfaceBounds.height()))) {
+            gesture.clearRow();
+        }
+        return gesture.dispatch(event, dispatch);
+    }
+
+    private boolean draw(View view, Canvas canvas, PlayBackgroundNodes.Layer layer,
+                         float x, float y, float width, float height) {
+        if (closed || !GlassConfig.enabled || !canvas.isHardwareAccelerated()
+                || view.getRootView() != decor || !motion.isReady()) return false;
+        float density = view.getResources().getDisplayMetrics().density;
+        view.getLocationOnScreen(location);
+        float bottom = location[1] + view.getHeight();
+        if (Math.abs(width - view.getWidth()) > 2f * density
+                || Math.abs(location[0] - x) > 2f * density
+                || height < 44f * density || height > 112f * density
+                || y + height > bottom + 2f * density || y + height < bottom - 36f * density
+                || !hasNativeIcons(view, x, y, width, height)) return false;
+        if (layer == PlayBackgroundNodes.Layer.RECTANGULAR_FILL) {
+            // Keep this fill until the paired surface has actually drawn.
+            return view == owner.get() && gesture != null
+                    && Math.abs(x - surfaceBounds.left) <= density
+                    && Math.abs(y - surfaceBounds.top) <= density
+                    && Math.abs(width - surfaceBounds.width()) <= density
+                    && Math.abs(height - surfaceBounds.height()) <= density;
+        }
+        View previous = owner.get();
+        if (previous != view) {
+            if (gesture != null) gesture.clearRow();
+            owner = new WeakReference<>(view);
+            gesture = new PlayBarGesture(view, motion, bridge::select, this::requestFrame);
+            // Re-record the paired rectangular background outside this draw.
+            decor.post(() -> { if (!closed) bridge.invalidate(view); });
+        }
+        surfaceBounds.set(x, y, x + width, y + height);
+        gesture.setRow(x, y, x + width, y + height);
+        boolean night = (view.getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        surface.draw(canvas, width, height, motion.slot(), motion.scale(), density, night);
+        return true;
+    }
+
+    private boolean hasNativeIcons(View view, float left, float top, float width, float height) {
+        if (!(view instanceof ViewGroup)) return false;
+        ViewGroup compose = (ViewGroup) view;
+        for (int i = 0; i < compose.getChildCount(); i++) {
+            View child = compose.getChildAt(i);
+            if (!(child instanceof ViewGroup) || !"kbs".equals(child.getClass().getName())) continue;
+            ViewGroup icons = (ViewGroup) child;
+            int cells = 0;
+            icons.getLocationOnScreen(location);
+            int x = location[0];
+            int y = location[1];
+            float bottom = top + height;
+            if (width <= 0) return false;
+            for (int j = 0; j < icons.getChildCount(); j++) {
+                View icon = icons.getChildAt(j);
+                if (!"leu".equals(icon.getClass().getName()) || !icon.isShown()
+                        || icon.getWidth() <= 0 || icon.getHeight() <= 0) continue;
+                float cx = x + (icon.getLeft() + icon.getRight()) * .5f;
+                float cy = y + (icon.getTop() + icon.getBottom()) * .5f;
+                if (cy < top || cy >= bottom) continue;
+                int cell = (int) Math.floor((cx - left) * TABS / width);
+                if (cell >= 0 && cell < TABS) cells |= 1 << cell;
+            }
+            return cells == (1 << TABS) - 1;
+        }
+        return false;
+    }
+
+    private void observe(int index) {
+        if (closed) return;
+        motion.observeNative(index, SystemClock.uptimeMillis());
+        requestFrame();
+    }
+
+    private void requestFrame() {
+        if (closed || scheduled) return;
+        scheduled = true;
+        choreographer.postFrameCallback(frame);
+    }
+
+    private void onFrame(long time) {
+        scheduled = false;
+        if (closed) return;
+        long now = SystemClock.uptimeMillis();
+        float dt = lastFrame == 0L ? 1f / 60f : Math.max(0f, (time - lastFrame) * 1e-9f);
+        View view = owner.get();
+        if (view != null && gesture != null && (!view.isShown() || !hasNativeIcons(view,
+                surfaceBounds.left, surfaceBounds.top, surfaceBounds.width(), surfaceBounds.height()))) {
+            gesture.clearRow();
+        }
+        boolean running = motion.step(dt, now);
+        bridge.invalidate(view);
+        lastFrame = running ? time : 0L;
+        if (running) requestFrame();
+        long deadline = motion.deadlineMs();
+        if (deadline != scheduledDeadline) {
+            decor.removeCallbacks(timeout);
+            scheduledDeadline = deadline;
+            if (deadline > now) decor.postDelayed(timeout, deadline - now);
+        }
+    }
+
+    boolean owns(View view) { return !closed && view.getRootView() == decor; }
+
+    void close() {
+        if (closed) return;
+        closed = true;
+        choreographer.removeFrameCallback(frame);
+        decor.removeCallbacks(timeout);
+        decor.removeOnAttachStateChangeListener(this);
+        bridge.unbind(this);
+        if (gesture != null) gesture.clearRow();
+        motion.reset();
+    }
+
+    @Override public void onViewAttachedToWindow(View view) {}
+    @Override public void onViewDetachedFromWindow(View view) { close(); }
+}
