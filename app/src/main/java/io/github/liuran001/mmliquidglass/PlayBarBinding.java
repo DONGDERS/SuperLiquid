@@ -17,7 +17,9 @@ final class PlayBarBinding implements View.OnAttachStateChangeListener {
     private final PlayHomeBar bridge;
     private final View decor;
     private final PlayBarMotion motion = new PlayBarMotion();
-    private final PlayBarSurface surface = new PlayBarSurface();
+    private final LiquidGlassPanel plate;
+    private final LiquidGlassPanel capsule;
+    private boolean night;
     private final Choreographer choreographer = Choreographer.getInstance();
     private final Choreographer.FrameCallback frame = this::onFrame;
     private final Runnable timeout = this::requestFrame;
@@ -33,6 +35,10 @@ final class PlayBarBinding implements View.OnAttachStateChangeListener {
     PlayBarBinding(Activity activity, PlayHomeBar bridge) {
         this.bridge = bridge;
         decor = activity.getWindow().getDecorView();
+        night = isNight(decor);
+        float density = decor.getResources().getDisplayMetrics().density;
+        plate = LiquidGlassInstaller.installEmbedded(activity, density, night);
+        capsule = plate == null ? null : LiquidGlassInstaller.installEmbedded(activity, density, night);
         decor.addOnAttachStateChangeListener(this);
         bridge.bind(this::observe, this::draw);
     }
@@ -49,9 +55,21 @@ final class PlayBarBinding implements View.OnAttachStateChangeListener {
 
     private boolean draw(View view, Canvas canvas, PlayBackgroundNodes.Layer layer,
                          float x, float y, float width, float height) {
-        if (closed || !GlassConfig.enabled || !canvas.isHardwareAccelerated()
+        if (closed || plate == null || capsule == null || !GlassConfig.enabled || !canvas.isHardwareAccelerated()
                 || view.getRootView() != decor || !motion.isReady()) return false;
         float density = view.getResources().getDisplayMetrics().density;
+        if (layer == PlayBackgroundNodes.Layer.SELECTED_INDICATOR) {
+            return view == owner.get() && gesture != null
+                    && width >= 24f * density - 1f
+                    && width <= surfaceBounds.width() / TABS + density
+                    && height >= 24f * density - 1f && height <= 40f * density
+                    && x >= surfaceBounds.left - density
+                    && x + width <= surfaceBounds.right + density
+                    && y >= surfaceBounds.top - density
+                    && y + height <= surfaceBounds.bottom + density
+                    && hasNativeIcons(view, surfaceBounds.left, surfaceBounds.top,
+                                      surfaceBounds.width(), surfaceBounds.height());
+        }
         view.getLocationOnScreen(location);
         float bottom = location[1] + view.getHeight();
         if (Math.abs(width - view.getWidth()) > 2f * density
@@ -77,12 +95,38 @@ final class PlayBarBinding implements View.OnAttachStateChangeListener {
         }
         surfaceBounds.set(x, y, x + width, y + height);
         gesture.setRow(x, y, x + width, y + height);
-        boolean night = (view.getResources().getConfiguration().uiMode
-                & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-        surface.draw(canvas, width, height, motion.slot(), motion.scale(), density, night);
+        if (night != isNight(view)) {
+            night = isNight(view);
+            plate.setTheme(night);
+            capsule.setTheme(night);
+        }
+        float inset = Math.min(4f * density, height / 12f);
+        float cell = width / TABS;
+        float scale = motion.scale();
+        int capsuleWidth = Math.round((cell - 2f * inset) * scale);
+        int capsuleHeight = Math.round((height - 4f * inset) * scale);
+        int save = canvas.save();
+        try {
+            canvas.translate(0f, inset);
+            plate.drawEmbeddedMaterial(canvas, Math.round(width), Math.round(height - 2f * inset));
+        } finally {
+            canvas.restoreToCount(save);
+        }
+        save = canvas.save();
+        try {
+            canvas.translate((motion.slot() + .5f) * cell - capsuleWidth * .5f,
+                    (height - capsuleHeight) * .5f);
+            capsule.setInteraction(Math.max(0f, Math.min(1f, (scale - 1f) / .39f)), capsuleWidth * .5f);
+            capsule.drawEmbeddedMaterial(canvas, capsuleWidth, capsuleHeight);
+        } finally {
+            canvas.restoreToCount(save);
+        }
         return true;
     }
-
+    private static boolean isNight(View view) {
+        return (view.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                == Configuration.UI_MODE_NIGHT_YES;
+    }
     private boolean hasNativeIcons(View view, float left, float top, float width, float height) {
         if (!(view instanceof ViewGroup)) return false;
         ViewGroup compose = (ViewGroup) view;

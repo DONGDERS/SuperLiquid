@@ -278,6 +278,20 @@ final class LiquidGlassInstaller {
         }
     }
 
+    /** Compose owns the parent and draw order; install only the shared material. */
+    static LiquidGlassPanel installEmbedded(Context context, float density, boolean night) {
+        if (Build.VERSION.SDK_INT < LiquidGlassPanel.MIN_SDK) return null;
+        try {
+            // Never sample the Compose owner: its display list includes these panels.
+            LiquidGlassPanel panel = new LiquidGlassPanel(context, null, density, night);
+            panel.useAppTuning();
+            return panel;
+        } catch (RuntimeException failure) {
+            LiquidGlassModule.logErr("embedded glass renderer unavailable", failure);
+            return null;
+        }
+    }
+
     /** Package-private: BiliHomeBar (bilibili's Compose bar) feeds a self-built row. */
     static void install(ViewGroup tabView) {
         install(tabView, null);

@@ -13,7 +13,7 @@ import java.util.ArrayList;
 
 /** Carries bottom-bar identity from Compose modifier creation to actual drawing. */
 final class PlayBackgroundNodes {
-    enum Layer { RECTANGULAR_FILL, SURFACE }
+    enum Layer { RECTANGULAR_FILL, SURFACE, SELECTED_INDICATOR }
 
     interface Surface {
         /** Return false to keep the native fill. Coordinates are local to the draw scope. */
@@ -76,6 +76,9 @@ final class PlayBackgroundNodes {
     private final Method composeCanvas;
     private final Field nativeCanvas;
     private final Method nodeOwner;
+    private final Method layoutOf;
+    private final Method parentLayout;
+    private WeakReference<Object> claimedLayout = new WeakReference<>(null);
     private final Method nodeCoordinator;
     private final Method localToScreen;
     private final Method invalidateDraw;
@@ -98,6 +101,8 @@ final class PlayBackgroundNodes {
         nativeCanvas = type(loader, "iuq").getField("a");
         Class<?> nodeAccess = type(loader, "jsl");
         Class<?> nodeKind = type(loader, "jsk");
+        layoutOf = nodeAccess.getMethod("f", nodeKind);
+        parentLayout = type(loader, "jud").getMethod("x");
         nodeOwner = nodeAccess.getMethod("h", nodeKind);
         nodeCoordinator = nodeAccess.getMethod("g", nodeKind, int.class);
         localToScreen = type(loader, "jwf").getMethod("k", long.class);
@@ -113,6 +118,26 @@ final class PlayBackgroundNodes {
         // until a renderer explicitly claims it during a draw.
         var construct = type(loader, "bcm").getDeclaredConstructor(long.class,
                 type(loader, "ivs"), float.class, type(loader, "iye"), int.class);
+        Class<?> drawScope = type(loader, "jaj");
+        Class<?> indicatorNode = type(loader, "iqy");
+        Method drawIndicator = indicatorNode.getDeclaredMethod("gR", drawScope);
+        Field indicatorCallback = indicatorNode.getField("a");
+        Class<?> callbackClass = type(loader, "rwk");
+        Field indicatorBranch = callbackClass.getDeclaredField("c");
+        indicatorBranch.setAccessible(true);
+        LiquidGlassModule.hookIntercept(drawIndicator, chain -> {
+            if (!mainThread() || surface == null) return chain.proceed();
+            Object node = chain.getThisObject();
+            Object callback = indicatorCallback.get(node);
+            // eX's drawBehind lambda (56 × 32 dp). Other rwk branches draw
+            // unrelated elements, including the thin edge marker.
+            if (!callbackClass.isInstance(callback) || indicatorBranch.getInt(callback) != 0x12
+                    || !drawReplacement(node, chain.getArg(0), Layer.SELECTED_INDICATOR)) {
+                return chain.proceed();
+            }
+            // iqy.gR draws the lambda first, then native content exactly once.
+            return drawContent.invoke(chain.getArg(0));
+        });
         LiquidGlassModule.hookAfter(construct, chain -> {
             if (mainThread() && creating != null && (int) chain.getArg(4) == 2) {
                 modifiers.set(chain.getThisObject(), creating);
@@ -151,6 +176,7 @@ final class PlayBackgroundNodes {
 
     void setSurface(Surface value) {
         surface = value;
+        claimedLayout.clear();
         invalidate(null);
     }
 
@@ -190,12 +216,21 @@ final class PlayBackgroundNodes {
             if (!(host instanceof View)) return false;
             View owner = (View) host;
             if (!owner.isShown() || !owner.isAttachedToWindow()) return false;
+            Object layout = null;
+            if (layer == Layer.SURFACE || layer == Layer.SELECTED_INDICATOR) {
+                layout = layoutOf.invoke(null, node);
+                // A surface that no longer validates must not keep ownership.
+                if (layer == Layer.SURFACE && claimedLayout.get() == layout) claimedLayout.clear();
+            }
             Object coords = nodeCoordinator.invoke(null, node, 1);
             long origin = (long) localToScreen.invoke(coords, 0L);
             float x = Float.intBitsToFloat((int) (origin >>> 32));
             float y = Float.intBitsToFloat((int) origin);
             if (!Float.isFinite(x) || !Float.isFinite(y)) return false;
             rememberDraw(node, owner);
+            // Independent draw layers can render before the plate. Keep their
+            // invalidation entry so they get another pass after it claims the row.
+            if (layer == Layer.SELECTED_INDICATOR && !insideClaimedLayout(layout)) return false;
             Object wrapped = composeCanvas.invoke(drawContext.invoke(scope));
             if (!nativeCanvas.getDeclaringClass().isInstance(wrapped)) return false;
             Canvas canvas = (Canvas) nativeCanvas.get(wrapped);
@@ -208,7 +243,9 @@ final class PlayBackgroundNodes {
             }
             int save = canvas.save();
             try {
-                return surface.draw(owner, canvas, layer, x, y, width, height);
+                boolean accepted = surface.draw(owner, canvas, layer, x, y, width, height);
+                if (layer == Layer.SURFACE && accepted) claimedLayout = new WeakReference<>(layout);
+                return accepted;
             } finally {
                 canvas.restoreToCount(save);
             }
@@ -217,6 +254,16 @@ final class PlayBackgroundNodes {
             LiquidGlassModule.logErr("Play bottom-bar background; restoring native fill", failure);
             return false;
         }
+    }
+
+    private boolean insideClaimedLayout(Object layout) throws ReflectiveOperationException {
+        Object claimed = claimedLayout.get();
+        if (claimed == null) return false;
+        for (int depth = 0; layout != null && depth < 64; depth++) {
+            if (layout == claimed) return true;
+            layout = parentLayout.invoke(layout);
+        }
+        return false;
     }
 
     private static boolean mainThread() {

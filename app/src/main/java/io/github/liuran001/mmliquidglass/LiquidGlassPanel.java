@@ -272,9 +272,19 @@ final class LiquidGlassPanel extends View {
     @Override
     protected void onSizeChanged(int w, int h, int ow, int oh) {
         super.onSizeChanged(w, h, ow, oh);
+        updateClip(w, h);
+    }
+
+    private int mClipWidth = -1;
+    private int mClipHeight = -1;
+
+    private void updateClip(int width, int height) {
+        if (mClipWidth == width && mClipHeight == height) return;
+        mClipWidth = width;
+        mClipHeight = height;
         mClip.reset();
-        float r = h * 0.5f;
-        mClip.addRoundRect(0, 0, w, h, r, r, Path.Direction.CW);
+        float radius = Math.min(width, height) * 0.5f;
+        mClip.addRoundRect(0, 0, width, height, radius, radius, Path.Direction.CW);
     }
 
     @Override
@@ -376,6 +386,14 @@ final class LiquidGlassPanel extends View {
         }
         ViewGeom.unscaledScreenPos(this, mSelf);
         drawPanel(canvas, w, h, h * 0.5f, mEmbeddedNode, mSelf, captureScale);
+    }
+
+    /** Draws shared material in a Compose-owned slot without capturing its owner. */
+    void drawEmbeddedMaterial(Canvas canvas, int width, int height) {
+        if (width <= 0 || height <= 0) return;
+        updateClip(width, height);
+        drawPanel(canvas, width, height, Math.min(width, height) * 0.5f,
+                mEmbeddedNode, mSelf, 1f);
     }
 
     /**
