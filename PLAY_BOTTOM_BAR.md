@@ -2,7 +2,7 @@
 
 ## Confirmed from the device and dex
 
-- Package `com.android.vending`, activity `.AssetBrowserActivity`. A single full-screen `ComposeView` hosts the page **and** the bottom bar. Do not hide, scale, reparent, or mirror that view. Its five bottom AndroidView children supply icons, not labels.
+- Package `com.android.vending`, launcher alias `.AssetBrowserActivity`, actual resumed activity `com.google.android.finsky.activities.MainActivity`. A single full-screen `ComposeView` hosts the page **and** the bottom bar. Do not hide, scale, reparent, or mirror that view. Its five bottom AndroidView children supply icons, not labels.
 - `Lamwa.a` lists the tabs in order. `Latis.eY` iterates the list and compares the loop index directly with `Lamwa.b`. Use that model as the selection source, rather than the selected flag of an embedded icon. Both `Latis.ff` and `Latis.fg` receive the model as argument zero.
 - Legacy: `ff → hq → fvt.b → fvo → fvt.a`. Material: `fg → bmrx.cT → fsv.a → fsw.a`; the examined `ffm` implementation also calls `fvt.b`, via `fsx`. `fg` additionally adds a rectangular fill with `bcn.c` ahead of the surface.
 - `fvt.a` builds shadow, border, background, and clipping as separate modifiers. `bcn.b` adds a fill modifier; its `bcq.gR` implementation draws the fill before `jaj.H()` draws the content. **Do not** hook `bcn` or `fvt` unconditionally: they are shared with other Compose surfaces. **Do not** drop `eX` or `eV`: they render native tab content, and `eX` includes icon animation paths.

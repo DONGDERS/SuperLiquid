@@ -131,7 +131,12 @@ public class LiquidGlassModule extends XposedModule {
                                                 "home activity onResume #" + sResumeHits);
                                     }
                                     if (app == HostApp.PLAY) {
-                                        if (sPlay != null) sPlay.resume(activity);
+                                        if (sPlay != null) {
+                                            sPlay.resume(activity);
+                                            log(android.util.Log.INFO, "Play bottom-bar home matched; resume dispatched");
+                                        } else {
+                                            log(android.util.Log.WARN, "Play home matched but Compose bridge is unavailable");
+                                        }
                                         return result;
                                     }
                                     if (app == HostApp.KUGOU) {
@@ -217,6 +222,7 @@ public class LiquidGlassModule extends XposedModule {
                                 PlayHomeBar bar = new PlayHomeBar(loader);
                                 bar.install(loader);
                                 sPlay = bar;
+                                log(android.util.Log.INFO, "Play bottom-bar Compose hooks installed");
                             }
                         } catch (Exception | LinkageError failure) {
                             logErr("Play Store bottom-bar ABI unavailable; retaining native bar", failure);
