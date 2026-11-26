@@ -32,6 +32,9 @@ MIT（继承自原项目 [liuran001/WeChat-LiquidGlass](https://github.com/liura
 另致谢参考项目 [sjtt2/HeyBox-LiquidGlass](https://github.com/sjtt2/HeyBox-LiquidGlass)、[tiann/KernelSU](https://github.com/tiann/KernelSU)
 
 
+## v0.5.2-R2
+- 修复了已知问题
+
 ## v0.5.2-R1
 - 添加了对淘宝与拼多多的支持
 
