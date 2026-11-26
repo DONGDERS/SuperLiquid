@@ -185,15 +185,19 @@ public final class GlassConfig {
         }
     }
 
-    static void load(Context ctx) {
+    static void ensureHostVersion(Context ctx) {
+        if (hostVersionCode >= 0 && hostUpdatedAt > 0) return;
         try {
             android.content.pm.PackageInfo info = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0);
-            hostVersionCode = info.getLongVersionCode();
             hostUpdatedAt = info.lastUpdateTime;
+            hostVersionCode = info.getLongVersionCode();
         } catch (Exception failure) {
-            hostVersionCode = -1;
-            hostUpdatedAt = 0;
+            LiquidGlassModule.logErr("tab layout: host version unavailable", failure);
         }
+    }
+
+    static void load(Context ctx) {
+        ensureHostVersion(ctx);
         try {
             SharedPreferences p = ctx.getSharedPreferences(PREFS, 0);
             if (!moduleLayerRead) {

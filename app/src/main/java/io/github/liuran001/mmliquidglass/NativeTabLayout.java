@@ -26,6 +26,7 @@ final class NativeTabLayout {
         apply(row, "alipay");
     }
     private static void apply(ViewGroup row, String appKey) {
+        GlassConfig.ensureHostVersion(row.getContext());
         RuntimeTabCatalog.observeRow(row, appKey);
         String[] titles = new String[row.getChildCount()];
         List<String> nativeKeys = new ArrayList<>();
