@@ -67,10 +67,8 @@ object TabLayoutEditor {
         val snapshot = RuntimeTabs.snapshot(key)
         if (!snapshot.current) return emptyList()
         val native = snapshot.items.map { it.key }
-        if (cfg.catalogToken == snapshot.token && cfg.order.isNotEmpty()) {
-            return io.github.liuran001.mmliquidglass.TabCatalogRules.candidateOrder(native, cfg.order)
-        }
-        return (snapshot.items.filter { it.locked }.map { it.key } + native).distinct()
+        val saved = if (cfg.catalogToken == snapshot.token) cfg.order else emptyList()
+        return io.github.liuran001.mmliquidglass.TabCatalogRules.candidateOrder(native, saved)
     }
 }
 

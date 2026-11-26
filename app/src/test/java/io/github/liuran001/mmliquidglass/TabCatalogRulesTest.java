@@ -47,6 +47,14 @@ public class TabCatalogRulesTest {
         assertEquals(nativeTabs, TabCatalogRules.candidateOrder(nativeTabs, List.of()));
         assertEquals(List.of(), TabCatalogRules.candidateOrder(List.of(), List.of("旧项")));
     }
+    @Test public void requiredAccountTabKeepsItsNativePositionByDefault() {
+        List<String> nativeTabs = List.of("首页", "直播", "会员专区", "发现", "我");
+        assertEquals(4, TabCatalogRules.accountIndex("kugou", nativeTabs));
+        assertTrue(TabCatalogRules.locked("kugou", "我"));
+        assertEquals(nativeTabs, TabCatalogRules.candidateOrder(nativeTabs, List.of()));
+        List<String> custom = List.of("首页", "发现", "我", "直播", "会员专区");
+        assertEquals(custom, TabCatalogRules.candidateOrder(nativeTabs, custom));
+    }
     @Test public void nativeCampaignTitlesAndKugouAliasesKeepTheirIdentity() {
         assertEquals("周一大领券", TabCatalogRules.normalize("pinduoduo", "周一大领券"));
         assertEquals("赚钱", TabCatalogRules.normalize("kugou", "金币"));
