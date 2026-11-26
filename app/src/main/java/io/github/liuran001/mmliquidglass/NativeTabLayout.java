@@ -55,13 +55,13 @@ final class NativeTabLayout {
             int index = Arrays.asList(titles).indexOf(title);
             if (index >= 0 && RuntimeTabCatalog.nativeVisibility(row.getChildAt(index)) != View.GONE
                     && index != entry && !order.contains(index)
-                    && isVisible(index, titles, hidden, nativeIndices.get(nativeIndices.size() - 1))) {
+                    && isVisible(appKey, titles[index], hidden)) {
                 order.add(index);
             }
         }
         for (int index : nativeIndices) {
             if (!order.contains(index)
-                    && isVisible(index, titles, hidden, nativeIndices.get(nativeIndices.size() - 1))) order.add(index);
+                    && isVisible(appKey, titles[index], hidden)) order.add(index);
         }
         int[] slots = new int[order.size()];
         for (int slot = 0; slot < slots.length; slot++) slots[slot] = order.get(slot);
@@ -81,8 +81,8 @@ final class NativeTabLayout {
         if (hadOrder) row.requestLayout();
     }
 
-    private static boolean isVisible(int index, String[] titles, List<String> hidden, int lastNativeIndex) {
-        return index == lastNativeIndex || !hidden.contains(titles[index]);
+    private static boolean isVisible(String appKey, String key, List<String> hidden) {
+        return RuntimeTabCatalog.isLockedKey(appKey, key) || !hidden.contains(key);
     }
 
     private static int[] slots(ViewGroup row) {

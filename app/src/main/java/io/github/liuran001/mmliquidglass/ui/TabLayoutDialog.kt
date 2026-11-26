@@ -1,6 +1,17 @@
 package io.github.liuran001.mmliquidglass.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -51,22 +62,12 @@ object TabLayoutEditor {
     fun candidates(key: String, cfg: Config.TabLayout): List<String> {
         val snapshot = RuntimeTabs.snapshot(key)
         if (!snapshot.current) return emptyList()
-        return io.github.liuran001.mmliquidglass.TabCatalogRules.candidateOrder(
-            snapshot.items.map { it.key },
-            if (cfg.catalogToken == snapshot.token) cfg.order.map { configKey(key, it) } else emptyList(),
-        )
+        val native = snapshot.items.map { it.key }
+        if (cfg.catalogToken == snapshot.token && cfg.order.isNotEmpty()) {
+            return io.github.liuran001.mmliquidglass.TabCatalogRules.candidateOrder(native, cfg.order)
+        }
+        return (snapshot.items.filter { it.locked }.map { it.key } + native).distinct()
     }
-    fun configKey(appKey: String, title: String): String =
-        io.github.liuran001.mmliquidglass.TabCatalogRules.normalize(appKey, title)
-    /**
-     * Keep hidden tabs in [order]. Filtering them out looked harmless but threw
-     * their position away: the hook only walks the configured order and appends
-     * whatever is left in native order, so a hidden tab always came back at the
-     * end instead of its own slot. The hook already skips hidden titles when it
-     * builds the visible sequence, so carrying them here costs nothing.
-     */
-    fun toCfg(order: List<String>, hidden: Set<String>): Config.TabLayout =
-        Config.TabLayout(order = order, hidden = hidden.toList())
 }
 
 @Composable
@@ -74,20 +75,43 @@ fun TabLayoutDialog(
     appKey: String,
     show: Boolean,
     onDismiss: () -> Unit,
+    onDismissFinished: () -> Unit,
     onApply: (Config.TabLayout) -> Unit,
 ) {
-    if (!show) return
     val snapshot = RuntimeTabs.snapshot(appKey)
     val initial = Config.tabLayout(appKey).takeIf { it.catalogToken == snapshot.token }
         ?: Config.TabLayout()
-    val hiddenKeys = initial.hidden.map { TabLayoutEditor.configKey(appKey, it) }.toSet()
+    val hiddenKeys = initial.hidden.toSet()
+    var overrides by remember(appKey, snapshot.token) { mutableStateOf(initial.labels) }
+    var showAll by remember(appKey, snapshot.token) { mutableStateOf(false) }
+    val dismiss = { if (showAll && show) showAll = false else onDismiss() }
+    @Composable
+    fun candidateBody(color: Color) {
+        Column(Modifier.fillMaxWidth().heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
+            snapshot.items.sortedBy { it.nativeIndex }.forEach { item ->
+                val selected = overrides[item.key]
+                Text("${item.nativeIndex + 1} · ${selected ?: item.label}", color = color,
+                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+                (listOf(null) + item.candidates).forEach { choice ->
+                    val checked = selected == choice
+                    Text(
+                        text = (if (checked) "●  " else "○  ") + (choice ?: "自动：${item.label}"),
+                        color = color,
+                        modifier = Modifier.fillMaxWidth().clickable(enabled = show) {
+                            overrides = if (choice == null) overrides - item.key else overrides + (item.key to choice)
+                        }.padding(horizontal = 12.dp, vertical = 10.dp),
+                    )
+                }
+            }
+        }
+    }
     val start = TabLayoutEditor.candidates(appKey, initial).map { key ->
         key to (key in hiddenKeys && !TabLayoutEditor.locked(appKey, key))
     }
     // A new report replaces an obsolete editor draft instead of saving stale rows.
-    var items by remember(appKey, show, snapshot) { mutableStateOf(start) }
-    var dragging by remember(appKey, show, snapshot) { mutableStateOf<String?>(null) }
-    var dragDy by remember(appKey, show, snapshot) { mutableFloatStateOf(0f) }
+    var items by remember(appKey, snapshot.current, snapshot.token) { mutableStateOf(start) }
+    var dragging by remember(appKey, snapshot.current, snapshot.token) { mutableStateOf<String?>(null) }
+    var dragDy by remember(appKey, snapshot.current, snapshot.token) { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
     val rowH = with(density) { 48.dp.toPx() }
 
@@ -172,7 +196,8 @@ fun TabLayoutDialog(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        snapshot.items.firstOrNull { it.key == title }?.label ?: title,
+                        overrides[title] ?: snapshot.items.firstOrNull { it.key == title }?.label ?: title,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
                         fontSize = 16.sp, color = baseColor,
                         modifier = Modifier.weight(1f),
                     )
@@ -208,69 +233,76 @@ fun TabLayoutDialog(
         if (!snapshot.current || items.isEmpty()) return
         val order = items.map { it.first }
         val hidden = items.filter { it.second }.map { it.first }.toSet()
-        onApply(TabLayoutEditor.toCfg(order, hidden))
+        onApply(Config.TabLayout(order = order, hidden = hidden.toList(),
+            catalogToken = snapshot.token, labels = overrides))
         onDismiss()
     }
 
-    val SUMMARY = snapshot.status + if (snapshot.current)
-        "\n长按拖动排序 · 点加减号隐藏或恢复 · 首项固定" else ""
+    val title = if (showAll) "全部候选" else "底栏项目"
+    val summary = snapshot.status
+    @Composable
+    fun body(color: Color, dragBg: Color) {
+        if (showAll) candidateBody(color)
+        else Column(Modifier.heightIn(max = 384.dp).verticalScroll(rememberScrollState())) {
+            rowsBody(color, dragBg)
+        }
+    }
     when (LocalUiMode.current) {
         UiMode.Miuix -> OverlayDialog(
             show = show,
-            title = "底栏项目",
-            summary = SUMMARY,
-            onDismissRequest = onDismiss,
-            content = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    rowsBody(colorScheme.onBackground, colorScheme.secondaryContainer.copy(alpha = 0.4f))
-                    Spacer(Modifier.height(16.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Spacer(Modifier.weight(1f))
-                        TextButton(
-                            text = "取消",
-                            onClick = onDismiss,
-                            modifier = Modifier.padding(end = 12.dp),
-                        )
-                        if (snapshot.current) TextButton(text = "保存", onClick = { applyEdit() })
-                    }
-                }
-            },
-        )
-        UiMode.Material -> if (show) Dialog(
-            onDismissRequest = onDismiss,
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+            title = title,
+            summary = summary,
+            onDismissRequest = dismiss,
+            onDismissFinished = onDismissFinished,
         ) {
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 56.dp),
+            body(colorScheme.onBackground, colorScheme.secondaryContainer.copy(alpha = 0.4f))
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth()) {
+                if (snapshot.current && !showAll) TextButton(text = "查看全部", onClick = { if (show) showAll = true })
+                Spacer(Modifier.weight(1f))
+                TextButton(text = if (showAll) "返回" else "取消", onClick = dismiss)
+                if (snapshot.current && !showAll) TextButton(text = "保存", onClick = { if (show) applyEdit() })
+            }
+        }
+        UiMode.Material -> {
+            val transition = remember { MutableTransitionState(false) }
+            transition.targetState = show
+            LaunchedEffect(show, transition.isIdle, transition.currentState) {
+                if (!show && transition.isIdle && !transition.currentState) onDismissFinished()
+            }
+            Dialog(
+                onDismissRequest = dismiss,
+                properties = DialogProperties(usePlatformDefaultWidth = false),
             ) {
-                Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
-                    M3Text(
-                        "底栏项目",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    M3Text(
-                        SUMMARY,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    rowsBody(
-                        MaterialTheme.colorScheme.onSurface,
-                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Spacer(Modifier.weight(1f))
-                        M3TextButton(onClick = onDismiss) { M3Text("取消") }
-                        Spacer(Modifier.width(12.dp))
-                        if (snapshot.current) M3TextButton(onClick = { applyEdit() }) { M3Text("保存") }
+                AnimatedVisibility(
+                    visibleState = transition,
+                    enter = fadeIn() + scaleIn(initialScale = 0.94f),
+                    exit = fadeOut() + scaleOut(targetScale = 0.94f),
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        tonalElevation = 6.dp,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp),
+                    ) {
+                        Column(Modifier.fillMaxWidth().padding(20.dp)) {
+                            M3Text(title, style = MaterialTheme.typography.titleLarge)
+                            M3Text(summary, style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 8.dp))
+                            body(MaterialTheme.colorScheme.onSurface,
+                                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
+                            Row(Modifier.fillMaxWidth()) {
+                                if (snapshot.current && !showAll) M3TextButton(onClick = { showAll = true }, enabled = show) {
+                                    M3Text("查看全部")
+                                }
+                                Spacer(Modifier.weight(1f))
+                                M3TextButton(onClick = dismiss, enabled = show) { M3Text(if (showAll) "返回" else "取消") }
+                                if (snapshot.current && !showAll) M3TextButton(onClick = { applyEdit() }, enabled = show) {
+                                    M3Text("保存")
+                                }
+                            }
+                        }
                     }
                 }
             }

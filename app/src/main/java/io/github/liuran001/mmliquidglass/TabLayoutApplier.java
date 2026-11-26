@@ -20,7 +20,7 @@ import java.util.Set;
  * <app>TabBarBridge switch hook runs it after every native setTo.
  *
  * <p>Basics can never be hidden: the default-entry tab (position 0) plus the
- * "my/mine" family. Titles are matched against each cell's first TextView.
+ * "my/mine" family. Layouts address native cell identities, independently of the displayed title.
  */
 final class TabLayoutApplier {
 
@@ -33,7 +33,7 @@ final class TabLayoutApplier {
 
     /** Same locked titles as the runtime catalog shown by the manager. */
     static boolean isLockedTitle(String appKey, String title) {
-        return TabCatalogRules.locked(appKey, title);
+        return RuntimeTabCatalog.isLockedKey(appKey, title);
     }
     private static String normalizeTitle(String appKey, String title) {
         return TabCatalogRules.normalize(appKey, title);

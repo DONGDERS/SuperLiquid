@@ -591,9 +591,11 @@ final class HeyboxHomeBar {
     }
 
     private static String catalogKeys(RadioButton[] tabs) {
-        java.util.ArrayList<String> keys = new java.util.ArrayList<>();
-        for (RadioButton tab : tabs) keys.add(RuntimeTabCatalog.layoutKey("heybox", tab));
-        return new org.json.JSONArray(keys).toString();
+        if (tabs.length == 0) return "";
+        RuntimeTabCatalog.Catalog catalog = RuntimeTabCatalog.reportCells(tabs[0].getContext(),
+                "heybox", java.util.Arrays.asList(tabs));
+        return new org.json.JSONArray(catalog.keys).toString()
+                + new org.json.JSONArray(catalog.labels).toString();
     }
 
     private static void refreshNativeTabs() {

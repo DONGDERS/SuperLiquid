@@ -42,7 +42,7 @@ final class AlipayHomeBar {
         if (validBar(view)) return view;
         if (view instanceof ViewGroup group) {
             for (int i=0; i<group.getChildCount(); i++) {
-                View match = findBar(group.getChildAt(i));
+                View match = findBarInTree(group.getChildAt(i));
                 if (match != null) return match;
             }
         }

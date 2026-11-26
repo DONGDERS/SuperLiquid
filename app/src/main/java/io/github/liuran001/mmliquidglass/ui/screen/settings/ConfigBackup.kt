@@ -50,6 +50,8 @@ object ConfigBackup {
                 if (!t.isDefault) put(key, JSONObject().apply {
                     put("order", JSONArray(t.order))
                     put("hidden", JSONArray(t.hidden))
+                    put("catalogToken", t.catalogToken)
+                    put("labels", JSONObject(t.labels))
                 })
             }
         })
@@ -127,8 +129,15 @@ object ConfigBackup {
             for (key in listOf("mm", "qq", "bili", "heybox", "kugou")) {
                 runCatching {
                     val o = t.getJSONObject(key)
-                    Config.setTabLayout(key, Config.TabLayout(
-                        order = arr(o, "order"), hidden = arr(o, "hidden")))
+                    val token = o.optString("catalogToken")
+                    if (token.isNotEmpty()) {
+                        val labels = o.optJSONObject("labels")?.let { values ->
+                            values.keys().asSequence().associateWith { values.getString(it) }
+                        }.orEmpty()
+                        Config.setTabLayout(key, Config.TabLayout(
+                            order = arr(o, "order"), hidden = arr(o, "hidden"),
+                            catalogToken = token, labels = labels))
+                    }
                 } // per-app tolerance: a bad entry skips only that app
             }
             applied++

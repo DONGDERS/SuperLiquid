@@ -54,8 +54,9 @@ object Config {
         val order: List<String> = emptyList(),
         val hidden: List<String> = emptyList(),
         val catalogToken: String = "",
+        val labels: Map<String, String> = emptyMap(),
     ) {
-        val isDefault: Boolean get() = order.isEmpty() && hidden.isEmpty()
+        val isDefault: Boolean get() = order.isEmpty() && hidden.isEmpty() && labels.isEmpty()
     }
 
     const val REMOTE_NAME = "superliquid"
@@ -125,21 +126,29 @@ object Config {
 
     fun setTabLayout(key: String, t: TabLayout) {
         val snapshot = RuntimeTabs.snapshot(key)
-        if (!t.isDefault && !snapshot.current) return
-        val bound = t.copy(catalogToken = if (snapshot.current) snapshot.token else "")
+        if (!t.isDefault && (!snapshot.current || t.catalogToken != snapshot.token)) return
+        val byKey = snapshot.items.associateBy { it.key }
+        val bound = t.copy(
+            order = t.order.filter { it in byKey }.distinct(),
+            hidden = t.hidden.filter { byKey[it]?.locked == false }.distinct(),
+            labels = t.labels.filter { (id, label) -> byKey[id]?.candidates?.contains(label) == true },
+        )
         _tabs.value = _tabs.value + (key to bound)
-        val json = org.json.JSONArray(t.order).toString()
-        val jsonH = org.json.JSONArray(t.hidden).toString()
+        val json = org.json.JSONArray(bound.order).toString()
+        val jsonH = org.json.JSONArray(bound.hidden).toString()
+        val jsonLabels = org.json.JSONObject(bound.labels).toString()
         val editor = (remotePrefs ?: hookPrefs)?.edit() ?: return
         editor.putString("${key}_tab_order", json)
         editor.putString("${key}_tab_hidden", jsonH)
         editor.putString("${key}_tab_catalog", bound.catalogToken)
+        editor.putString("${key}_tab_labels", jsonLabels)
         editor.apply()
         val mirror = if (remotePrefs != null) hookPrefs else null
         mirror?.edit()?.apply {
             putString("${key}_tab_order", json)
             putString("${key}_tab_hidden", jsonH)
             putString("${key}_tab_catalog", bound.catalogToken)
+            putString("${key}_tab_labels", jsonLabels)
         }?.apply()
     }
 
@@ -332,6 +341,10 @@ object Config {
             (0 until a.length()).map { a.getString(it) }
         }.getOrDefault(emptyList())
         return TabLayout(order = arr("${key}_tab_order"), hidden = arr("${key}_tab_hidden"),
-            catalogToken = p.getString("${key}_tab_catalog", "").orEmpty())
+            catalogToken = p.getString("${key}_tab_catalog", "").orEmpty(),
+            labels = runCatching {
+                val json = org.json.JSONObject(p.getString("${key}_tab_labels", "{}") ?: "{}")
+                json.keys().asSequence().associateWith { json.getString(it) }
+            }.getOrDefault(emptyMap()))
     }
 }

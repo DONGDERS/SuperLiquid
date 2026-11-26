@@ -65,6 +65,12 @@ public final class GlassConfig {
     static volatile String[] tabOrder = new String[0];
     static volatile String[] tabHidden = new String[0];
     private static volatile String tabCatalogToken = "";
+    private static volatile org.json.JSONObject tabLabels = new org.json.JSONObject();
+
+    static String tabLabel(String key, String fallback) {
+        String label = tabLabels.optString(key, fallback);
+        return TabCatalogRules.validText(label) ? label : fallback;
+    }
     private static volatile long hostVersionCode = -1;
     private static volatile long hostUpdatedAt;
 
@@ -139,6 +145,7 @@ public final class GlassConfig {
         tabOrder = new String[0];
         tabHidden = new String[0];
         tabCatalogToken = "";
+        tabLabels = new org.json.JSONObject();
         hostVersionCode = -1;
         hostUpdatedAt = 0;
         pubScale = 1f;
@@ -224,6 +231,8 @@ public final class GlassConfig {
             tabOrder = readStrArray(p, keyPrefix + "_tab_order");
             tabHidden = readStrArray(p, keyPrefix + "_tab_hidden");
             tabCatalogToken = p.getString(keyPrefix + "_tab_catalog", "");
+            try { tabLabels = new org.json.JSONObject(p.getString(keyPrefix + "_tab_labels", "{}")); }
+            catch (org.json.JSONException invalid) { tabLabels = new org.json.JSONObject(); }
         }
         moduleLayerRead = true;
         // Full applied-config snapshot: one log line answers "why does the

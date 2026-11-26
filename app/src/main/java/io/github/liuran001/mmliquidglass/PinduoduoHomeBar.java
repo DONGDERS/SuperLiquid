@@ -74,14 +74,7 @@ final class PinduoduoHomeBar {
     }
 
     private static TextView titleView(View view) {
-        if (view instanceof TextView text) return text;
-        if (view instanceof ViewGroup group) {
-            for (int i=0; i<group.getChildCount(); i++) {
-                TextView found = titleView(group.getChildAt(i));
-                if (found != null && found.getVisibility() == View.VISIBLE) return found;
-            }
-        }
-        return null;
+        return RuntimeTabCatalog.titleView(view);
     }
 
     private static boolean needsMaterialOnly(ViewGroup page) {

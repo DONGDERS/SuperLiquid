@@ -102,6 +102,7 @@ private fun rememberAppIdentities(): Map<String, AppIdentity> {
 @Composable
 fun AppsScreen(bottomOverlay: Dp) {
     var tabDialogKey by remember { mutableStateOf<String?>(null) }
+    var tabDialogVisible by remember { mutableStateOf(false) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
     val identities = rememberAppIdentities()
@@ -114,12 +115,17 @@ fun AppsScreen(bottomOverlay: Dp) {
             (t.key == "mm" && "WeChat".contains(term, ignoreCase = true)) ||
             (t.key == "heybox" && "Heybox".contains(term, ignoreCase = true))
     }
-    TabLayoutDialog(
-        appKey = tabDialogKey ?: "heybox",
-        show = tabDialogKey != null,
-        onApply = { cfg -> tabDialogKey?.let { Config.setTabLayout(it, cfg) } },
-        onDismiss = { tabDialogKey = null },
-    )
+    tabDialogKey?.let { appKey ->
+        key(appKey) {
+            TabLayoutDialog(
+                appKey = appKey,
+                show = tabDialogVisible,
+                onApply = { cfg -> Config.setTabLayout(appKey, cfg) },
+                onDismiss = { tabDialogVisible = false },
+                onDismissFinished = { if (!tabDialogVisible) tabDialogKey = null },
+            )
+        }
+    }
     LScreen(
         title = stringResourceCompat(R.string.apps_title),
         bottomOverlay = bottomOverlay,
@@ -154,7 +160,10 @@ fun AppsScreen(bottomOverlay: Dp) {
                         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
                             LText(tabs.status, subtitle = true)
                             if (tabs.current) LText(
-                                tabs.items.joinToString(" · ") { it.label }, subtitle = true,
+                                tabs.items.joinToString(" · ") { item ->
+                                    Config.tabLayout(t.key).takeIf { it.catalogToken == tabs.token }
+                                        ?.labels?.get(item.key) ?: item.label
+                                }, subtitle = true,
                             )
                         }
                         AppParams(
@@ -162,7 +171,10 @@ fun AppsScreen(bottomOverlay: Dp) {
                             set = { Config.setApp(t.key, it) },
                             // The Heybox pill overruns its frame at a width of 1.0.
                             widthRange = if (t.key == "heybox") 0.2f..0.9f else 0.5f..1.2f,
-                            onEditTabs = { tabDialogKey = t.key },
+                            onEditTabs = {
+                                tabDialogKey = t.key
+                                tabDialogVisible = true
+                            },
                         )
                         when (t.key) {
                             "kugou" -> LSliderRow(

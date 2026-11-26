@@ -106,6 +106,7 @@ final class BiliHomeBar {
     private static final int GRAY = 0xFF61666D;
     private static final int PINK = 0xFFFB7299;
     private static String[] LABELS = new String[0];
+    private static String[] KEYS = new String[0];
     private static java.util.List<View> sNativeCells = java.util.Collections.emptyList();
     private static View sPublishCell;
     private static long sLastCatalogRead;
@@ -833,8 +834,10 @@ final class BiliHomeBar {
                 sLastCatalogRead = now;
                 String[] previous = LABELS.clone();
                 int[] previousIndices = SLOT_TO_APP.clone();
+                String[] previousKeys = KEYS.clone();
                 if (learnNativeTabs(real) && (!java.util.Arrays.equals(previous, LABELS)
-                        || !java.util.Arrays.equals(previousIndices, SLOT_TO_APP))) {
+                        || !java.util.Arrays.equals(previousIndices, SLOT_TO_APP)
+                        || !java.util.Arrays.equals(previousKeys, KEYS))) {
                     LinearLayout next = buildRow(row.getContext());
                     row.removeAllViews();
                     while (next.getChildCount() > 0) {
@@ -843,6 +846,7 @@ final class BiliHomeBar {
                         row.addView(cell);
                     }
                 }
+                syncPublishPill();
             }
             if (real != null && mGetItem != null) {
                 int slot = appToSlot(readIndex(real));
@@ -855,6 +859,20 @@ final class BiliHomeBar {
             LiquidGlassModule.logErr("bili: poll failed", t);
         }
         sMain.postDelayed(BiliHomeBar::poll, POLL_MS);
+    }
+
+    private static void syncPublishPill() {
+        LiquidGlassHostLayout current = sPublishHost.get();
+        if (sPublishCell == null) {
+            if (current != null && current.getParent() instanceof ViewGroup parent) parent.removeView(current);
+            sPublishHost = new WeakReference<>(null);
+            return;
+        }
+        if (current != null && current.isAttachedToWindow()) return;
+        Activity activity = sHomeActivity.get();
+        LiquidGlassHostLayout left = sLeftHost.get();
+        if (activity == null || left == null || !(left.getParent() instanceof ViewGroup parent)) return;
+        sPublishHost = new WeakReference<>(buildPublishPill(activity, LiquidGlassInstaller.currentPager(), parent));
     }
 
     /** Reads getCurrentItem off the live bar; -1 when it will not answer. */
@@ -940,22 +958,27 @@ final class BiliHomeBar {
         for (int i = 0; i < n; i++) {
             View cell = nativeRow.getChildAt(i);
             String label = RuntimeTabCatalog.label(cell);
-            boolean isPublish = "发布".equals(label) || "投稿".equals(label) || "+".equals(label)
-                    || (label.isEmpty() && (n & 1) == 1 && i == n / 2);
-            if (isPublish) { publish = cell; continue; }
-            if (label.isEmpty() || labels.contains(label)) return false;
+            boolean isPublish = RuntimeTabCatalog.isBiliPublishAction(cell);
+            // The old native object remains available after it is detached.
+            if (!isPublish && cell == sPublishCell) isPublish = true;
+            if (isPublish) {
+                if (publish != null) return false;
+                publish = cell;
+                continue;
+            }
             cells.add(cell);
             indices.add(i);
             labels.add(label);
         }
         if (cells.size() < 2) return false;
         sNativeCells = cells;
-        LABELS = labels.toArray(new String[0]);
+        RuntimeTabCatalog.Catalog catalog = RuntimeTabCatalog.reportCells(real.getContext(), "bili", cells, indices);
+        KEYS = catalog.keys.toArray(new String[0]);
+        LABELS = catalog.labels.toArray(new String[0]);
         SLOT_TO_APP = new int[indices.size()];
         for (int i = 0; i < indices.size(); i++) SLOT_TO_APP[i] = indices.get(i);
         sNativeCount = n;
         sPublishCell = publish;
-        RuntimeTabCatalog.publish(real.getContext(), "bili", LABELS, LABELS);
         return true;
     }
     private static android.graphics.drawable.Drawable nativeIcon(View view) {
@@ -983,7 +1006,7 @@ final class BiliHomeBar {
      */
     private static int[] applyTabLayout() {
         int n = LABELS.length;
-        if (!GlassConfig.matchesTabCatalog(LABELS)
+        if (!GlassConfig.matchesTabCatalog(KEYS)
                 || (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0)) {
             LiquidGlassModule.log(android.util.Log.INFO,
                     "bili: tab layout no config, native order");
@@ -999,7 +1022,7 @@ final class BiliHomeBar {
         for (String want : GlassConfig.tabOrder) {
             if (want == null) continue;
             for (int i = 0; i < n; i++) {
-                if (!used[i] && want.equals(LABELS[i]) && !hidden.contains(LABELS[i])) {
+                if (!used[i] && want.equals(KEYS[i]) && !hidden.contains(KEYS[i])) {
                     used[i] = true;
                     disp.add(i);
                     break;
@@ -1007,7 +1030,7 @@ final class BiliHomeBar {
             }
         }
         for (int i = 0; i < n; i++) {
-            if (!used[i] && !hidden.contains(LABELS[i])) disp.add(i);
+            if (!used[i] && !hidden.contains(KEYS[i])) disp.add(i);
         }
         disp.remove(Integer.valueOf(0));
         disp.add(0, 0);
@@ -1061,7 +1084,8 @@ final class BiliHomeBar {
             tab.addView(icon, iconLp);
 
             TextView label = new TextView(ctx);
-            label.setText(LABELS[index]);
+            label.setText(GlassConfig.matchesTabCatalog(KEYS)
+                    ? GlassConfig.tabLabel(KEYS[index], LABELS[index]) : LABELS[index]);
             label.setTextSize(8);
             label.setTextColor(GRAY);
             label.setIncludeFontPadding(false);

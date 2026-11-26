@@ -5,6 +5,26 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class TabCatalogRulesTest {
+    private static TabCatalogRules.LabelCandidate label(String text, double baseline) {
+        return new TabCatalogRules.LabelCandidate(text, baseline, 0.7, 1, 11, false, false, false);
+    }
+    @Test public void sharedBaselineAndAccountBeatPromotionalText() {
+        assertEquals(List.of("首页", "直播", "我的"), TabCatalogRules.chooseLabels("kugou", List.of(
+                List.of(label("首页", 34)), List.of(label("限时活动", 22), label("直播", 33)),
+                List.of(label("5.5折", 34), label("我的", 35)))));
+        assertEquals(1, TabCatalogRules.accountIndex("qq", List.of("消息", "联系人", "动态")));
+        assertEquals(2, TabCatalogRules.accountIndex("qq", List.of("消息", "频道", "其他")));
+    }
+    @Test public void publishSemanticsRecognizeAccessibilitySuffix() {
+        assertTrue(TabCatalogRules.isBiliPublishActionLabel("发布内容，5之3，标签"));
+        assertFalse(TabCatalogRules.isBiliPublishActionLabel("新发布动态"));
+    }
+    @Test public void discountChangesDoNotChangeCellIdentity() {
+        assertEquals(TabCatalogRules.cellKey(4, "mine", List.of("我的", "5.5折")),
+                TabCatalogRules.cellKey(4, "mine", List.of("我的", "8折")));
+        assertNotEquals(TabCatalogRules.cellKey(4, "mine", List.of("我的")),
+                TabCatalogRules.cellKey(3, "mine", List.of("我的")));
+    }
     @Test public void removalDropsOldTabAndAppendsNewVisibleTab() {
         assertEquals(List.of("首页", "消息", "我的", "新功能"),
                 TabCatalogRules.candidateOrder(List.of("首页", "新功能", "消息", "我的"),

@@ -28,24 +28,46 @@ public final class TabCatalogProvider extends ContentProvider {
         Context ctx = getContext();
         try {
             if (ctx.getPackageManager().getPackageUid(pkg, 0) != Binder.getCallingUid()) return null;
-            String[] keys = extras.getStringArray("keys");
-            String[] labels = extras.getStringArray("labels");
-            if (keys == null || labels == null || keys.length < 2
-                    || keys.length > TabCatalogRules.MAX_TABS || keys.length != labels.length) return null;
+            if (extras.getInt("schema") != TabCatalogRules.SCHEMA) return null;
+            String payload = extras.getString("items");
+            if (payload == null || payload.length() > 80000) return null;
+            JSONArray incoming = new JSONArray(payload);
+            if (incoming.length() < 2 || incoming.length() > TabCatalogRules.MAX_TABS) return null;
             JSONArray items = new JSONArray();
             HashSet<String> seen = new HashSet<>();
-            for (int i = 0; i < keys.length; i++) {
-                if (!TabCatalogRules.validText(keys[i]) || !TabCatalogRules.validText(labels[i])
-                        || !seen.add(keys[i])) return null;
-                items.put(new JSONObject().put("key", keys[i]).put("label", labels[i])
-                        .put("locked", i == 0 || TabCatalogRules.locked(appKey, keys[i])
-                                || (("taobao".equals(appKey) || "alipay".equals(appKey)) && i == keys.length - 1)));
+            java.util.ArrayList<String> labels = new java.util.ArrayList<>();
+            for (int i = 0; i < incoming.length(); i++) labels.add(incoming.getJSONObject(i).getString("label"));
+            int account = TabCatalogRules.accountIndex(appKey, labels);
+            int previousIndex = -1;
+            for (int i = 0; i < incoming.length(); i++) {
+                JSONObject entry = incoming.getJSONObject(i);
+                String key = entry.getString("key"), label = entry.getString("label");
+                int nativeIndex = entry.getInt("native_index");
+                JSONArray choices = entry.getJSONArray("candidates");
+                if (!TabCatalogRules.validText(key) || !key.startsWith("cell2:" + nativeIndex + ":")
+                        || !TabCatalogRules.validText(label) || !seen.add(key)
+                        || nativeIndex <= previousIndex || nativeIndex >= TabCatalogRules.MAX_TABS
+                        || choices.length() == 0 || choices.length() > TabCatalogRules.MAX_CANDIDATES) return null;
+                previousIndex = nativeIndex;
+                JSONArray valid = new JSONArray();
+                HashSet<String> unique = new HashSet<>();
+                boolean includesLabel = false;
+                boolean locked = i == 0 || i == account;
+                for (int j = 0; j < choices.length(); j++) {
+                    String choice = choices.getString(j);
+                    if (!TabCatalogRules.validText(choice) || !unique.add(choice)) return null;
+                    includesLabel |= label.equals(choice);
+                    valid.put(choice);
+                }
+                if (!includesLabel) return null;
+                items.put(new JSONObject().put("key", key).put("label", label)
+                        .put("native_index", nativeIndex).put("candidates", valid).put("locked", locked));
             }
             // Take the version from PackageManager, never from a host-supplied value.
             PackageInfo info = ctx.getPackageManager().getPackageInfo(pkg, 0);
             if (extras.getLong("version_code", -1) != info.getLongVersionCode()
                     || extras.getLong("updated_at", -1) != info.lastUpdateTime) return null;
-            JSONObject report = new JSONObject().put("schema", 1).put("package", pkg)
+            JSONObject report = new JSONObject().put("schema", TabCatalogRules.SCHEMA).put("package", pkg)
                     .put("version_code", info.getLongVersionCode()).put("version_name", info.versionName)
                     .put("updated_at", info.lastUpdateTime).put("items", items);
             SharedPreferences prefs = preferences(ctx);
