@@ -26,7 +26,7 @@ jobs:
           echo "ANDROID_SDK_ROOT=${ANDROID_HOME:-$ANDROID_SDK_ROOT}" >> "$GITHUB_ENV"
 
       - name: Assemble release
-        run: gradle testReleaseUnitTest assembleRelease --stacktrace --no-daemon
+        run: gradle testDebugUnitTest assembleRelease --stacktrace --no-daemon
 
       # The LSPosed entry point is discovered only from META-INF/xposed at the
       # APK root, and AGP strips META-INF from the merge. It has to be appended
