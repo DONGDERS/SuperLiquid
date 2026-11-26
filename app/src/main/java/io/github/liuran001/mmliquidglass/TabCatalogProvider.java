@@ -44,7 +44,7 @@ public final class TabCatalogProvider extends ContentProvider {
                 String key = entry.getString("key"), label = entry.getString("label");
                 int nativeIndex = entry.getInt("native_index");
                 JSONArray choices = entry.getJSONArray("candidates");
-                if (!TabCatalogRules.validText(key) || !key.startsWith("cell2:" + nativeIndex + ":")
+                if (!TabCatalogRules.validText(key) || !key.startsWith("cell" + TabCatalogRules.SCHEMA + ":" + nativeIndex + ":")
                         || !TabCatalogRules.validText(label) || !seen.add(key)
                         || nativeIndex <= previousIndex || nativeIndex >= TabCatalogRules.MAX_TABS
                         || choices.length() == 0 || choices.length() > TabCatalogRules.MAX_CANDIDATES) return null;

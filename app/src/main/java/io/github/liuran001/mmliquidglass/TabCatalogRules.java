@@ -41,7 +41,7 @@ public final class TabCatalogRules {
         }
         return title;
     }
-    public static final int SCHEMA = 2;
+    public static final int SCHEMA = 3;
     public static final int MAX_CANDIDATES = 32;
 
     /** Measurements are taken in the native row, before the module moves its cells. */
@@ -126,16 +126,9 @@ public final class TabCatalogRules {
         }
         return labels;
     }
-    /** Identity does not depend on the chosen name, geometry or unread/promotion text. */
-    static String cellKey(int nativeIndex, String identity, List<String> observed) {
-        java.util.TreeSet<String> evidence = new java.util.TreeSet<>();
-        for (String text : observed) {
-            String title = accessibilityTitle(text);
-            if (validText(title) && !decoration(title)) evidence.add(title);
-        }
-        StringBuilder input = new StringBuilder(identity);
-        for (String value : evidence) input.append(':').append(value.length()).append(':').append(value);
-        return "cell2:" + nativeIndex + ":" + digest(input.toString()).substring(0, 24);
+    /** Identity uses the native slot and resource, not the rendered title. */
+    static String cellKey(int nativeIndex, String identity) {
+        return "cell" + SCHEMA + ":" + nativeIndex + ":" + digest(identity).substring(0, 24);
     }
     private static String digest(String input) {
         try {

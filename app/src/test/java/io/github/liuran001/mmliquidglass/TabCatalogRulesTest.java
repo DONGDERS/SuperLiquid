@@ -19,11 +19,13 @@ public class TabCatalogRulesTest {
         assertTrue(TabCatalogRules.isBiliPublishActionLabel("发布内容，5之3，标签"));
         assertFalse(TabCatalogRules.isBiliPublishActionLabel("新发布动态"));
     }
-    @Test public void discountChangesDoNotChangeCellIdentity() {
-        assertEquals(TabCatalogRules.cellKey(4, "mine", List.of("我的", "5.5折")),
-                TabCatalogRules.cellKey(4, "mine", List.of("我的", "8折")));
-        assertNotEquals(TabCatalogRules.cellKey(4, "mine", List.of("我的")),
-                TabCatalogRules.cellKey(3, "mine", List.of("我的")));
+    @Test public void catalogChangesWhenNativeSlotOrResourceChanges() {
+        String home = TabCatalogRules.cellKey(0, "home");
+        String mine = TabCatalogRules.cellKey(1, "mine");
+        String token = TabCatalogRules.catalogToken(1, 10, List.of(home, mine));
+        assertTrue(TabCatalogRules.matchesCatalog(token, 1, 10, List.of(home, mine)));
+        assertFalse(TabCatalogRules.matchesCatalog(token, 1, 10, List.of(home, TabCatalogRules.cellKey(1, "video"))));
+        assertFalse(TabCatalogRules.matchesCatalog(token, 1, 10, List.of(home, TabCatalogRules.cellKey(2, "mine"))));
     }
     @Test public void removalDropsOldTabAndAppendsNewVisibleTab() {
         assertEquals(List.of("首页", "消息", "我的", "新功能"),

@@ -40,14 +40,7 @@ final class RuntimeTabCatalog {
     static List<View> nativeCells(ViewGroup row) {
         List<WeakReference<View>> known = NATIVE_ROWS.get(row);
         List<View> cells = new ArrayList<>();
-        List<WeakReference<View>> expected = APPLIED_ROWS.get(row);
-        boolean sameOrder = expected == null || expected.size() == row.getChildCount();
-        if (expected != null && sameOrder) {
-            for (int i = 0; i < expected.size(); i++) {
-                if (expected.get(i).get() != row.getChildAt(i)) { sameOrder = false; break; }
-            }
-        }
-        if (sameOrder && known != null && known.size() == row.getChildCount()) {
+        if (known != null && known.size() == row.getChildCount()) {
             for (WeakReference<View> ref : known) {
                 View view = ref.get();
                 if (view == null || view.getParent() != row) { cells.clear(); break; }
@@ -221,28 +214,30 @@ final class RuntimeTabCatalog {
         for (int i = 0; i < cells.size(); i++) {
             View cell = source(cells.get(i));
             List<String> choices = new ArrayList<>();
-            List<String> evidence = new ArrayList<>();
+            // The same native slot may have different text when selected or promoted.
             boolean locked = i == 0 || i == account;
             for (TabCatalogRules.LabelCandidate candidate : all.get(i)) {
                 if (!choices.contains(candidate.text()) && choices.size() < TabCatalogRules.MAX_CANDIDATES)
                     choices.add(candidate.text());
-                if (!candidate.badge()) evidence.add(candidate.text());
             }
             String label = automatic.get(i);
             if (!choices.contains(label)) {
                 if (choices.size() == TabCatalogRules.MAX_CANDIDATES) choices.remove(choices.size() - 1);
                 choices.add(0, label);
             }
-            Object tag = cell.getTag();
-            String stableTag = tag instanceof String || tag instanceof Number || tag instanceof Enum<?>
-                    ? String.valueOf(tag) : "";
             String key = TabCatalogRules.cellKey(indices.get(i),
-                    cell.getClass().getName() + ":" + resourceName(cell) + ":" + stableTag, evidence);
+                    cell.getClass().getName() + ":" + resourceName(cell));
             catalog.keys.add(key); catalog.labels.add(label); catalog.candidates.add(choices);
             catalog.indices.add(indices.get(i)); catalog.locked.add(locked);
             CELL_KEYS.put(cells.get(i), key); CELL_KEYS.put(cell, key);
         }
+        Catalog previous = CATALOGS.get(appKey);
+        if (previous != null && previous.keys.equals(catalog.keys)) {
+            publish(context, previous);
+            return previous;
+        }
         CATALOGS.put(appKey, catalog);
+
         publish(context, catalog);
         return catalog;
     }
@@ -281,6 +276,8 @@ final class RuntimeTabCatalog {
         observeRow(row, appKey);
         if (row == null || WATCHED.put(row, true) != null) return;
         OBSERVED_KEYS.put(row, rowKeys(row, appKey));
+        guardAppliedLayout(row, appKey);
+
         WeakReference<ViewGroup> ref = new WeakReference<>(row);
         row.postDelayed(new Runnable() {
             @Override public void run() {
@@ -299,7 +296,36 @@ final class RuntimeTabCatalog {
             }
         }, 1500);
     }
+    private static void guardAppliedLayout(ViewGroup row, String appKey) {
+        android.view.ViewTreeObserver.OnPreDrawListener guard = () -> {
+            List<WeakReference<View>> applied = APPLIED_ROWS.get(row);
+            if (applied == null || applied.size() != row.getChildCount()) return true;
+            boolean changed = false;
+            for (int i = 0; i < applied.size(); i++) {
+                View cell = applied.get(i).get();
+                if (cell == null || cell.getParent() != row) return true;
+                Integer visibility = APPLIED_VISIBILITY.get(cell);
+                changed |= cell != row.getChildAt(i)
+                        || (visibility != null && visibility == View.GONE && cell.getVisibility() != View.GONE);
+            }
+            if (!changed || GlassConfig.tabOrder.length + GlassConfig.tabHidden.length == 0) return true;
+            if ("taobao".equals(appKey)) NativeTabLayout.applyTaobao(row);
+            else if ("alipay".equals(appKey)) NativeTabLayout.applyAlipay(row);
+            else TabLayoutApplier.apply(row, appKey);
+            return !row.isLayoutRequested();
+        };
+        row.getViewTreeObserver().addOnPreDrawListener(guard);
+        row.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+            @Override public void onViewAttachedToWindow(View view) {}
+            @Override public void onViewDetachedFromWindow(View view) {
+                row.getViewTreeObserver().removeOnPreDrawListener(guard);
+                row.removeOnAttachStateChangeListener(this);
+                WATCHED.remove(row);
+            }
+        });
+    }
     private static void publish(Context context, Catalog catalog) {
+
         String appKey = catalog.appKey;
         if (TabCatalogRules.packageFor(appKey) == null || catalog.keys.size() < 2) return;
         org.json.JSONArray items = new org.json.JSONArray();

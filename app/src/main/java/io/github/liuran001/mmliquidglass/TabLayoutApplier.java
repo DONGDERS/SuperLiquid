@@ -126,9 +126,11 @@ final class TabLayoutApplier {
                 View cell = cells.get(logical);
                 // addView() throws "child already has a parent" even for a
                 // same-parent move — detach first, then insert.
-                row.removeView(cell);
-                row.addView(cell, Math.min(pos, row.getChildCount()));
-                cell.setVisibility(View.VISIBLE);
+                if (row.getChildAt(pos) != cell) {
+                    row.removeView(cell);
+                    row.addView(cell, Math.min(pos, row.getChildCount()));
+                }
+                if (cell.getVisibility() != View.VISIBLE) cell.setVisibility(View.VISIBLE);
                 pos++;
             }
             for (int i = 0; i < n; i++) {

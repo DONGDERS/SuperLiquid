@@ -28,6 +28,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.runtime.key
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -82,34 +86,41 @@ fun TabLayoutDialog(
     val initial = Config.tabLayout(appKey).takeIf { it.catalogToken == snapshot.token }
         ?: Config.TabLayout()
     val hiddenKeys = initial.hidden.toSet()
-    var overrides by remember(appKey, snapshot.token) { mutableStateOf(initial.labels) }
     var showAll by remember(appKey, snapshot.token) { mutableStateOf(false) }
     val dismiss = { if (showAll && show) showAll = false else onDismiss() }
-    @Composable
-    fun candidateBody(color: Color) {
-        Column(Modifier.fillMaxWidth().heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
-            snapshot.items.sortedBy { it.nativeIndex }.forEach { item ->
-                val selected = overrides[item.key]
-                Text("${item.nativeIndex + 1} · ${selected ?: item.label}", color = color,
-                    modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
-                (listOf(null) + item.candidates).forEach { choice ->
-                    val checked = selected == choice
-                    Text(
-                        text = (if (checked) "●  " else "○  ") + (choice ?: "自动：${item.label}"),
-                        color = color,
-                        modifier = Modifier.fillMaxWidth().clickable(enabled = show) {
-                            overrides = if (choice == null) overrides - item.key else overrides + (item.key to choice)
-                        }.padding(horizontal = 12.dp, vertical = 10.dp),
-                    )
-                }
-            }
-        }
-    }
     val start = TabLayoutEditor.candidates(appKey, initial).map { key ->
         key to (key in hiddenKeys && !TabLayoutEditor.locked(appKey, key))
     }
     // A new report replaces an obsolete editor draft instead of saving stale rows.
     var items by remember(appKey, snapshot.current, snapshot.token) { mutableStateOf(start) }
+    val pinned = items.firstOrNull()?.first
+
+    fun setIncluded(id: String, included: Boolean) {
+        if (!show || id == pinned || TabLayoutEditor.locked(appKey, id)) return
+        items = items.map { (key, hidden) -> if (key == id) key to !included else key to hidden }
+    }
+
+    @Composable
+    fun candidateBody(color: Color) {
+        val optional = snapshot.items.filter { !it.locked && it.key != pinned }
+        Column(Modifier.fillMaxWidth().heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
+            if (optional.isEmpty()) Text("没有可选项目", color = color)
+            optional.forEach { item -> key(item.key) {
+                val included = items.any { it.first == item.key && !it.second }
+                Row(
+                    Modifier.fillMaxWidth().toggleable(
+                        value = included, enabled = show, role = Role.Checkbox,
+                        onValueChange = { setIncluded(item.key, it) },
+                    ).padding(vertical = 12.dp, horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(checked = included, onCheckedChange = null)
+                    Spacer(Modifier.width(12.dp))
+                    Text(item.label, color = color, modifier = Modifier.weight(1f))
+                }
+            } }
+        }
+    }
     var dragging by remember(appKey, snapshot.current, snapshot.token) { mutableStateOf<String?>(null) }
     var dragDy by remember(appKey, snapshot.current, snapshot.token) { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
@@ -196,7 +207,7 @@ fun TabLayoutDialog(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        overrides[title] ?: snapshot.items.firstOrNull { it.key == title }?.label ?: title,
+                        snapshot.items.firstOrNull { it.key == title }?.label ?: title,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                         fontSize = 16.sp, color = baseColor,
                         modifier = Modifier.weight(1f),
@@ -234,11 +245,11 @@ fun TabLayoutDialog(
         val order = items.map { it.first }
         val hidden = items.filter { it.second }.map { it.first }.toSet()
         onApply(Config.TabLayout(order = order, hidden = hidden.toList(),
-            catalogToken = snapshot.token, labels = overrides))
+            catalogToken = snapshot.token))
         onDismiss()
     }
 
-    val title = if (showAll) "全部候选" else "底栏项目"
+    val title = if (showAll) "选择底栏项目" else "底栏项目"
     val summary = snapshot.status
     @Composable
     fun body(color: Color, dragBg: Color) {
