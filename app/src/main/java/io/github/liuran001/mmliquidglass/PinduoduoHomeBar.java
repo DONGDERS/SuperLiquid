@@ -19,8 +19,8 @@ final class PinduoduoHomeBar {
     private PinduoduoHomeBar() {}
 
     static void onHomeResume(Activity activity) {
-        if (!GlassConfig.enabled || activity.getPackageManager().getPackageUid(
-                activity.getPackageName(), 0) != android.os.Process.myUid() || pending.get() == activity) return;
+        if (!GlassConfig.enabled || !"com.xunmeng.pinduoduo".equals(activity.getPackageName())
+                || pending.get() == activity) return;
         LiquidGlassHostLayout old = installed.get();
         if (old != null && old.isAttachedToWindow()
                 && old.getRootView() == activity.getWindow().getDecorView()) return;
