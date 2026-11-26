@@ -298,8 +298,9 @@ fun ColorPaletteScreenMaterial(
                                 SegmentedSwitchItem(
                                     icon = Icons.Filled.BlurOn,
                                     title = stringResource(id = R.string.settings_global_shader_bg),
-                                    summary = stringResource(id = R.string.settings_global_shader_bg_summary),
-                                    checked = uiState.enableGlobalShaderBg,
+                                    summary = stringResource(id = R.string.settings_global_shader_bg_miuix_only),
+                                    checked = false,
+                                    enabled = false,
                                     onCheckedChange = actions.onSetEnableGlobalShaderBg,
                                 )
                             }

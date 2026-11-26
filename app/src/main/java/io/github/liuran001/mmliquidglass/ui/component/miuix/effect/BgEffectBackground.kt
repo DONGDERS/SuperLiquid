@@ -24,6 +24,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun BgEffectBackground(
     dynamicBackground: Boolean,
+    drawBackground: Boolean = true,
     modifier: Modifier = Modifier,
     bgModifier: Modifier = Modifier,
     isFullSize: Boolean = false,
@@ -31,7 +32,7 @@ fun BgEffectBackground(
     alpha: () -> Float = { 1f },
     content: @Composable BoxScope.() -> Unit,
 ) {
-    if (!isRuntimeShaderSupported()) {
+    if (!drawBackground || !isRuntimeShaderSupported()) {
         Box(modifier = modifier, content = content)
         return
     }

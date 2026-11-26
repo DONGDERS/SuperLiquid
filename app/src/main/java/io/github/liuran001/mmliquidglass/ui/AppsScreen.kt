@@ -247,7 +247,7 @@ private fun AppCard(
     val title = t.label + (if (identity.installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed))
     val toggle = onToggle
     when (LocalUiMode.current) {
-        UiMode.Miuix -> MiuixCard(modifier = Modifier.fillMaxWidth()) {
+        UiMode.Miuix -> io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
             ArrowPreference(
                 title = title,
                 summary = t.pkg,

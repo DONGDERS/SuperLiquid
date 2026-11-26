@@ -27,7 +27,12 @@ class SettingsRepositoryImpl : SettingsRepository {
 
     override var uiMode: String
         get() = p.getString("ui_mode", "miuix") ?: "miuix"
-        set(value) { p.edit().putString("ui_mode", value).apply() }
+        set(value) {
+            p.edit().apply {
+                putString("ui_mode", value)
+                if (value == "material") putBoolean("enable_global_shader_bg", false)
+            }.apply()
+        }
 
     override var themeMode: Int
         get() = p.getInt("color_mode", 0)
@@ -65,8 +70,8 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = p.getBoolean("enable_floating_bottom_bar_blur", false)
         set(value) { p.edit().putBoolean("enable_floating_bottom_bar_blur", value).apply() }
     override var enableGlobalShaderBg: Boolean
-        get() = p.getBoolean("enable_global_shader_bg", true)
-        set(value) { p.edit().putBoolean("enable_global_shader_bg", value).apply() }
+        get() = uiMode == "miuix" && p.getBoolean("enable_global_shader_bg", true)
+        set(value) { p.edit().putBoolean("enable_global_shader_bg", value && uiMode == "miuix").apply() }
     override var enableAppExpandLimit: Boolean
         get() = p.getBoolean("enable_app_expand_limit", true)
         set(value) { p.edit().putBoolean("enable_app_expand_limit", value).apply() }

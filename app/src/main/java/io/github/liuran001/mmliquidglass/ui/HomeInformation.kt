@@ -166,7 +166,7 @@ private fun HomeInfoSection(title: String, rows: List<Pair<Int, String>>) {
         }
         UiMode.Miuix -> {
             SmallTitle(text = title, insideMargin = PaddingValues(16.dp, 8.dp))
-            MiuixCard(modifier = Modifier.fillMaxWidth()) {
+            io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
                 rows.forEach { (label, value) ->
                     SelectionContainer {
                         BasicComponent(

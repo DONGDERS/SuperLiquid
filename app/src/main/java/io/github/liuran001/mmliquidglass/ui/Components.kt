@@ -65,7 +65,7 @@ fun LCard(content: @Composable ColumnScope.() -> Unit) {
                 .padding(vertical = 6.dp)
         ) { Column(Modifier.padding(16.dp)) { content() } }
 
-        UiMode.Miuix -> MiuixCard(
+        UiMode.Miuix -> io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 6.dp)

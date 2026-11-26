@@ -164,7 +164,7 @@ private fun HomeScreenMiuix(connected: Boolean, bottomOverlay: Dp, onOpenAbout: 
         HomeInformation()
 
         // ---- About entry ----
-        MiuixCard(modifier = Modifier.fillMaxWidth()) {
+        io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
             ArrowPreference(
                 title = stringResource(R.string.about_title),
                 summary = stringResource(R.string.settings_repo_url),

@@ -108,14 +108,16 @@ class MainActivity : ComponentActivity() {
                 LocalUiMode provides uiMode,
                 LocalColorMode provides appSettings.colorMode.value,
                 LocalEnableBlur provides settings.enableBlur,
-                io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg provides (settings.enableGlobalShaderBg &&
+                io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg provides (uiMode == UiMode.Miuix && settings.enableGlobalShaderBg &&
                     android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM &&
                     top.yukonga.miuix.kmp.shader.isRuntimeShaderSupported()),
                 LocalEnableFloatingBottomBar provides settings.enableFloatingBottomBar,
                 LocalEnableFloatingBottomBarBlur provides settings.enableFloatingBottomBarBlur,
             ) {
                 io.github.liuran001.mmliquidglass.ui.theme.KernelSUTheme(appSettings = appSettings) {
-                    MainRoot(pagerState)
+                    io.github.liuran001.mmliquidglass.ui.component.miuix.GlobalShaderBackground {
+                        MainRoot(pagerState)
+                    }
                 }
             }
         }
@@ -160,18 +162,20 @@ fun MainRoot(pager: PagerState) {
         entry<RouteMain> {
             val settings = SettingsState.flow.collectAsStateWithLifecycle().value
             val enableFloating = LocalUiMode.current == UiMode.Miuix && settings.enableFloatingBottomBar
-            // KSU MainScreen: the backdrop carries a surface base fill so an
-            // uncaptured/empty layer reads as the theme surface, NOT black —
-            // the bare rememberLayerBackdrop() was the grey-glass root cause.
-            val backdropSurface = if (io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current) androidx.compose.ui.graphics.Color.Transparent else when (LocalUiMode.current) {
+            val globalShader = io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current
+            val shaderBackdrop = io.github.liuran001.mmliquidglass.ui.component.miuix.LocalGlobalShaderBackdrop.current
+            val backdropSurface = when (LocalUiMode.current) {
                 UiMode.Miuix -> top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.surface
                 UiMode.Material -> androidx.compose.material3.MaterialTheme.colorScheme.surface
             }
             val pageBackdrop =
                 top.yukonga.miuix.kmp.blur.rememberLayerBackdrop {
-                    drawRect(backdropSurface)
+                    if (!globalShader) drawRect(backdropSurface)
                     drawContent()
                 }
+            val floatingBackdrop = if (shaderBackdrop != null) {
+                io.github.liuran001.mmliquidglass.ui.component.liquid.rememberCombinedBackdrop(shaderBackdrop, pageBackdrop)
+            } else pageBackdrop
             // KSU: capture only when the floating glass bar actually blurs.
             val captureGlass = enableFloating && settings.enableFloatingBottomBarBlur
             val blurBackdrop = io.github.liuran001.mmliquidglass.ui.util.rememberBlurBackdrop(
@@ -213,17 +217,6 @@ fun MainRoot(pager: PagerState) {
                             else Modifier
                         )
                 ) {
-                    val globalShader = settings.enableGlobalShaderBg &&
-                        top.yukonga.miuix.kmp.shader.isRuntimeShaderSupported() &&
-                        android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM
-                    if (globalShader) {
-                        io.github.liuran001.mmliquidglass.ui.component.miuix.effect.BgEffectBackground(
-                            dynamicBackground = true,
-                            modifier = Modifier.matchParentSize(),
-                            isFullSize = true,
-                            effectBackground = true,
-                        ) {}
-                    }
                     HorizontalPager(
                         pager,
                         beyondViewportPageCount = 2,
@@ -295,7 +288,7 @@ fun MainRoot(pager: PagerState) {
                     FloatingBottomBar(
                         selectedIndex = selectedPage,
                         onSelected = { goto(it) },
-                        backdrop = pageBackdrop,
+                        backdrop = floatingBackdrop,
                         tabsCount = NAV.size,
                         isBlurEnabled = settings.enableFloatingBottomBarBlur,
                     ) { activateTab ->
@@ -349,7 +342,7 @@ fun MainRoot(pager: PagerState) {
                             // blurs the content behind it via BlurredBar.
                             io.github.liuran001.mmliquidglass.ui.util.BlurredBar(backdrop = blurBackdrop) {
                                 MiuixNavigationBar(
-                                    color = if (blurBackdrop != null) androidx.compose.ui.graphics.Color.Transparent
+                                    color = if (globalShader || blurBackdrop != null) androidx.compose.ui.graphics.Color.Transparent
                                     else top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.surface,
                                 ) {
                                     NAV.forEachIndexed { i, e ->

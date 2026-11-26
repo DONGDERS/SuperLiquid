@@ -106,14 +106,16 @@ fun ColorPaletteScreenMiuix(
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val enableBlurState = LocalEnableBlur.current
-    val backdrop = rememberBlurBackdrop(enableBlurState)
+    val globalShader = io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current
+    val backdrop = rememberBlurBackdrop(enableBlurState && !globalShader)
     val blurActive = backdrop != null
-    val barColor = if (blurActive) Color.Transparent else colorScheme.surface
+    val barColor = if (globalShader || blurActive) Color.Transparent else colorScheme.surface
     val uiState = state.uiState
     val currentColorMode = state.currentColorMode
     val isDark = currentColorMode.isDark || currentColorMode.isSystem && isSystemInDarkTheme()
 
     Scaffold(
+        containerColor = if (globalShader) Color.Transparent else colorScheme.surface,
         topBar = {
             BlurredBar(backdrop) {
                 TopAppBar(
@@ -178,7 +180,7 @@ fun ColorPaletteScreenMiuix(
                         },
                     )
 
-                    Card(
+                    io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
@@ -284,7 +286,7 @@ fun ColorPaletteScreenMiuix(
                         }
                     }
 
-                    Card(
+                    io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
@@ -338,7 +340,7 @@ fun ColorPaletteScreenMiuix(
 
                     }
 
-                    Card(
+                    io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),

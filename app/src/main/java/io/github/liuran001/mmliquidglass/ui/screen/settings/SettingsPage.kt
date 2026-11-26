@@ -82,7 +82,7 @@ fun SettingsPage(
             }
             UiMode.Miuix -> {
                 SmallTitle(text = appearance, insideMargin = PaddingValues(16.dp, 8.dp))
-                Card(modifier = Modifier.fillMaxWidth()) {
+                io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
                     OverlayDropdownPreference(
                         title = stringResource(R.string.settings_ui_mode),
                         summary = stringResource(R.string.settings_ui_mode_summary),
@@ -179,7 +179,7 @@ private fun rememberConfigImportLauncher(
 private fun ConfigBackupCard(onResetDefaults: () -> Unit, onDone: () -> Unit) {
     val exportLauncher = rememberConfigExportLauncher()
     val importLauncher = rememberConfigImportLauncher(onDone)
-    Card(modifier = Modifier.fillMaxWidth()) {
+    io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
         ArrowPreference(
             title = stringResource(R.string.settings_backup_export),
             summary = stringResource(R.string.settings_backup_export_summary),

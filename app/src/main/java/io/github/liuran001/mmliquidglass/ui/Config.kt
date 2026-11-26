@@ -157,6 +157,9 @@ object Config {
         uiPrefs = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
         hookPrefs = ctx.getSharedPreferences(REMOTE_NAME, Context.MODE_PRIVATE)
         _uiMode.value = uiPrefs.getString("ui_mode", UiMode.DEFAULT) ?: UiMode.DEFAULT
+        if (uiModeEnum == UiMode.Material) {
+            uiPrefs.edit().putBoolean("enable_global_shader_bg", false).apply()
+        }
         _colorMode.value = uiPrefs.getInt("color_mode", 0)
         hookPrefs?.let { readHook(it) }
 
@@ -188,8 +191,8 @@ object Config {
     }
 
     fun setUiMode(v: String) {
+        io.github.liuran001.mmliquidglass.data.repository.SettingsRepositoryImpl().uiMode = v
         _uiMode.value = v
-        uiPrefs.edit().putString("ui_mode", v).apply()
         AppSettingsStore.reload()
     }
 
