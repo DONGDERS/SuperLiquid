@@ -114,4 +114,9 @@
     <string name="settings_theme_mode_amoled">纯黑</string>
     <string name="settings_theme_mode_light">浅色</string>
     <string name="settings_theme_mode_system">跟随系统</string>
+    <string name="settings_global_shader_bg">全局光影背景</string>
+    <string name="settings_global_shader_bg_summary">将关于页的 Shader 光影背景应用到所有页面</string>
+    <string name="settings_app_expand_limit">限制展开卡片数量</string>
+    <string name="settings_app_expand_limit_summary">应用页同时展开的卡片超过上限时，自动收起最早展开的</string>
+    <string name="settings_app_expand_limit_count">最多同时展开</string>
 </resources>

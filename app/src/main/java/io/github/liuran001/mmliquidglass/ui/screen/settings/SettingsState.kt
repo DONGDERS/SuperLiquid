@@ -29,6 +29,9 @@ object SettingsState {
             enableBlur = r.enableBlur,
             enableFloatingBottomBar = r.enableFloatingBottomBar,
             enableFloatingBottomBarBlur = r.enableFloatingBottomBarBlur,
+            enableGlobalShaderBg = r.enableGlobalShaderBg,
+            enableAppExpandLimit = r.enableAppExpandLimit,
+            appExpandLimit = r.appExpandLimit,
         )
         AppSettingsStore.reload()
     }

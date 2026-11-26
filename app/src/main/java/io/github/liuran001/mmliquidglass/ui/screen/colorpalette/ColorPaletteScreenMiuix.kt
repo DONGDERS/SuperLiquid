@@ -343,8 +343,44 @@ fun ColorPaletteScreenMiuix(
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                            SwitchPreference(
+                                title = stringResource(id = R.string.settings_global_shader_bg),
+                                summary = stringResource(id = R.string.settings_global_shader_bg_summary),
+                                startAction = {
+                                    Icon(
+                                        Icons.Filled.BlurOn,
+                                        modifier = Modifier.padding(end = 6.dp),
+                                        contentDescription = stringResource(id = R.string.settings_global_shader_bg),
+                                        tint = colorScheme.onBackground,
+                                    )
+                                },
+                                checked = uiState.enableGlobalShaderBg,
+                                onCheckedChange = actions.onSetEnableGlobalShaderBg,
+                            )
+                        }
+                        SwitchPreference(
+                            title = stringResource(id = R.string.settings_app_expand_limit),
+                            summary = stringResource(id = R.string.settings_app_expand_limit_summary),
+                            startAction = {
+                                Icon(
+                                    Icons.Filled.ViewCarousel,
+                                    modifier = Modifier.padding(end = 6.dp),
+                                    contentDescription = stringResource(id = R.string.settings_app_expand_limit),
+                                    tint = colorScheme.onBackground,
+                                )
+                            },
+                            checked = uiState.enableAppExpandLimit,
+                            onCheckedChange = actions.onSetEnableAppExpandLimit,
+                        )
+                        AnimatedVisibility(visible = uiState.enableAppExpandLimit) {
+                            val counts = (1..10).toList()
+                            OverlayDropdownPreference(
+                                title = stringResource(id = R.string.settings_app_expand_limit_count),
+                                items = counts.map { it.toString() },
+                                selectedIndex = (uiState.appExpandLimit - 1).coerceIn(0, counts.lastIndex),
+                                onSelectedIndexChange = { index -> actions.onSetAppExpandLimit(counts[index]) },
+                            )
                         }
                         SwitchPreference(
                             title = stringResource(id = R.string.settings_predictive_back),

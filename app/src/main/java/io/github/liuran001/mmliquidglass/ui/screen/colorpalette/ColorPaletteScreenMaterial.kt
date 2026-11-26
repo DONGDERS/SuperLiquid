@@ -294,6 +294,30 @@ fun ColorPaletteScreenMaterial(
                                     onCheckedChange = actions.onSetEnableBlur,
                                 )
                             }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                                SegmentedSwitchItem(
+                                    icon = Icons.Filled.BlurOn,
+                                    title = stringResource(id = R.string.settings_global_shader_bg),
+                                    summary = stringResource(id = R.string.settings_global_shader_bg_summary),
+                                    checked = uiState.enableGlobalShaderBg,
+                                    onCheckedChange = actions.onSetEnableGlobalShaderBg,
+                                )
+                            }
+                            SegmentedSwitchItem(
+                                title = stringResource(id = R.string.settings_app_expand_limit),
+                                summary = stringResource(id = R.string.settings_app_expand_limit_summary),
+                                checked = uiState.enableAppExpandLimit,
+                                onCheckedChange = actions.onSetEnableAppExpandLimit,
+                            )
+                            if (uiState.enableAppExpandLimit) {
+                                val counts = (1..10).toList()
+                                SegmentedDropdownItem(
+                                    title = stringResource(id = R.string.settings_app_expand_limit_count),
+                                    items = counts.map { it.toString() },
+                                    selectedIndex = (uiState.appExpandLimit - 1).coerceIn(0, counts.lastIndex),
+                                    onItemSelected = { index -> actions.onSetAppExpandLimit(counts[index]) },
+                                )
+                            }
                             SegmentedSwitchItem(
                                 icon = Icons.AutoMirrored.Filled.ArrowBack,
                                 title = stringResource(id = R.string.settings_predictive_back),

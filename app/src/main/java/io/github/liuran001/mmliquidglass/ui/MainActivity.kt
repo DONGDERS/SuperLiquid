@@ -210,6 +210,17 @@ fun MainRoot(pager: PagerState) {
                             else Modifier
                         )
                 ) {
+                    val globalShader = settings.enableGlobalShaderBg &&
+                        top.yukonga.miuix.kmp.shader.isRuntimeShaderSupported() &&
+                        android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM
+                    if (globalShader) {
+                        io.github.liuran001.mmliquidglass.ui.component.miuix.effect.BgEffectBackground(
+                            dynamicBackground = true,
+                            modifier = Modifier.matchParentSize(),
+                            isFullSize = true,
+                            effectBackground = true,
+                        ) {}
+                    }
                     HorizontalPager(
                         pager,
                         beyondViewportPageCount = 2,

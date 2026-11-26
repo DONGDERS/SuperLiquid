@@ -267,7 +267,6 @@ fun TabLayoutDialog(
             body(colorScheme.onBackground, colorScheme.secondaryContainer.copy(alpha = 0.4f))
             Spacer(Modifier.height(12.dp))
             Row(Modifier.fillMaxWidth()) {
-                if (snapshot.current && !showAll) TextButton(text = "查看全部", onClick = { if (show) showAll = true })
                 Spacer(Modifier.weight(1f))
                 TextButton(text = if (showAll) "返回" else "取消", onClick = dismiss)
                 if (snapshot.current && !showAll) TextButton(text = "保存", onClick = { if (show) applyEdit() })
@@ -302,9 +301,6 @@ fun TabLayoutDialog(
                             body(MaterialTheme.colorScheme.onSurface,
                                 MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
                             Row(Modifier.fillMaxWidth()) {
-                                if (snapshot.current && !showAll) M3TextButton(onClick = { showAll = true }, enabled = show) {
-                                    M3Text("查看全部")
-                                }
                                 Spacer(Modifier.weight(1f))
                                 M3TextButton(onClick = dismiss, enabled = show) { M3Text(if (showAll) "返回" else "取消") }
                                 if (snapshot.current && !showAll) M3TextButton(onClick = { applyEdit() }, enabled = show) {

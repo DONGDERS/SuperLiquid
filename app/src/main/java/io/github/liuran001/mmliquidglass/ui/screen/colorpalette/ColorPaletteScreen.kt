@@ -48,6 +48,9 @@ fun ColorPaletteScreen(onBack: () -> Unit) {
         onSetEnableFloatingBottomBar = { repo.enableFloatingBottomBar = it; SettingsState.refresh() },
         onSetEnableFloatingBottomBarBlur = { repo.enableFloatingBottomBarBlur = it; SettingsState.refresh() },
         onSetEnablePredictiveBack = { repo.enablePredictiveBack = it; SettingsState.refresh() },
+        onSetEnableGlobalShaderBg = { repo.enableGlobalShaderBg = it; SettingsState.refresh() },
+        onSetEnableAppExpandLimit = { repo.enableAppExpandLimit = it; SettingsState.refresh() },
+        onSetAppExpandLimit = { repo.appExpandLimit = it; SettingsState.refresh() },
     )
 
     when (LocalUiMode.current) {

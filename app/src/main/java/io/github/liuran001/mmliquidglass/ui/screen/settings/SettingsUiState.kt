@@ -19,6 +19,9 @@ data class SettingsUiState(
     val enableBlur: Boolean = true,
     val enableFloatingBottomBar: Boolean = false,
     val enableFloatingBottomBarBlur: Boolean = false,
+    val enableGlobalShaderBg: Boolean = false,
+    val enableAppExpandLimit: Boolean = true,
+    val appExpandLimit: Int = 3,
     val enableWebDebugging: Boolean = false,
 
     // Su Compat

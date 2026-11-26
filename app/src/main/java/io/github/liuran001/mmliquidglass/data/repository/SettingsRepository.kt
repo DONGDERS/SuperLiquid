@@ -16,6 +16,9 @@ interface SettingsRepository {
     var enableBlur: Boolean
     var enableFloatingBottomBar: Boolean
     var enableFloatingBottomBarBlur: Boolean
+    var enableGlobalShaderBg: Boolean
+    var enableAppExpandLimit: Boolean
+    var appExpandLimit: Int
 }
 
 class SettingsRepositoryImpl : SettingsRepository {
@@ -61,4 +64,13 @@ class SettingsRepositoryImpl : SettingsRepository {
     override var enableFloatingBottomBarBlur: Boolean
         get() = p.getBoolean("enable_floating_bottom_bar_blur", false)
         set(value) { p.edit().putBoolean("enable_floating_bottom_bar_blur", value).apply() }
+    override var enableGlobalShaderBg: Boolean
+        get() = p.getBoolean("enable_global_shader_bg", false)
+        set(value) { p.edit().putBoolean("enable_global_shader_bg", value).apply() }
+    override var enableAppExpandLimit: Boolean
+        get() = p.getBoolean("enable_app_expand_limit", true)
+        set(value) { p.edit().putBoolean("enable_app_expand_limit", value).apply() }
+    override var appExpandLimit: Int
+        get() = p.getInt("app_expand_limit", 3).coerceIn(1, 10)
+        set(value) { p.edit().putInt("app_expand_limit", value.coerceIn(1, 10)).apply() }
 }

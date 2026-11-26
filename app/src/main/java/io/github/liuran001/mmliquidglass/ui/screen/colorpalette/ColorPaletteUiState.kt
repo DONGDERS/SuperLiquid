@@ -27,4 +27,7 @@ data class ColorPaletteScreenActions(
     val onSetEnableFloatingBottomBar: (Boolean) -> Unit,
     val onSetEnableFloatingBottomBarBlur: (Boolean) -> Unit,
     val onSetEnablePredictiveBack: (Boolean) -> Unit,
+    val onSetEnableGlobalShaderBg: (Boolean) -> Unit = {},
+    val onSetEnableAppExpandLimit: (Boolean) -> Unit = {},
+    val onSetAppExpandLimit: (Int) -> Unit = {},
 )

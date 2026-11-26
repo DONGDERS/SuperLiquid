@@ -1,5 +1,6 @@
 package io.github.liuran001.mmliquidglass.ui
 
+import androidx.compose.runtime.collectAsState
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -107,6 +108,14 @@ fun AppsScreen(bottomOverlay: Dp) {
     var query by rememberSaveable { mutableStateOf("") }
     val identities = rememberAppIdentities()
     val cardState = rememberSaveableStateHolder()
+    val uiSettings by io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsState.flow.collectAsState()
+    // Expanded cards in open order (oldest first); the limit collapses the oldest.
+    var expandedKeys by rememberSaveable { mutableStateOf(listOf<String>()) }
+    val expandLimit = if (uiSettings.enableAppExpandLimit) uiSettings.appExpandLimit.coerceAtLeast(1) else Int.MAX_VALUE
+    LaunchedEffect(expandLimit) { if (expandedKeys.size > expandLimit) expandedKeys = expandedKeys.takeLast(expandLimit) }
+    fun toggleCard(k: String) {
+        expandedKeys = if (k in expandedKeys) expandedKeys - k else (expandedKeys + k).takeLast(expandLimit)
+    }
     val term = query.trim()
     val targets = TARGETS.filter { t ->
         t.label.contains(term, ignoreCase = true) || t.pkg.contains(term, ignoreCase = true) ||
@@ -145,7 +154,7 @@ fun AppsScreen(bottomOverlay: Dp) {
         targets.forEach { t ->
             key(t.key) {
                 cardState.SaveableStateProvider(t.key) {
-                    AppCard(t, identities.getValue(t.key)) {
+                    AppCard(t, identities.getValue(t.key), t.key in expandedKeys, { toggleCard(t.key) }) {
                         val cfg = when (t.key) {
                             "mm" -> Config.mm
                             "qq" -> Config.qq
@@ -228,10 +237,15 @@ private fun AppSearchField(query: String, onQueryChange: (String) -> Unit) {
 }
 
 @Composable
-private fun AppCard(t: Target, identity: AppIdentity, content: @Composable ColumnScope.() -> Unit) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
+private fun AppCard(
+    t: Target,
+    identity: AppIdentity,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val title = t.label + (if (identity.installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed))
-    val toggle = { expanded = !expanded }
+    val toggle = onToggle
     when (LocalUiMode.current) {
         UiMode.Miuix -> MiuixCard(modifier = Modifier.fillMaxWidth()) {
             ArrowPreference(
