@@ -23,7 +23,7 @@ final class AlipayHomeBar {
 
     static ViewGroup findBar(View root) {
         View preferred = root.findViewById(0x45070020);
-        View bar = validBar(preferred) ? preferred : findBar(root);
+        View bar = validBar(preferred) ? preferred : findBarInTree(root);
         if (!validBar(bar)) return null;
         return backdrop((ViewGroup) bar.getParent()) != null ? (ViewGroup) bar : null;
     }
@@ -38,7 +38,7 @@ final class AlipayHomeBar {
         return count >= 2 && count <= TabCatalogRules.MAX_TABS;
     }
 
-    private static View findBar(View view) {
+    private static View findBarInTree(View view) {
         if (validBar(view)) return view;
         if (view instanceof ViewGroup group) {
             for (int i=0; i<group.getChildCount(); i++) {
