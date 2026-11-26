@@ -47,13 +47,13 @@ object Config {
     )
 
     /**
-     * heybox floating-bar tab layout: display order + hidden titles, both
-     * matched against the native bar's captured tab titles (首页/热点/游戏库/我).
-     * Empty order = native capture order; the hook locks 首页/我 regardless.
+     * Display order + hidden keys bound to a runtime catalog of an installed app.
+     * Empty order uses the native order; a stale catalog never applies to a host.
      */
     data class TabLayout(
         val order: List<String> = emptyList(),
         val hidden: List<String> = emptyList(),
+        val catalogToken: String = "",
     ) {
         val isDefault: Boolean get() = order.isEmpty() && hidden.isEmpty()
     }
@@ -119,26 +119,32 @@ object Config {
         "bili" to TabLayout(), "heybox" to TabLayout(),
         "kugou" to TabLayout(),
         "pinduoduo" to TabLayout(),
-        "alipay" to TabLayout(),
+        "alipay" to TabLayout(), "taobao" to TabLayout(),
     ))
     fun tabLayout(key: String): TabLayout = _tabs.value[key] ?: TabLayout()
 
     fun setTabLayout(key: String, t: TabLayout) {
-        _tabs.value = _tabs.value + (key to t)
+        val snapshot = RuntimeTabs.snapshot(key)
+        if (!t.isDefault && !snapshot.current) return
+        val bound = t.copy(catalogToken = if (snapshot.current) snapshot.token else "")
+        _tabs.value = _tabs.value + (key to bound)
         val json = org.json.JSONArray(t.order).toString()
         val jsonH = org.json.JSONArray(t.hidden).toString()
         val editor = (remotePrefs ?: hookPrefs)?.edit() ?: return
         editor.putString("${key}_tab_order", json)
         editor.putString("${key}_tab_hidden", jsonH)
+        editor.putString("${key}_tab_catalog", bound.catalogToken)
         editor.apply()
         val mirror = if (remotePrefs != null) hookPrefs else null
         mirror?.edit()?.apply {
             putString("${key}_tab_order", json)
             putString("${key}_tab_hidden", jsonH)
+            putString("${key}_tab_catalog", bound.catalogToken)
         }?.apply()
     }
 
     fun init(ctx: Context) {
+        RuntimeTabs.init(ctx)
         uiPrefs = ctx.getSharedPreferences("settings", Context.MODE_PRIVATE)
         hookPrefs = ctx.getSharedPreferences(REMOTE_NAME, Context.MODE_PRIVATE)
         _uiMode.value = uiPrefs.getString("ui_mode", UiMode.DEFAULT) ?: UiMode.DEFAULT
@@ -236,7 +242,7 @@ object Config {
         setApp("taobao", AppCfg())
         setApp("alipay", AppCfg())
         setKugouPlayerLiftDp(DEFAULT_KUGOU_PLAYER_LIFT_DP)
-        for (key in listOf("mm", "qq", "bili", "heybox", "kugou", "pinduoduo", "alipay")) {
+        for (key in listOf("mm", "qq", "bili", "heybox", "kugou", "pinduoduo", "taobao", "alipay")) {
             setTabLayout(key, TabLayout())
         }
     }
@@ -303,7 +309,7 @@ object Config {
             "bili" to readTabLayout(p, "bili"), "heybox" to readTabLayout(p, "heybox"),
             "kugou" to readTabLayout(p, "kugou"),
             "pinduoduo" to readTabLayout(p, "pinduoduo"),
-            "alipay" to readTabLayout(p, "alipay"),
+            "alipay" to readTabLayout(p, "alipay"), "taobao" to readTabLayout(p, "taobao"),
         )
         _bili.value = BiliCfg(
             base = app("bili", AppCfg(widthScale = 0.7f)),
@@ -325,6 +331,7 @@ object Config {
             val a = org.json.JSONArray(s)
             (0 until a.length()).map { a.getString(it) }
         }.getOrDefault(emptyList())
-        return TabLayout(order = arr("${key}_tab_order"), hidden = arr("${key}_tab_hidden"))
+        return TabLayout(order = arr("${key}_tab_order"), hidden = arr("${key}_tab_hidden"),
+            catalogToken = p.getString("${key}_tab_catalog", "").orEmpty())
     }
 }

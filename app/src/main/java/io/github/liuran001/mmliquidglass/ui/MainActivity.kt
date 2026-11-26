@@ -87,6 +87,10 @@ import top.yukonga.miuix.kmp.basic.NavigationBarItem as MiuixNavigationBarItem
 import top.yukonga.miuix.kmp.basic.Scaffold as MiuixScaffold
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        RuntimeTabs.refresh()
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)

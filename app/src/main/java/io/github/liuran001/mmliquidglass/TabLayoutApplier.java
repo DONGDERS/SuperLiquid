@@ -2,7 +2,6 @@ package io.github.liuran001.mmliquidglass;
 
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,87 +31,13 @@ final class TabLayoutApplier {
     private TabLayoutApplier() {
     }
 
-    /** Basics per app key (mirrors TabLayoutEditor.LOCKED in the manager):
-     *  verified by TA on the live bars: WeChat first tab IS 微信;
-     *  QQ order is 消息/频道/联系人/动态 and locks 消息+联系人. */
-    private static final java.util.Map<String, Set<String>> LOCKED = new java.util.HashMap<>();
-
-    static {
-        LOCKED.put("mm", new HashSet<>(java.util.Arrays.asList("微信", "我")));
-        LOCKED.put("qq", new HashSet<>(java.util.Arrays.asList("消息", "联系人")));
-        LOCKED.put("bili", new HashSet<>(java.util.Arrays.asList("首页", "我的")));
-        LOCKED.put("heybox", new HashSet<>(java.util.Arrays.asList("首页", "我")));
-        LOCKED.put("kugou", new HashSet<>(java.util.Arrays.asList("首页", "我")));
-        LOCKED.put("pinduoduo", new HashSet<>(java.util.Arrays.asList("首页", "个人中心")));
+    /** Same locked titles as the runtime catalog shown by the manager. */
+    static boolean isLockedTitle(String appKey, String title) {
+        return TabCatalogRules.locked(appKey, title);
     }
-
-    /** Basics that the given host keeps, whatever the manager says. */
-    static boolean isLockedTitle(String appKey, String t) {
-        Set<String> set = LOCKED.get(appKey);
-        return set != null && set.contains(t);
-    }
-
-    private static String kugouTitle(View cell, int fallback) {
-        Object tag = cell.getTag();
-        if (tag instanceof String) {
-            switch (((String) tag).trim()) {
-                case "ting": return "首页";
-                case "mine": return "我";
-                case "chang": return "唱玩";
-                case "kan": return "直播";
-                case "video": return "视频";
-                case "songroom": return "K歌";
-                case "make_money": return "赚钱";
-                default: break; // The fun tab may be labelled 直播 or 视频.
-            }
-        }
-        return normalizeTitle("kugou", cellTitle(cell, fallback));
-    }
-
     private static String normalizeTitle(String appKey, String title) {
-        if ("pinduoduo".equals(appKey) && PinduoduoTabLabelProvider.LEGACY_CAMPAIGN_KEY.equals(title)) {
-            return PinduoduoTabLabelProvider.CAMPAIGN_KEY;
-        }
-        if (!"kugou".equals(appKey)) return title;
-        if ("金币".equals(title)) return "赚钱";
-        if ("我的".equals(title)) return "我";
-        return title;
+        return TabCatalogRules.normalize(appKey, title);
     }
-
-    /** First non-empty TextView text inside a cell, else its position. */
-    private static String cellTitle(View cell, int fallback) {
-        if (cell instanceof ViewGroup) {
-            String found = findText((ViewGroup) cell);
-            if (found != null && !found.isEmpty()) {
-                return found.toString().trim();
-            }
-        } else if (cell instanceof TextView) {
-            CharSequence c = ((TextView) cell).getText();
-            if (c != null && c.length() > 0) return c.toString().trim();
-        }
-        if (cell instanceof PinduoduoHomeBar.TabCopy) {
-            return ((PinduoduoHomeBar.TabCopy) cell).layoutTitle();
-        }
-        // Some bars label cells only via accessibility (TabWidget does).
-        CharSequence cd = cell.getContentDescription();
-        if (cd != null && cd.length() > 0) return cd.toString().trim();
-        return "#" + fallback;
-    }
-
-    private static String findText(ViewGroup vg) {
-        for (int i = 0; i < vg.getChildCount(); i++) {
-            View c = vg.getChildAt(i);
-            if (c instanceof TextView) {
-                CharSequence t = ((TextView) c).getText();
-                if (t != null && t.length() > 0) return t.toString();
-            } else if (c instanceof ViewGroup) {
-                String r = findText((ViewGroup) c);
-                if (r != null) return r;
-            }
-        }
-        return null;
-    }
-
     /**
      * Rewrite the row per GlassConfig.tabOrder / tabHidden. Idempotent:
      * safe to call again after a structural refresh (the mapping is rebuilt
@@ -125,18 +50,31 @@ final class TabLayoutApplier {
         }
         try {
             int n = row.getChildCount();
-            if (n < 2) {
+            if (n < 2 || n > TabCatalogRules.MAX_TABS) {
+                RuntimeTabCatalog.restoreRow(row);
                 LiquidGlassModule.log(android.util.Log.WARN,
                         "tab layout skipped: app=" + appKey + " childCount=" + n);
                 clear();
                 return;
             }
+            List<View> cells = RuntimeTabCatalog.nativeCells(row);
+            RuntimeTabCatalog.observeRow(row, appKey);
             String[] titles = new String[n];
+            List<String> currentKeys = new ArrayList<>();
             for (int i = 0; i < n; i++) {
-                View cell = row.getChildAt(i);
-                titles[i] = "kugou".equals(appKey) ? kugouTitle(cell, i) : cellTitle(cell, i);
+                View cell = cells.get(i);
+                titles[i] = RuntimeTabCatalog.layoutKey(appKey, cell);
+                if (RuntimeTabCatalog.nativeVisibility(cell) == View.GONE) continue;
+                if (titles[i].isEmpty() || currentKeys.contains(titles[i])) {
+                    RuntimeTabCatalog.restoreRow(row);
+                    clear();
+                    return; // No positional guess after a host update.
+                }
+                currentKeys.add(titles[i]);
             }
-            if (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0) {
+            if (!GlassConfig.matchesTabCatalog(currentKeys)
+                    || (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0)) {
+                RuntimeTabCatalog.restoreRow(row);
                 LiquidGlassModule.log(android.util.Log.INFO,
                         "tab layout: no config for app=" + appKey
                                 + ", native order " + java.util.Arrays.toString(titles));
@@ -150,7 +88,10 @@ final class TabLayoutApplier {
                 h = normalizeTitle(appKey, h);
                 if (h != null && !isLockedTitle(appKey, h)) hidden.add(h);
             }
-            hidden.remove(titles[0]);
+            int entry = 0;
+            while (entry < n && RuntimeTabCatalog.nativeVisibility(cells.get(entry)) == View.GONE) entry++;
+            if (entry == n) { clear(); return; }
+            hidden.remove(titles[entry]);
             // Display order: configured titles first, then the rest natively.
             List<Integer> disp = new ArrayList<>();
             boolean[] used = new boolean[n];
@@ -158,7 +99,8 @@ final class TabLayoutApplier {
                 if (want == null) continue;
                 want = normalizeTitle(appKey, want);
                 for (int i = 0; i < n; i++) {
-                    if (!used[i] && want.equals(titles[i]) && !hidden.contains(titles[i])) {
+                    if (RuntimeTabCatalog.nativeVisibility(cells.get(i)) != View.GONE
+                            && !used[i] && want.equals(titles[i]) && !hidden.contains(titles[i])) {
                         used[i] = true;
                         disp.add(i);
                         break;
@@ -166,14 +108,13 @@ final class TabLayoutApplier {
                 }
             }
             for (int i = 0; i < n; i++) {
-                if (!used[i] && !hidden.contains(titles[i])) disp.add(i);
+                if (RuntimeTabCatalog.nativeVisibility(cells.get(i)) != View.GONE
+                        && !used[i] && !hidden.contains(titles[i])) disp.add(i);
             }
             // Hard rule: the entry tab (logical 0) is PINNED first — it can
             // never be pushed below slot 0, whatever the stored order says.
-            disp.remove(Integer.valueOf(0));
-            disp.add(0, 0);
-            List<View> cells = new ArrayList<>();
-            for (int i = 0; i < n; i++) cells.add(row.getChildAt(i));
+            disp.remove(Integer.valueOf(entry));
+            disp.add(0, entry);
             // Titles first — if anything below throws, the evidence line
             // already told us what the live bar has.
             LiquidGlassModule.log(android.util.Log.INFO, "tab layout: app=" + appKey
@@ -197,6 +138,7 @@ final class TabLayoutApplier {
             for (int p = 0; p < disp.size(); p++) m[p] = disp.get(p);
             sPos2Logical = m;
             sRow = row;
+            RuntimeTabCatalog.markApplied(row);
             // Evidence line: config + what titles the live bar actually has —
             // a title mismatch (server rebound labels) shows up right here.
             LiquidGlassModule.log(android.util.Log.INFO, "tab layout applied: app=" + appKey
@@ -266,9 +208,12 @@ final class TabLayoutApplier {
         }
         try {
             boolean fixed = false;
-            for (int p = 0; p < row.getChildCount() && p < m.length; p++) {
+            int slot = 0;
+            for (int p = 0; p < row.getChildCount(); p++) {
                 View cell = row.getChildAt(p);
-                boolean want = m[p] == logicalIndex;
+                boolean visible = cell.getVisibility() != View.GONE;
+                boolean want = visible && slot < m.length && m[slot] == logicalIndex;
+                if (visible) slot++;
                 if (cell.isSelected() != want) {
                     cell.setSelected(want);
                     fixed = true;

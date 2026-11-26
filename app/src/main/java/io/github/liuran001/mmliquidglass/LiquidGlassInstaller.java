@@ -332,6 +332,8 @@ final class LiquidGlassInstaller {
         // cells for the reparented hosts. heybox/bili run their own self-drawn
         // paths and never reach here.
         String appKey = GlassConfig.key();
+        if ("mm".equals(appKey) || "qq".equals(appKey) || "taobao".equals(appKey)
+                || "alipay".equals(appKey) || kugou) RuntimeTabCatalog.watch(tabRow, appKey);
         if ("taobao".equals(appKey)) {
             NativeTabLayout.applyTaobao(tabRow);
         } else if ("alipay".equals(appKey)) {
@@ -1767,11 +1769,16 @@ final class LiquidGlassInstaller {
             // host around the row.
             stripSolidBackgrounds(tabView);
             disableTabWidgetStrips(tabView);
-            if (LiquidGlassModule.app() == HostApp.TAOBAO) {
+            String key = GlassConfig.key();
+            if ("mm".equals(key) || "qq".equals(key) || "taobao".equals(key)
+                    || "alipay".equals(key) || "kugou".equals(key)) RuntimeTabCatalog.watch(tabRow, key);
+            if (LiquidGlassModule.app() == HostApp.WECHAT || LiquidGlassModule.app() == HostApp.QQ) {
+                TabLayoutApplier.apply(tabRow, key);
+            } else if (LiquidGlassModule.app() == HostApp.TAOBAO) {
                 NativeTabLayout.applyTaobao(tabRow);
             } else if (LiquidGlassModule.app() == HostApp.ALIPAY) {
                 NativeTabLayout.applyAlipay(tabRow);
-            } else if (LiquidGlassModule.app() == HostApp.KUGOU && tabRow != sTabRowRef.get()) {
+            } else if (LiquidGlassModule.app() == HostApp.KUGOU) {
                 TabLayoutApplier.apply(tabRow, "kugou");
             }
             dropNavReserve(tabView);

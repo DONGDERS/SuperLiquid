@@ -17,9 +17,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Icon
-import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -32,9 +30,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import io.github.liuran001.mmliquidglass.PinduoduoTabLabelProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.MaterialTheme
@@ -48,78 +44,20 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
-/**
- * heybox floating-bar tab layout editor: drag to reorder, tap the eye to
- * hide/restore. Locked basics (首页/主页, 我/我的) can never be hidden — the
- * hook enforces the same rule server-side, this is the visible half.
- *
- * The bar's titles are server-driven; the editor edits the known candidate
- * set (stored config entries + defaults). Unlisted runtime tabs simply ride
- * at the end (hook falls back to native order for them).
- */
+/** Edits the latest native report. Unknown/stale bars are never guessed. */
 object TabLayoutEditor {
-
-    /** Known tab titles per app key; unmatched runtime tabs ride at the end.
-     *  Verified by TA on the live bars (2026-10-15):
-     *  WeChat = 微信/通讯录/发现/我 (first tab IS 微信, not 消息);
-     *  QQ = 消息/频道/联系人/动态 (no 我 tab). */
-    val DEFAULTS = mapOf(
-        "mm" to listOf("微信", "通讯录", "发现", "我"),
-        "qq" to listOf("消息", "频道", "联系人", "动态"),
-        "bili" to listOf("首页", "动态", "会员购", "我的"),
-        "heybox" to listOf("首页", "热点", "游戏库", "我"),
-        "kugou" to listOf("首页", "直播", "K歌", "赚钱", "我"),
-        "pinduoduo" to listOf("首页", "多多视频", PinduoduoTabLabelProvider.CAMPAIGN_KEY, "聊天", "个人中心"),
-        "taobao" to listOf("首页", "视频", "消息", "购物车", "我的淘宝"),
-        "alipay" to listOf("首页", "理财", "生活", "消息", "我的"),
-    )
-
-    /** Basics per app: never hideable, never reorderable away from slot 0. */
-    val LOCKED = mapOf(
-        "mm" to setOf("微信", "我"),
-        "qq" to setOf("消息", "联系人"),
-        "bili" to setOf("首页", "我的"),
-        "heybox" to setOf("首页", "我"),
-        "kugou" to setOf("首页", "我"),
-        "pinduoduo" to setOf("首页", "个人中心"),
-        "taobao" to setOf("首页", "我的淘宝"),
-        "alipay" to setOf("首页", "我的"),
-    )
-
     fun locked(appKey: String, title: String): Boolean =
-        title in (LOCKED[appKey] ?: emptySet())
-
-    /** Candidate list = stored order first, then defaults, deduped. */
+        RuntimeTabs.snapshot(appKey).items.firstOrNull { it.key == title }?.locked == true
     fun candidates(key: String, cfg: Config.TabLayout): List<String> {
-        if (key == "kugou") {
-            val defaults = DEFAULTS.getValue(key)
-            return (defaults.take(1) + cfg.order.map(::kugouTitle) + defaults)
-                .filter { it in defaults }.distinct()
-        }
-        val out = ArrayList<String>()
-        // Entry tab (slot 0) is pinned to the front regardless of what an
-        // older config stored there.
-        DEFAULTS[key]?.firstOrNull()?.let { out.add(it) }
-        for (entry in cfg.order + (DEFAULTS[key] ?: emptyList())) {
-            val title = configKey(key, entry)
-            if (title !in out) out.add(title)
-        }
-        return out
+        val snapshot = RuntimeTabs.snapshot(key)
+        if (!snapshot.current) return emptyList()
+        return io.github.liuran001.mmliquidglass.TabCatalogRules.candidateOrder(
+            snapshot.items.map { it.key },
+            if (cfg.catalogToken == snapshot.token) cfg.order.map { configKey(key, it) } else emptyList(),
+        )
     }
-
-    fun configKey(appKey: String, title: String): String = when {
-        appKey == "kugou" -> kugouTitle(title)
-        appKey == "pinduoduo" && title == PinduoduoTabLabelProvider.LEGACY_CAMPAIGN_KEY ->
-            PinduoduoTabLabelProvider.CAMPAIGN_KEY
-        else -> title
-    }
-
-    fun kugouTitle(title: String): String = when (title) {
-        "金币" -> "赚钱"
-        "我的" -> "我"
-        else -> title
-    }
-
+    fun configKey(appKey: String, title: String): String =
+        io.github.liuran001.mmliquidglass.TabCatalogRules.normalize(appKey, title)
     /**
      * Keep hidden tabs in [order]. Filtering them out looked harmless but threw
      * their position away: the hook only walks the configured order and appends
@@ -139,28 +77,17 @@ fun TabLayoutDialog(
     onApply: (Config.TabLayout) -> Unit,
 ) {
     if (!show) return
-    val initial = Config.tabLayout(appKey)
+    val snapshot = RuntimeTabs.snapshot(appKey)
+    val initial = Config.tabLayout(appKey).takeIf { it.catalogToken == snapshot.token }
+        ?: Config.TabLayout()
     val hiddenKeys = initial.hidden.map { TabLayoutEditor.configKey(appKey, it) }.toSet()
     val start = TabLayoutEditor.candidates(appKey, initial).map { key ->
-        key to (key in hiddenKeys && (appKey != "kugou" || !TabLayoutEditor.locked(appKey, key)))
+        key to (key in hiddenKeys && !TabLayoutEditor.locked(appKey, key))
     }
-    var campaignLabel by remember(appKey) { mutableStateOf("活动入口") }
-    if (appKey == "pinduoduo") {
-        val context = LocalContext.current
-        val prefs = remember(context) { PinduoduoTabLabelProvider.preferences(context) }
-        DisposableEffect(prefs) {
-            val labelKey = PinduoduoTabLabelProvider.LABEL_KEY
-            val listener = SharedPreferences.OnSharedPreferenceChangeListener { updated, key ->
-                if (key == labelKey) campaignLabel = updated.getString(labelKey, "活动入口") ?: "活动入口"
-            }
-            prefs.registerOnSharedPreferenceChangeListener(listener)
-            campaignLabel = prefs.getString(labelKey, "活动入口") ?: "活动入口"
-            onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
-        }
-    }
-    var items by remember(show) { mutableStateOf(start) }
-    var dragging by remember(show) { mutableStateOf<String?>(null) }
-    var dragDy by remember(show) { mutableFloatStateOf(0f) }
+    // A new report replaces an obsolete editor draft instead of saving stale rows.
+    var items by remember(appKey, show, snapshot) { mutableStateOf(start) }
+    var dragging by remember(appKey, show, snapshot) { mutableStateOf<String?>(null) }
+    var dragDy by remember(appKey, show, snapshot) { mutableFloatStateOf(0f) }
     val density = LocalDensity.current
     val rowH = with(density) { 48.dp.toPx() }
 
@@ -245,9 +172,7 @@ fun TabLayoutDialog(
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        if (appKey == "pinduoduo" && title == PinduoduoTabLabelProvider.CAMPAIGN_KEY) {
-                            campaignLabel
-                        } else title,
+                        snapshot.items.firstOrNull { it.key == title }?.label ?: title,
                         fontSize = 16.sp, color = baseColor,
                         modifier = Modifier.weight(1f),
                     )
@@ -280,13 +205,15 @@ fun TabLayoutDialog(
     }
 
     fun applyEdit() {
+        if (!snapshot.current || items.isEmpty()) return
         val order = items.map { it.first }
         val hidden = items.filter { it.second }.map { it.first }.toSet()
         onApply(TabLayoutEditor.toCfg(order, hidden))
         onDismiss()
     }
 
-    val SUMMARY = "长按拖动排序 · 点眼睛隐藏 · 首项固定不可移除"
+    val SUMMARY = snapshot.status + if (snapshot.current)
+        "\n长按拖动排序 · 点加减号隐藏或恢复 · 首项固定" else ""
     when (LocalUiMode.current) {
         UiMode.Miuix -> OverlayDialog(
             show = show,
@@ -304,7 +231,7 @@ fun TabLayoutDialog(
                             onClick = onDismiss,
                             modifier = Modifier.padding(end = 12.dp),
                         )
-                        TextButton(text = "保存", onClick = { applyEdit() })
+                        if (snapshot.current) TextButton(text = "保存", onClick = { applyEdit() })
                     }
                 }
             },
@@ -343,7 +270,7 @@ fun TabLayoutDialog(
                         Spacer(Modifier.weight(1f))
                         M3TextButton(onClick = onDismiss) { M3Text("取消") }
                         Spacer(Modifier.width(12.dp))
-                        M3TextButton(onClick = { applyEdit() }) { M3Text("保存") }
+                        if (snapshot.current) M3TextButton(onClick = { applyEdit() }) { M3Text("保存") }
                     }
                 }
             }

@@ -92,6 +92,8 @@ final class HeyboxHomeBar {
     private static final Handler sMain = new Handler(Looper.getMainLooper());
     private static long sLastFailLog;
     private static int sResumeLogs;
+    private static String sCatalogKeys = "";
+    private static long sLastCatalogRead;
 
     /**
      * A live frame of the native tab: the whole RadioButton — whatever the
@@ -230,7 +232,7 @@ final class HeyboxHomeBar {
                     rb++;
                 }
             }
-            if (rb >= 3) {
+            if (rb >= 2 && rb <= TabCatalogRules.MAX_TABS) {
                 return rg;
             }
         }
@@ -275,7 +277,7 @@ final class HeyboxHomeBar {
                     n++;
                 }
             }
-            if (n < 2) {
+            if (n < 2 || n > TabCatalogRules.MAX_TABS) {
                 LiquidGlassModule.log(android.util.Log.WARN,
                         "heybox: only " + n + " visible tabs, waiting for server nav cfg");
                 return false;
@@ -302,6 +304,7 @@ final class HeyboxHomeBar {
                     sRealTabs[k++] = (RadioButton) c;
                 }
             }
+            sCatalogKeys = catalogKeys(sRealTabs);
             captureColors();
             publishAccent();
 
@@ -530,6 +533,8 @@ final class HeyboxHomeBar {
      */
     private static int[] applyTabLayout() {
         int n = sRealTabs.length;
+        if (n > 0) RuntimeTabCatalog.reportCells(sRealTabs[0].getContext(), "heybox",
+                java.util.Arrays.asList(sRealTabs));
         if (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0) {
             LiquidGlassModule.log(android.util.Log.INFO,
                     "heybox: tab layout no config, native order");
@@ -539,16 +544,18 @@ final class HeyboxHomeBar {
             String[] titles = new String[n];
             for (int i = 0; i < n; i++) {
                 try {
-                    titles[i] = sRealTabs[i].getText().toString();
+                    titles[i] = RuntimeTabCatalog.layoutKey("heybox", sRealTabs[i]);
                 } catch (Throwable t) {
                     titles[i] = "";
                 }
             }
+            if (!GlassConfig.matchesTabCatalog(titles)) return identitySlots(n);
             // Hidden set (config names the tab titles), basics locked.
             java.util.Set<String> hidden = new java.util.HashSet<>();
             for (String h : GlassConfig.tabHidden) {
                 if (h != null && !TabLayoutApplier.isLockedTitle("heybox", h)) hidden.add(h);
             }
+            hidden.remove(titles[0]);
             // Display order: config order first, then unlisted in native order.
             java.util.ArrayList<Integer> disp = new java.util.ArrayList<>();
             boolean[] used = new boolean[n];
@@ -565,11 +572,13 @@ final class HeyboxHomeBar {
             for (int i = 0; i < n; i++) {
                 if (!used[i] && !hidden.contains(titles[i])) disp.add(i);
             }
+            disp.remove(Integer.valueOf(0));
+            disp.add(0, 0);
             int[] out = new int[disp.size()];
             for (int i = 0; i < disp.size(); i++) out[i] = disp.get(i);
             // Hidden slots get no icon view: existing null guards skip them.
             for (int i = 0; i < n; i++) {
-                if (hidden.contains(titles[i])) sIcons[i] = null;
+                if (hidden.contains(titles[i]) && i != 0) sIcons[i] = null;
             }
             LiquidGlassModule.log(android.util.Log.INFO, "heybox: tab layout applied, visible="
                     + disp.size() + "/" + n + " titles=" + java.util.Arrays.toString(titles)
@@ -579,6 +588,71 @@ final class HeyboxHomeBar {
             LiquidGlassModule.logErr("heybox: tab layout apply failed", t);
             return identitySlots(n);
         }
+    }
+
+    private static String catalogKeys(RadioButton[] tabs) {
+        java.util.ArrayList<String> keys = new java.util.ArrayList<>();
+        for (RadioButton tab : tabs) keys.add(RuntimeTabCatalog.layoutKey("heybox", tab));
+        return new org.json.JSONArray(keys).toString();
+    }
+
+    private static void refreshNativeTabs() {
+        RadioGroup real = sRealBar.get();
+        LinearLayout row = sLeftRow;
+        Activity act = sHomeActivity.get();
+        if (real == null || row == null || act == null) return;
+        java.util.ArrayList<RadioButton> cells = new java.util.ArrayList<>();
+        for (int i = 0; i < real.getChildCount(); i++) {
+            View cell = real.getChildAt(i);
+            if (cell instanceof RadioButton radio && cell.getVisibility() == View.VISIBLE) cells.add(radio);
+        }
+        if (cells.size() < 2 || cells.size() > TabCatalogRules.MAX_TABS) return;
+        String[] refreshedLabels = new String[cells.size()];
+        java.util.HashSet<String> uniqueLabels = new java.util.HashSet<>();
+        for (int i=0; i<cells.size(); i++) {
+            refreshedLabels[i] = cells.get(i).getText().toString().trim();
+            if (!TabCatalogRules.validText(refreshedLabels[i]) || !uniqueLabels.add(refreshedLabels[i])) return;
+        }
+        RadioButton[] next = cells.toArray(new RadioButton[0]);
+        String keys = catalogKeys(next);
+        if (java.util.Arrays.equals(next, sRealTabs) && keys.equals(sCatalogKeys)) {
+            RuntimeTabCatalog.reportCells(real.getContext(), "heybox", cells);
+            return;
+        }
+        // Preserve existing snapshot geometry when the hidden row receives new children.
+        float density = real.getResources().getDisplayMetrics().density;
+        int oldW = sSnapW != null && sSnapW.length > 0 ? sSnapW[0] : Math.round(64 * density);
+        int oldH = sSnapH != null && sSnapH.length > 0 ? sSnapH[0] : Math.round(48 * density);
+        android.graphics.Bitmap[] previous = sSnapBm;
+        sRealTabs = next;
+        sCatalogKeys = keys;
+        int n = next.length;
+        sIcons = new ImageView[n];
+        sSnapW = new int[n]; sSnapH = new int[n]; sSnapK = new float[n];
+        sSnapBm = new android.graphics.Bitmap[n];
+        for (int i = 0; i < n; i++) {
+            sSnapW[i] = next[i].getWidth() > 0 ? next[i].getWidth() : oldW;
+            sSnapH[i] = next[i].getHeight() > 0 ? next[i].getHeight() : oldH;
+            if (next[i].getWidth() <= 0 || next[i].getHeight() <= 0) {
+                next[i].measure(View.MeasureSpec.makeMeasureSpec(sSnapW[i], View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(sSnapH[i], View.MeasureSpec.EXACTLY));
+                next[i].layout(0, 0, sSnapW[i], sSnapH[i]);
+            }
+            sSnapK[i] = Math.min(1.2f, Math.max(0.25f,
+                    Math.min(32f * density / sSnapH[i], 46f * density / sSnapW[i])));
+        }
+        sDisp = applyTabLayout();
+        LinearLayout built = buildRow(act, sDisp);
+        row.removeAllViews();
+        while (built.getChildCount() > 0) {
+            View cell = built.getChildAt(0);
+            built.removeViewAt(0);
+            row.addView(cell);
+        }
+        if (previous != null) for (android.graphics.Bitmap bitmap : previous) {
+            if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+        }
+        applySelection(true);
     }
 
     private static int[] identitySlots(int n) {
@@ -863,6 +937,11 @@ final class HeyboxHomeBar {
                 return;
             }
             keepChromeHidden();
+            long catalogNow = SystemClock.uptimeMillis();
+            if (catalogNow - sLastCatalogRead >= 1500) {
+                sLastCatalogRead = catalogNow;
+                refreshNativeTabs();
+            }
 
             // Theme flips: the host tracks the live config (bili-style); our
             // icons/labels re-capture off the app's own bar, which swaps in

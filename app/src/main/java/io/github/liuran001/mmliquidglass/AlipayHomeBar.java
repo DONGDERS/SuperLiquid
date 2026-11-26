@@ -12,24 +12,41 @@ import android.widget.TextView;
 import java.lang.ref.WeakReference;
 
 final class AlipayHomeBar {
-    private static final int BAR = 0x45070020;
     private static final int BACKGROUND = 0x4507001f;
     private static final int SELECTED_ICON_CONTAINER = 0x4507001d;
     private static final int SELECTED_ICON_SIZE_DP = 36;
     private static final int TAB_ICON = 0x45070023;
     private static final int TAB_DESCRIPTION = 0x45070022;
-    private static final String HOME_LABEL = "首页";
+    private static final java.util.Map<View, CharSequence> HOME_LABELS = new java.util.WeakHashMap<>();
 
     private AlipayHomeBar() { }
 
     static ViewGroup findBar(View root) {
-        View bar = root.findViewById(BAR);
+        View preferred = root.findViewById(0x45070020);
+        View bar = validBar(preferred) ? preferred : findBar(root);
+        if (!validBar(bar)) return null;
+        return backdrop((ViewGroup) bar.getParent()) != null ? (ViewGroup) bar : null;
+    }
+
+    private static boolean validBar(View bar) {
         if (!(bar instanceof FrameLayout) || !(bar.getParent() instanceof TabHost)
-                || !bar.isShown() || bar.getWidth() <= 0) return null;
+                || !bar.isShown() || bar.getWidth() <= 0) return false;
         View tabs = bar.findViewById(android.R.id.tabs);
         if (!(tabs instanceof TabWidget) || tabs.getParent() != bar || !tabs.isShown()
-                || tabs.getHeight() <= 0 || ((TabWidget) tabs).getChildCount() != 5) return null;
-        return backdrop((ViewGroup) bar.getParent()) != null ? (ViewGroup) bar : null;
+                || tabs.getHeight() <= 0) return false;
+        int count = ((TabWidget) tabs).getChildCount();
+        return count >= 2 && count <= TabCatalogRules.MAX_TABS;
+    }
+
+    private static View findBar(View view) {
+        if (validBar(view)) return view;
+        if (view instanceof ViewGroup group) {
+            for (int i=0; i<group.getChildCount(); i++) {
+                View match = findBar(group.getChildAt(i));
+                if (match != null) return match;
+            }
+        }
+        return null;
     }
 
     static ViewGroup backdrop(ViewGroup parent) {
@@ -43,8 +60,10 @@ final class AlipayHomeBar {
         View label = home.findViewById(TAB_DESCRIPTION);
         if (!(label instanceof TextView) || label.getParent() != home) return;
         TextView description = (TextView) label;
-        // Alipay can hide or replace this label when switching tabs.
-        if (!TextUtils.equals(HOME_LABEL, description.getText())) description.setText(HOME_LABEL);
+        CharSequence current = description.getText();
+        if (!TextUtils.isEmpty(current)) HOME_LABELS.put(home, current.toString());
+        CharSequence learned = HOME_LABELS.get(home);
+        if (TextUtils.isEmpty(current) && learned != null) description.setText(learned);
         if (description.getVisibility() != View.VISIBLE) description.setVisibility(View.VISIBLE);
         if (description.getAlpha() != 1f) description.setAlpha(1f);
     }
@@ -65,7 +84,8 @@ final class AlipayHomeBar {
                         ViewGroup row = (ViewGroup) cell.getParent();
                         if (!(row.getParent() instanceof View)) return;
                         View bar = (View) row.getParent();
-                        if (bar.getId() == BAR && bar.getParent() instanceof LiquidGlassHostLayout) {
+                        if (bar.getParent() instanceof LiquidGlassHostLayout
+                                && ((View) bar.getParent()).getParent() instanceof TabHost) {
                             keepSelectedHomeIconStill(row, cell);
                         }
                     });

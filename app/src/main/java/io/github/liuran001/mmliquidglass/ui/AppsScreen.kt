@@ -150,6 +150,13 @@ fun AppsScreen(bottomOverlay: Dp) {
                             "alipay" -> Config.alipay
                             else -> Config.bili.base
                         }
+                        val tabs = RuntimeTabs.snapshot(t.key)
+                        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                            LText(tabs.status, subtitle = true)
+                            if (tabs.current) LText(
+                                tabs.items.joinToString(" · ") { it.label }, subtitle = true,
+                            )
+                        }
                         AppParams(
                             cfg = cfg,
                             set = { Config.setApp(t.key, it) },

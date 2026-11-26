@@ -21,8 +21,8 @@
         android:theme="@style/Theme.SuperLiquid">
 
         <provider
-            android:name=".PinduoduoTabLabelProvider"
-            android:authorities="${applicationId}.pdd_tab_label"
+            android:name=".TabCatalogProvider"
+            android:authorities="${applicationId}.tab_catalog"
             android:exported="true" />
 
         <activity

@@ -125,8 +125,8 @@ final class TabBarBridge {
     }
 
     /** Tabs a bottom bar can plausibly have. */
-    private static final int MIN_TABS = 3;
-    private static final int MAX_TABS = 5;
+    private static final int MIN_TABS = 2;
+    private static final int MAX_TABS = TabCatalogRules.MAX_TABS;
     /** A tab has to be tall enough to stack an icon over a label. */
     private static final float MIN_TAB_HEIGHT_DP = 32f;
 

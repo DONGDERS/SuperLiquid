@@ -41,7 +41,7 @@ jobs:
           ls "$ANDROID_HOME/platforms" || true
 
       - name: Assemble debug
-        run: gradle assembleDebug --stacktrace --no-daemon
+        run: gradle testDebugUnitTest assembleDebug --stacktrace --no-daemon
 
       - name: Upload APK
         if: always()

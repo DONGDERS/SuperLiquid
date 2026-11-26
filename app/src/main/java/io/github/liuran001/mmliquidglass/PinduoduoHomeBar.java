@@ -12,28 +12,18 @@ import android.widget.TextView;
 
 final class PinduoduoHomeBar {
     private static final String PREFIX = "com.xunmeng.pinduoduo.ui_home_activity.widget.tab.";
-    private static final int PAGE = 0x7f090236; // Native page sibling, excluding bar and divider.
-    private static final int DIVIDER = 0x7f090235;
-    private static final int WEB_VIEW = 0x7f090605;
     private static final String FRAME = "com.xunmeng.pinduoduo.ui_home_activity.widget.MainFrameContainerView";
-    private static final int TITLE = 0x7f09023d; // 7.96.0
-    private static final int VERSION = 79600;
     private static java.lang.ref.WeakReference<Activity> pending = new java.lang.ref.WeakReference<>(null);
     private static java.lang.ref.WeakReference<LiquidGlassHostLayout> installed = new java.lang.ref.WeakReference<>(null);
 
     private PinduoduoHomeBar() {}
 
     static void onHomeResume(Activity activity) {
-        if (!GlassConfig.enabled || pending.get() == activity) return;
+        if (!GlassConfig.enabled || activity.getPackageManager().getPackageUid(
+                activity.getPackageName(), 0) != android.os.Process.myUid() || pending.get() == activity) return;
         LiquidGlassHostLayout old = installed.get();
         if (old != null && old.isAttachedToWindow()
                 && old.getRootView() == activity.getWindow().getDecorView()) return;
-        try {
-            if (activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0)
-                    .versionCode != VERSION) return;
-        } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {
-            return;
-        }
         pending = new java.lang.ref.WeakReference<>(activity);
         View decor = activity.getWindow().getDecorView();
         decor.post(() -> probe(activity, decor, 0));
@@ -78,49 +68,74 @@ final class PinduoduoHomeBar {
             View child = bar.getChildAt(i);
             if (child.getVisibility() != View.VISIBLE) continue;
             if ((PREFIX + "TabRelativeLayout").equals(child.getClass().getName())
-                    && child.findViewById(TITLE) instanceof TextView) tabs.add(child);
+                    && titleView(child) != null) tabs.add(child);
         }
         return tabs;
     }
 
-    private static View campaignTab(java.util.List<View> tabs) {
-        // Only classify the extra slot when all four regular tabs are present.
-        if (tabs.size() != 5) return null;
-        java.util.Set<String> regular = new java.util.HashSet<>(
-                java.util.Arrays.asList("首页", "多多视频", "聊天", "个人中心"));
-        View campaign = null;
-        for (View tab : tabs) {
-            TextView title = tab.findViewById(TITLE);
-            if (!regular.remove(title.getText().toString().trim())) {
-                if (campaign != null) return null;
-                campaign = tab;
+    private static TextView titleView(View view) {
+        if (view instanceof TextView text) return text;
+        if (view instanceof ViewGroup group) {
+            for (int i=0; i<group.getChildCount(); i++) {
+                TextView found = titleView(group.getChildAt(i));
+                if (found != null && found.getVisibility() == View.VISIBLE) return found;
             }
         }
-        return regular.isEmpty() ? campaign : null;
+        return null;
     }
 
-    private static boolean needsMaterialOnly(ViewGroup page, View campaign) {
-        if (campaign != null) {
-            TextView title = campaign.findViewById(TITLE);
-            if (title.isSelected()) return true;
+    private static boolean needsMaterialOnly(ViewGroup page) {
+        return findWebView(page);
+    }
+
+    private static boolean findWebView(View view) {
+        if (view instanceof android.webkit.WebView && view.isShown()
+                && view.getWidth() > 0 && view.getHeight() > 0) return true;
+        if (view instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View child = group.getChildAt(i);
+                if (child != view && findWebView(child)) return true;
+            }
         }
-        View web = page.findViewById(WEB_VIEW);
-        return web != null && web.isShown() && web.getWidth() > 0 && web.getHeight() > 0;
+        return false;
+    }
+
+    private static ViewGroup findPage(ViewGroup frame, ViewGroup bar) {
+        ViewGroup best = null;
+        long area = 0;
+        for (int i=0; i<frame.getChildCount(); i++) {
+            View child = frame.getChildAt(i);
+            if (child == bar || !(child instanceof ViewGroup candidate) || !child.isShown()
+                    || child.getWidth() <= 0 || child.getHeight() <= 0) continue;
+            long next = (long) child.getWidth() * child.getHeight();
+            if (next > area) { best = candidate; area = next; }
+        }
+        return best;
+    }
+
+    private static View findDivider(ViewGroup frame, ViewGroup bar) {
+        int maxHeight = Math.max(2, Math.round(2 * frame.getResources().getDisplayMetrics().density));
+        for (int i=0; i<frame.getChildCount(); i++) {
+            View child = frame.getChildAt(i);
+            if (child != bar && child.getClass() == View.class && child.getWidth() >= frame.getWidth() * 0.7f
+                    && child.getHeight() > 0 && child.getHeight() <= maxHeight
+                    && Math.abs(child.getTop() - bar.getTop()) <= maxHeight * 3) return child;
+        }
+        return null;
     }
 
     private static boolean install(Activity activity, ViewGroup bar) {
         java.util.ArrayList<View> tabs = tabs(bar);
-        if (tabs.size() < 3 || tabs.size() > 6 || bar.getHeight() <= 0) return false;
+        if (tabs.size() < 2 || tabs.size() > TabCatalogRules.MAX_TABS || bar.getHeight() <= 0) return false;
         for (View tab : tabs) if (tab.getWidth() <= 0 || tab.getHeight() <= 0) return false;
         View content = activity.findViewById(android.R.id.content);
         if (!(content instanceof FrameLayout) || !(bar.getParent() instanceof ViewGroup)) return false;
         FrameLayout parent = (FrameLayout) content;
         ViewGroup frame = (ViewGroup) bar.getParent();
         if (!FRAME.equals(frame.getClass().getName()) || frame.getParent() != parent) return false;
-        View page = frame.findViewById(PAGE);
-        if (!(page instanceof ViewGroup) || page.getParent() != frame || page.getHeight() <= 0) return false;
-        ViewGroup backdrop = (ViewGroup) page;
-        View line = frame.findViewById(DIVIDER);
+        ViewGroup backdrop = findPage(frame, bar);
+        if (backdrop == null) return false;
+        View line = findDivider(frame, bar);
         final View divider = line != null && line.getParent() == frame && line.getClass() == View.class
                 ? line : null;
         float dividerAlpha = divider == null ? 0f : divider.getAlpha();
@@ -131,11 +146,11 @@ final class PinduoduoHomeBar {
         int reserve = Math.max(0, parent.getHeight() - (location[1] - origin[1] + bar.getHeight()));
         LinearLayout row = new LinearLayout(activity);
         row.setOrientation(LinearLayout.HORIZONTAL);
-        View campaign = campaignTab(tabs);
         for (View tab : tabs) {
-            View copy = new TabCopy(tab, tab == campaign);
+            View copy = new TabCopy(tab);
             row.addView(copy, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, tab.getHeight()));
         }
+        RuntimeTabCatalog.watch(row, "pinduoduo");
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
@@ -155,7 +170,7 @@ final class PinduoduoHomeBar {
             FrameLayout.LayoutParams glassLp = (FrameLayout.LayoutParams) host.getLayoutParams();
             glassLp.bottomMargin += reserve;
             host.setLayoutParams(glassLp);
-            LiquidGlassInstaller.setMaterialOnly(host, backdrop, needsMaterialOnly(backdrop, campaign));
+            LiquidGlassInstaller.setMaterialOnly(host, backdrop, needsMaterialOnly(backdrop));
             bar.setAlpha(0f);
             if (divider != null) divider.setAlpha(0f);
             bar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
@@ -173,7 +188,7 @@ final class PinduoduoHomeBar {
                 live.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
                 if (visible && bar.getAlpha() != 0f) bar.setAlpha(0f);
                 if (visible && divider != null && divider.getAlpha() != 0f) divider.setAlpha(0f);
-                LiquidGlassInstaller.setMaterialOnly(live, backdrop, needsMaterialOnly(backdrop, campaign));
+                LiquidGlassInstaller.setMaterialOnly(live, backdrop, needsMaterialOnly(backdrop));
                 for (int i = 0; i < row.getChildCount(); i++) ((TabCopy) row.getChildAt(i)).sync();
                 return true;
             };
@@ -223,14 +238,10 @@ final class PinduoduoHomeBar {
         private final int naturalWidth;
         final TextView title;
 
-        private final boolean campaign;
-        private String reportedLabel;
-
-        TabCopy(View source, boolean campaign) {
+        TabCopy(View source) {
             super(source.getContext());
             this.source = source;
-            this.campaign = campaign;
-            title = source.findViewById(TITLE);
+            title = titleView(source);
             naturalWidth = Math.round(44f * getResources().getDisplayMetrics().density);
             setOnClickListener(v -> {
                 if (!source.performClick() && source instanceof ViewGroup) {
@@ -247,8 +258,7 @@ final class PinduoduoHomeBar {
         }
 
         String layoutTitle() {
-            return campaign ? PinduoduoTabLabelProvider.CAMPAIGN_KEY
-                    : title.getText().toString().trim();
+            return title.getText().toString().trim();
         }
 
         void sync() {
@@ -259,17 +269,7 @@ final class PinduoduoHomeBar {
                 setContentDescription(label);
             }
             if (title.isSelected()) HostApp.PINDUODUO.accentOverride = title.getCurrentTextColor();
-            if (campaign) {
-                String campaignLabel = title.getText().toString().trim();
-                if (!campaignLabel.isEmpty() && !campaignLabel.equals(reportedLabel)) {
-                    reportedLabel = campaignLabel;
-                    try {
-                        PinduoduoTabLabelProvider.publish(getContext(), campaignLabel);
-                    } catch (RuntimeException e) {
-                        LiquidGlassModule.logErr("pinduoduo: campaign label sync failed", e);
-                    }
-                }
-            }
+
         }
 
         @Override protected void onMeasure(int widthSpec, int heightSpec) {

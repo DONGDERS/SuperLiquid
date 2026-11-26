@@ -17,7 +17,7 @@ android {
         applicationId = "dongder.super.liquid"
         minSdk = 33
         targetSdk = 37
-        versionCode = 87
+        versionCode = 88
         versionName = "0.5.2-R1"
     }
 
@@ -69,6 +69,7 @@ kotlin {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
     // libxposed API: provided by the LSPosed loader at hook time.
     compileOnly(files("libs/xposed-api-102.jar"))
     // Module-process bridge to LSPosed service (RemotePreferences for the UI).

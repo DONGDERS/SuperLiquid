@@ -11,40 +11,57 @@ import java.util.List;
 
 /** Keeps the native TabWidget indices stable while changing the on-screen order. */
 final class NativeTabLayout {
-    private static final String[] TAOBAO_TITLES = {"首页", "视频", "消息", "购物车", "我的淘宝"};
-    private static final String[] ALIPAY_TITLES = {"首页", "理财", "生活", "消息", "我的"};
     private static final int ORDER_TAG = 0x7e534c54;
-    private static final String TAOBAO_CELL = "com.taobao.tao.navigation.NavigationTabIndicatorView";
 
     private NativeTabLayout() {}
 
     static void applyTaobao(ViewGroup row) {
-        if (!(row instanceof TabWidget) || row.getChildCount() != TAOBAO_TITLES.length) return;
-        for (int index = 0; index < TAOBAO_TITLES.length; index++) {
-            if (!TAOBAO_CELL.equals(row.getChildAt(index).getClass().getName())) return;
-        }
-        apply(row, TAOBAO_TITLES);
+        if (!(row instanceof TabWidget) || row.getChildCount() < 2 || row.getChildCount() > TabCatalogRules.MAX_TABS) return;
+        apply(row, "taobao");
     }
     static void applyAlipay(ViewGroup row) {
-        if (!(row instanceof TabWidget) || row.getChildCount() != ALIPAY_TITLES.length) return;
+        if (!(row instanceof TabWidget) || row.getChildCount() < 2 || row.getChildCount() > TabCatalogRules.MAX_TABS) return;
         View home = row.getChildAt(0);
-        if (!"HomeTabWidgetItemView".equals(home.getClass().getSimpleName())) return;
         AlipayHomeBar.keepHomeLabelVisible(home);
-        apply(row, ALIPAY_TITLES);
+        apply(row, "alipay");
     }
-    private static void apply(ViewGroup row, String[] titles) {
-        if (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0) return;
+    private static void apply(ViewGroup row, String appKey) {
+        RuntimeTabCatalog.observeRow(row, appKey);
+        String[] titles = new String[row.getChildCount()];
+        List<String> nativeKeys = new ArrayList<>();
+        List<Integer> nativeIndices = new ArrayList<>();
+        for (int i = 0; i < titles.length; i++) {
+            View cell = row.getChildAt(i);
+            titles[i] = RuntimeTabCatalog.layoutKey(appKey, cell);
+            if (RuntimeTabCatalog.nativeVisibility(cell) == View.GONE) continue;
+            if (titles[i].isEmpty()) { restore(row); return; }
+            nativeKeys.add(titles[i]);
+            nativeIndices.add(i);
+        }
+        if (new java.util.HashSet<>(nativeKeys).size() != nativeKeys.size()) {
+            restore(row);
+            return;
+        }
+        if (!GlassConfig.matchesTabCatalog(nativeKeys)
+                || (GlassConfig.tabOrder.length == 0 && GlassConfig.tabHidden.length == 0)) {
+            restore(row);
+            return;
+        }
         List<String> hidden = Arrays.asList(GlassConfig.tabHidden);
-        List<Integer> order = new ArrayList<>(titles.length);
-        order.add(0);
+        List<Integer> order = new ArrayList<>(nativeKeys.size());
+        int entry = nativeIndices.get(0);
+        order.add(entry);
         for (String title : GlassConfig.tabOrder) {
             int index = Arrays.asList(titles).indexOf(title);
-            if (index > 0 && !order.contains(index) && isVisible(index, titles, hidden)) {
+            if (index >= 0 && RuntimeTabCatalog.nativeVisibility(row.getChildAt(index)) != View.GONE
+                    && index != entry && !order.contains(index)
+                    && isVisible(index, titles, hidden, nativeIndices.get(nativeIndices.size() - 1))) {
                 order.add(index);
             }
         }
-        for (int index = 1; index < titles.length; index++) {
-            if (!order.contains(index) && isVisible(index, titles, hidden)) order.add(index);
+        for (int index : nativeIndices) {
+            if (!order.contains(index)
+                    && isVisible(index, titles, hidden, nativeIndices.get(nativeIndices.size() - 1))) order.add(index);
         }
         int[] slots = new int[order.size()];
         for (int slot = 0; slot < slots.length; slot++) slots[slot] = order.get(slot);
@@ -54,10 +71,18 @@ final class NativeTabLayout {
             View cell = row.getChildAt(index);
             if (cell.getVisibility() != visibility) cell.setVisibility(visibility);
         }
+        RuntimeTabCatalog.markApplied(row);
     }
 
-    private static boolean isVisible(int index, String[] titles, List<String> hidden) {
-        return index == titles.length - 1 || !hidden.contains(titles[index]);
+    private static void restore(ViewGroup row) {
+        boolean hadOrder = row.getTag(ORDER_TAG) != null;
+        row.setTag(ORDER_TAG, null);
+        RuntimeTabCatalog.restoreRow(row);
+        if (hadOrder) row.requestLayout();
+    }
+
+    private static boolean isVisible(int index, String[] titles, List<String> hidden, int lastNativeIndex) {
+        return index == lastNativeIndex || !hidden.contains(titles[index]);
     }
 
     private static int[] slots(ViewGroup row) {
@@ -65,9 +90,11 @@ final class NativeTabLayout {
         Object order = row.getTag(ORDER_TAG);
         if (!(order instanceof int[])) return null;
         int[] slots = (int[]) order;
+        if (slots.length != TabBarBridge.tabCount(row)) return null;
         for (int index : slots) {
-            if (index >= row.getChildCount()) return null;
+            if (index < 0 || index >= row.getChildCount()) return null;
         }
+        if (slots.length != TabBarBridge.tabCount(row)) return null;
         return slots;
     }
 
@@ -115,6 +142,14 @@ final class NativeTabLayout {
         return -1;
     }
 
+    static int currentTabIndex(ViewGroup row) {
+        View ancestor = row;
+        while (ancestor.getParent() instanceof View) {
+            ancestor = (View) ancestor.getParent();
+            if (ancestor instanceof TabHost) return ((TabHost) ancestor).getCurrentTab();
+        }
+        return -1;
+    }
     static int selectedSlot(ViewGroup row) {
         View ancestor = row;
         while (ancestor.getParent() instanceof View) {

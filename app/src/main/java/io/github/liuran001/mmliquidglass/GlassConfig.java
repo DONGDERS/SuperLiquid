@@ -64,6 +64,16 @@ public final class GlassConfig {
      *  JSON string arrays under <app>_tab_order / <app>_tab_hidden. */
     static volatile String[] tabOrder = new String[0];
     static volatile String[] tabHidden = new String[0];
+    private static volatile String tabCatalogToken = "";
+    private static volatile long hostVersionCode = -1;
+    private static volatile long hostUpdatedAt;
+
+    static boolean matchesTabCatalog(java.util.List<String> keys) {
+        return TabCatalogRules.matchesCatalog(tabCatalogToken, hostVersionCode, hostUpdatedAt, keys);
+    }
+    static boolean matchesTabCatalog(String[] keys) {
+        return matchesTabCatalog(java.util.Arrays.asList(keys));
+    }
 
     static volatile boolean enabled = true;
     public static final int DEFAULT_KUGOU_PLAYER_LIFT_DP = 20;
@@ -128,6 +138,9 @@ public final class GlassConfig {
         borderWidthScale = 1f;
         tabOrder = new String[0];
         tabHidden = new String[0];
+        tabCatalogToken = "";
+        hostVersionCode = -1;
+        hostUpdatedAt = 0;
         pubScale = 1f;
         pubBottomDp = 12;
         pubSideDp = 16;
@@ -167,6 +180,14 @@ public final class GlassConfig {
 
     static void load(Context ctx) {
         try {
+            android.content.pm.PackageInfo info = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0);
+            hostVersionCode = info.getLongVersionCode();
+            hostUpdatedAt = info.lastUpdateTime;
+        } catch (Exception failure) {
+            hostVersionCode = -1;
+            hostUpdatedAt = 0;
+        }
+        try {
             SharedPreferences p = ctx.getSharedPreferences(PREFS, 0);
             if (!moduleLayerRead) {
                 barOffsetDp = p.getInt("barOffsetDp", barOffsetDp);
@@ -202,6 +223,7 @@ public final class GlassConfig {
         if (!keyPrefix.isEmpty()) {
             tabOrder = readStrArray(p, keyPrefix + "_tab_order");
             tabHidden = readStrArray(p, keyPrefix + "_tab_hidden");
+            tabCatalogToken = p.getString(keyPrefix + "_tab_catalog", "");
         }
         moduleLayerRead = true;
         // Full applied-config snapshot: one log line answers "why does the
