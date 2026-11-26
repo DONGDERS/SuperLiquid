@@ -108,6 +108,9 @@ class MainActivity : ComponentActivity() {
                 LocalUiMode provides uiMode,
                 LocalColorMode provides appSettings.colorMode.value,
                 LocalEnableBlur provides settings.enableBlur,
+                io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg provides (settings.enableGlobalShaderBg &&
+                    android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM &&
+                    top.yukonga.miuix.kmp.shader.isRuntimeShaderSupported()),
                 LocalEnableFloatingBottomBar provides settings.enableFloatingBottomBar,
                 LocalEnableFloatingBottomBarBlur provides settings.enableFloatingBottomBarBlur,
             ) {
@@ -160,7 +163,7 @@ fun MainRoot(pager: PagerState) {
             // KSU MainScreen: the backdrop carries a surface base fill so an
             // uncaptured/empty layer reads as the theme surface, NOT black —
             // the bare rememberLayerBackdrop() was the grey-glass root cause.
-            val backdropSurface = when (LocalUiMode.current) {
+            val backdropSurface = if (io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current) androidx.compose.ui.graphics.Color.Transparent else when (LocalUiMode.current) {
                 UiMode.Miuix -> top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.surface
                 UiMode.Material -> androidx.compose.material3.MaterialTheme.colorScheme.surface
             }
@@ -316,6 +319,7 @@ fun MainRoot(pager: PagerState) {
                 // The floating glass bar is a Miuix-skin feature (KSU parity):
                 // it reads MiuixTheme, which the Mat branch does not provide.
                 UiMode.Material -> Scaffold(
+                    containerColor = if (io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current) androidx.compose.ui.graphics.Color.Transparent else androidx.compose.material3.MaterialTheme.colorScheme.background,
                     contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal),
                     bottomBar = {
                         NavigationBar {
@@ -337,6 +341,7 @@ fun MainRoot(pager: PagerState) {
                 ) { pad -> pagerContent(pad) }
 
                 UiMode.Miuix -> MiuixScaffold(
+                    containerColor = if (io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current) androidx.compose.ui.graphics.Color.Transparent else top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.surface,
                     contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal),
                     bottomBar = {
                         if (enableFloating) floatingBar() else {

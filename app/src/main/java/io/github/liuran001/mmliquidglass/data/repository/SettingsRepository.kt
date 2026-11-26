@@ -65,7 +65,7 @@ class SettingsRepositoryImpl : SettingsRepository {
         get() = p.getBoolean("enable_floating_bottom_bar_blur", false)
         set(value) { p.edit().putBoolean("enable_floating_bottom_bar_blur", value).apply() }
     override var enableGlobalShaderBg: Boolean
-        get() = p.getBoolean("enable_global_shader_bg", false)
+        get() = p.getBoolean("enable_global_shader_bg", true)
         set(value) { p.edit().putBoolean("enable_global_shader_bg", value).apply() }
     override var enableAppExpandLimit: Boolean
         get() = p.getBoolean("enable_app_expand_limit", true)

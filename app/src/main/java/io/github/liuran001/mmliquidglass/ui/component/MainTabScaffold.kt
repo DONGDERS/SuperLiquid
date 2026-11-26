@@ -43,7 +43,8 @@ internal fun MainTabScaffold(
 ) {
     val insets = WindowInsets(0, 0, 0, 0)
     val mode = LocalUiMode.current
-    val surface = when (mode) {
+    val globalShader = io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current
+    val surface = if (globalShader) Color.Transparent else when (mode) {
         UiMode.Material -> MaterialTheme.colorScheme.surface
         UiMode.Miuix -> MiuixTheme.colorScheme.surface
     }
@@ -53,6 +54,7 @@ internal fun MainTabScaffold(
             val scroll = TopAppBarDefaults.pinnedScrollBehavior()
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
+                containerColor = if (globalShader) Color.Transparent else MaterialTheme.colorScheme.background,
                 topBar = {
                     BlurredBar(backdrop, surface = surface) {
                         Column {
@@ -79,6 +81,7 @@ internal fun MainTabScaffold(
             val scroll = MiuixScrollBehavior()
             MiuixScaffold(
                 modifier = Modifier.fillMaxSize(),
+                containerColor = if (globalShader) Color.Transparent else MiuixTheme.colorScheme.surface,
                 topBar = {
                     BlurredBar(backdrop, surface = surface) {
                         MiuixTopAppBar(

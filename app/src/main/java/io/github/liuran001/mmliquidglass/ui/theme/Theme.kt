@@ -133,6 +133,8 @@ fun isInDarkTheme(): Boolean {
 val LocalColorMode = staticCompositionLocalOf { 0 }
 
 val LocalEnableBlur = staticCompositionLocalOf { false }
+/** True when the global shader background is drawn behind every page. */
+val LocalGlobalShaderBg = staticCompositionLocalOf { false }
 
 val LocalEnableFloatingBottomBar = staticCompositionLocalOf { false }
 
