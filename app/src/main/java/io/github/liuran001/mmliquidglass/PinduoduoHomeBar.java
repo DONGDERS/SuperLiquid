@@ -140,8 +140,7 @@ final class PinduoduoHomeBar {
     }
 
     private static final class ContentReserve {
-        private FrameLayout.LayoutParams expanded;
-        private int originalHeight;
+        private android.widget.RelativeLayout.LayoutParams expanded;
         private int originalBottomMargin;
 
         void remove(ViewGroup frame, ViewGroup page, View bar, View divider) {
@@ -152,24 +151,20 @@ final class PinduoduoHomeBar {
             // of PddTabView (which includes an extra header inside the bar).
             if (page.getBottom() >= edge || Math.abs(page.getBottom() - divider.getTop()) > 1
                     || divider.getTop() < bar.getTop() || divider.getTop() >= bar.getBottom()
-                    || !(page.getLayoutParams() instanceof FrameLayout.LayoutParams lp)
-                    || (lp.height == ViewGroup.LayoutParams.MATCH_PARENT && lp.bottomMargin == 0)) return;
-            originalHeight = lp.height;
+                    || !(page.getLayoutParams() instanceof android.widget.RelativeLayout.LayoutParams lp)
+                    || lp.height != ViewGroup.LayoutParams.MATCH_PARENT || lp.bottomMargin <= 0) return;
             originalBottomMargin = lp.bottomMargin;
-            expanded = new FrameLayout.LayoutParams(lp);
-            expanded.height = ViewGroup.LayoutParams.MATCH_PARENT;
-            expanded.bottomMargin = 0;
-            page.setLayoutParams(expanded);
+            expanded = lp;
+            // Keep the parent's relative rules and the host's top inset intact.
+            lp.bottomMargin = 0;
+            page.setLayoutParams(lp);
         }
 
         void restore(ViewGroup page) {
             if (expanded != null && page.getLayoutParams() == expanded
-                    && expanded.height == ViewGroup.LayoutParams.MATCH_PARENT
                     && expanded.bottomMargin == 0) {
-                FrameLayout.LayoutParams restored = new FrameLayout.LayoutParams(expanded);
-                restored.height = originalHeight;
-                restored.bottomMargin = originalBottomMargin;
-                page.setLayoutParams(restored);
+                expanded.bottomMargin = originalBottomMargin;
+                page.setLayoutParams(expanded);
             }
             expanded = null;
         }
