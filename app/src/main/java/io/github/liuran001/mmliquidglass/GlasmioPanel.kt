@@ -11,7 +11,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ComposeViewContext
+import androidx.compose.ui.platform.createLifecycleAwareWindowRecomposer
+
 import android.widget.FrameLayout
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.setViewTreeLifecycleOwner
@@ -56,30 +60,55 @@ internal class GlasmioPanel(
         configRevision++
         source.refresh()
     }
-    init {
-        val module = context.createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY)
-            .createConfigurationContext(context.resources.configuration)
-        addView(ComposeView(module).apply {
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
-            setContent {
+    private val moduleContext = context
+        .createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY)
+        .createConfigurationContext(context.resources.configuration)
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        removeAllViews()
+        val local = GlasmioOwner().also { owner = it }
+        setViewTreeLifecycleOwner(local)
+        setViewTreeSavedStateRegistryOwner(local)
+        val compose = ComposeView(moduleContext)
+        var firstDraw = true
+        try {
+            compose.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            compose.setContent {
                 configRevision
                 GlasmioTheme(isDark = dark) {
                     GlassSurface(
-                        modifier = Modifier.fillMaxSize(), backdrop = source, shape = Capsule(),
+                        modifier = Modifier.fillMaxSize().drawWithContent {
+                            drawContent()
+                            if (firstDraw && size.width > 0f && size.height > 0f) {
+                                firstDraw = false
+                                LiquidGlassModule.log(android.util.Log.INFO, "Glasmio Railway first draw")
+                            }
+                        },
+                        backdrop = source, shape = Capsule(),
                         material = NavigationGlassMaterial.RegularSmall,
                         frostRadius = (5f * GlassConfig.blurRadius.coerceIn(1, 8) / 3f).dp,
                         navigationSurfaceAlphaMultiplier = GlassConfig.tintStrength.coerceIn(.2f, 2f),
                     ) {}
                 }
             }
-        }, LayoutParams(-1, -1))
-    }
-    override fun onAttachedToWindow() {
-        val local = GlasmioOwner().also { owner = it }
-        setViewTreeLifecycleOwner(local)
-        setViewTreeSavedStateRegistryOwner(local)
-        local.start()
-        super.onAttachedToWindow()
+            // The native content root has no Compose lifecycle. Keep the recomposer local.
+            compose.createComposition(ComposeViewContext(
+                view = this,
+                compositionContext = createLifecycleAwareWindowRecomposer(lifecycle = local.lifecycle),
+                lifecycleOwner = local,
+                savedStateRegistryOwner = local,
+            ))
+            addView(compose, LayoutParams(-1, -1))
+            local.start()
+        } catch (error: Throwable) {
+            compose.disposeComposition()
+            removeView(compose)
+            local.stop()
+            owner = null
+            failed(error)
+            return
+        }
         viewTreeObserver.addOnPreDrawListener(beforeDraw)
     }
     override fun onDetachedFromWindow() {
