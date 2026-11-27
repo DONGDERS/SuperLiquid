@@ -408,7 +408,7 @@ final class LiquidGlassInstaller {
             // Horizontal position knob: shift the whole glass (pill + bar)
             // sideways; 0 keeps the stock centre alignment.
             final int xo = GlassConfig.barOffsetXDp;
-            if (xo != 0) {
+            if (xo != 0 && LiquidGlassModule.app() != HostApp.RAILWAY) {
                 host.post(() -> {
                     try {
                         host.setTranslationX(Math.round(xo * density));
@@ -419,7 +419,7 @@ final class LiquidGlassInstaller {
             }
             // Whole-tab-bar size knob: uniform view scale, pivot bottom-centre.
             final float ps = GlassConfig.pillScale;
-            if (ps != 1f) {
+            if (ps != 1f && LiquidGlassModule.app() != HostApp.RAILWAY) {
                 // Apply only after a REAL layout pass: pre-layout dims give
                 // pivot 0/0 (scale unfolds from the top-left = squashed and
                 // skewed until the first touch re-applied it per-frame).
@@ -2720,6 +2720,7 @@ final class LiquidGlassInstaller {
             // see LiquidGlassPanel.
             final LiquidGlassPanel glass =
                     new LiquidGlassPanel(ctx, backdrop, density, night);
+            if (LiquidGlassModule.app() == HostApp.RAILWAY) glass.useAppTuning();
             host.addView(glass, 0, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT));

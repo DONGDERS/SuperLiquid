@@ -183,6 +183,15 @@ final class DropletPanel extends View {
         // reject heybox's neutral selected state into the WeChat-green
         // fallback.
         HostApp app = LiquidGlassModule.app();
+        if (app == HostApp.RAILWAY) {
+            for (int i = 0; i < tabRow.getChildCount(); i++) {
+                if (tabRow.getChildAt(i) instanceof RailwayHomeBar.TabCopy copy && copy.source.isChecked()) {
+                    mAccentCache = copy.source.getCurrentTextColor();
+                    return mAccentCache;
+                }
+            }
+            return mAccentCache != 0 ? mAccentCache : (mNight ? 0xFFFFFFFF : 0xFF1C1C1E);
+        }
         if (app != null && app.accentOverride != 0) {
             return app.accentOverride;
         }

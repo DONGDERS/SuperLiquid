@@ -121,6 +121,7 @@ public class LiquidGlassModule extends XposedModule {
                                     // vanish on this device (see r1/r2 logs)
                                     // while ERROR passes through reliably.
                                     log(android.util.Log.ERROR, "resume match hit");
+                                    if (app == HostApp.RAILWAY) GlassConfig.setModule(this, app.pkg);
                                     GlassConfig.load(activity);
                                     log(android.util.Log.ERROR, "resume config loaded");
                                     sResumeHits++;

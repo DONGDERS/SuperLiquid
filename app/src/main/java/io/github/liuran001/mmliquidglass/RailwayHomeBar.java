@@ -23,6 +23,8 @@ final class RailwayHomeBar {
     private static java.lang.ref.WeakReference<Activity> pending = new java.lang.ref.WeakReference<>(null);
     private static java.lang.ref.WeakReference<LiquidGlassHostLayout> installed = new java.lang.ref.WeakReference<>(null);
 
+    private static Runnable refreshConfig;
+
     private RailwayHomeBar() {}
 
     static void onHomeResume(Activity activity) {
@@ -30,7 +32,7 @@ final class RailwayHomeBar {
         if (old != null && old.isAttachedToWindow()
                 && old.getRootView() == activity.getWindow().getDecorView()) {
             if (!GlassConfig.enabled && old.getParent() instanceof ViewGroup parent) parent.removeView(old);
-            else old.invalidate();
+            else if (refreshConfig != null) refreshConfig.run();
             return;
         }
         if (!GlassConfig.enabled || pending.get() == activity) return;
@@ -102,10 +104,26 @@ final class RailwayHomeBar {
             LiquidGlassInstaller.install(row, page);
             if (!(row.getParent() instanceof LiquidGlassHostLayout glass)) return false;
             host = glass;
-            // 12306 owns the window insets; keep the space beneath its native buttons.
-            FrameLayout.LayoutParams glassParams = (FrameLayout.LayoutParams) glass.getLayoutParams();
-            glassParams.bottomMargin += extraBottom;
-            glass.setLayoutParams(glassParams);
+            Runnable applyConfig = () -> {
+                TabLayoutApplier.apply(row, KEY);
+                FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) glass.getLayoutParams();
+                int width = LiquidGlassInstaller.hugContentWidth(row, density, parent.getWidth());
+                if (width > 0) params.width = width + glass.shadowPad() * 2;
+                // Anchor the visible pill, not its transparent shadow padding.
+                params.bottomMargin = extraBottom + Math.round(density * GlassConfig.barOffsetDp)
+                        - glass.shadowPad();
+                glass.setLayoutParams(params);
+                glass.setTranslationX(Math.round(density * GlassConfig.barOffsetXDp));
+                glass.setScaleX(GlassConfig.pillScale);
+                glass.setScaleY(GlassConfig.pillScale);
+                for (int i = 0; i < glass.getChildCount(); i++) glass.getChildAt(i).invalidate();
+                glass.invalidate();
+            };
+            glass.addOnLayoutChangeListener((v, l, t, r, b, oldL, oldT, oldR, oldB) -> {
+                glass.setPivotX((r - l) / 2f);
+                glass.setPivotY(b - t - glass.shadowPad());
+            });
+            applyConfig.run();
             ViewTreeObserver observer = glass.getViewTreeObserver();
             PageReserve reserve = new PageReserve();
             TipsLift lift = new TipsLift();
@@ -143,6 +161,7 @@ final class RailwayHomeBar {
                 @Override public void onViewAttachedToWindow(View v) {}
                 @Override public void onViewDetachedFromWindow(View v) {
                     if (observer.isAlive()) observer.removeOnPreDrawListener(sync);
+                    if (refreshConfig == applyConfig) refreshConfig = null;
                     lift.update(null, 0);
                     reserve.restore(page);
                     LiquidGlassInstaller.setMaterialOnly(glass, page, false);
@@ -152,6 +171,7 @@ final class RailwayHomeBar {
                 }
             });
             installed = new java.lang.ref.WeakReference<>(glass);
+            refreshConfig = applyConfig;
             success = true;
             LiquidGlassModule.log(android.util.Log.INFO, "railway: native tabs mirrored");
             return true;
