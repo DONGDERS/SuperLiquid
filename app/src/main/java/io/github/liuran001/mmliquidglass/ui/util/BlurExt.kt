@@ -30,10 +30,9 @@ fun BlurredBar(
     surface: Color? = null,
     content: @Composable () -> Unit,
 ) {
-    val globalShader = io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current
     val tint = surface ?: MiuixTheme.colorScheme.surface
     Box(
-        modifier = if (!globalShader && blurActive && backdrop != null) {
+        modifier = if (blurActive && backdrop != null) {
             Modifier.textureBlur(
                 backdrop = backdrop,
                 shape = RectangleShape,

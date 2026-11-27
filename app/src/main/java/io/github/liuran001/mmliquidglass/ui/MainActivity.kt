@@ -115,9 +115,7 @@ class MainActivity : ComponentActivity() {
                 LocalEnableFloatingBottomBarBlur provides settings.enableFloatingBottomBarBlur,
             ) {
                 io.github.liuran001.mmliquidglass.ui.theme.KernelSUTheme(appSettings = appSettings) {
-                    io.github.liuran001.mmliquidglass.ui.component.miuix.GlobalShaderBackground {
-                        MainRoot(pagerState)
-                    }
+                    MainRoot(pagerState)
                 }
             }
         }
@@ -163,19 +161,15 @@ fun MainRoot(pager: PagerState) {
             val settings = SettingsState.flow.collectAsStateWithLifecycle().value
             val enableFloating = LocalUiMode.current == UiMode.Miuix && settings.enableFloatingBottomBar
             val globalShader = io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current
-            val shaderBackdrop = io.github.liuran001.mmliquidglass.ui.component.miuix.LocalGlobalShaderBackdrop.current
             val backdropSurface = when (LocalUiMode.current) {
                 UiMode.Miuix -> top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.surface
                 UiMode.Material -> androidx.compose.material3.MaterialTheme.colorScheme.surface
             }
             val pageBackdrop =
                 top.yukonga.miuix.kmp.blur.rememberLayerBackdrop {
-                    if (!globalShader) drawRect(backdropSurface)
+                    drawRect(backdropSurface)
                     drawContent()
                 }
-            val floatingBackdrop = if (shaderBackdrop != null) {
-                io.github.liuran001.mmliquidglass.ui.component.liquid.rememberCombinedBackdrop(shaderBackdrop, pageBackdrop)
-            } else pageBackdrop
             // KSU: capture only when the floating glass bar actually blurs.
             val captureGlass = enableFloating && settings.enableFloatingBottomBarBlur
             val blurBackdrop = io.github.liuran001.mmliquidglass.ui.util.rememberBlurBackdrop(
@@ -217,28 +211,30 @@ fun MainRoot(pager: PagerState) {
                             else Modifier
                         )
                 ) {
-                    HorizontalPager(
-                        pager,
-                        beyondViewportPageCount = 2,
-                        modifier = Modifier.fillMaxSize()
-                    ) { page ->
-                        when (page) {
-                            0 -> HomeScreen(
-                                bottomOverlay = bottomOverlay,
-                                onOpenAbout = {
-                                    // Rapid double-tap guard: pushing the same NavKey twice
-                                    // crashes NavDisplay at reconcile (duplicate route key).
-                                    if (backStack.lastOrNull() !is RouteAbout) backStack.add(RouteAbout)
-                                },
-                            )
-                            1 -> AppsScreen(bottomOverlay)
-                            else -> io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsPage(
-                                bottomOverlay = bottomOverlay,
-                                onOpenTheme = {
-                                    if (backStack.lastOrNull() !is RouteColorPalette) backStack.add(RouteColorPalette)
-                                },
-                                onResetDefaults = { Config.resetDefaults() },
-                            )
+                    io.github.liuran001.mmliquidglass.ui.component.miuix.PageShaderBackground {
+                        HorizontalPager(
+                            pager,
+                            beyondViewportPageCount = 2,
+                            modifier = Modifier.fillMaxSize()
+                        ) { page ->
+                            when (page) {
+                                0 -> HomeScreen(
+                                    bottomOverlay = bottomOverlay,
+                                    onOpenAbout = {
+                                        // Rapid double-tap guard: pushing the same NavKey twice
+                                        // crashes NavDisplay at reconcile (duplicate route key).
+                                        if (backStack.lastOrNull() !is RouteAbout) backStack.add(RouteAbout)
+                                    },
+                                )
+                                1 -> AppsScreen(bottomOverlay)
+                                else -> io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsPage(
+                                    bottomOverlay = bottomOverlay,
+                                    onOpenTheme = {
+                                        if (backStack.lastOrNull() !is RouteColorPalette) backStack.add(RouteColorPalette)
+                                    },
+                                    onResetDefaults = { Config.resetDefaults() },
+                                )
+                            }
                         }
                     }
                 }
@@ -288,7 +284,7 @@ fun MainRoot(pager: PagerState) {
                     FloatingBottomBar(
                         selectedIndex = selectedPage,
                         onSelected = { goto(it) },
-                        backdrop = floatingBackdrop,
+                        backdrop = pageBackdrop,
                         tabsCount = NAV.size,
                         isBlurEnabled = settings.enableFloatingBottomBarBlur,
                     ) { activateTab ->

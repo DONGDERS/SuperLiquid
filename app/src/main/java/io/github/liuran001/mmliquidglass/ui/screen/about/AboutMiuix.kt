@@ -108,18 +108,16 @@ fun AboutScreenMiuix(
         }
     }
 
-    val globalShader = io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current
     val enableBlur = LocalEnableBlur.current
-    val barBlurBackdrop = rememberBlurBackdrop(enableBlur && !globalShader)
+    val barBlurBackdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = barBlurBackdrop != null && scrollProgress == 1f
-    val barColor = if (globalShader || blurActive) {
+    val barColor = if (blurActive) {
         Color.Transparent
     } else {
         if (scrollProgress == 1f) colorScheme.surface else Color.Transparent
     }
 
     Scaffold(
-        containerColor = if (globalShader) Color.Transparent else colorScheme.surface,
         topBar = {
             BlurredBar(backdrop = barBlurBackdrop, blurActive = blurActive) {
                 SmallTopAppBar(
@@ -177,12 +175,10 @@ private fun AboutContent(
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
 
-    val globalShader = io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current
-    val backdrop = io.github.liuran001.mmliquidglass.ui.component.miuix.LocalGlobalShaderBackdrop.current
-        ?: rememberLayerBackdrop()
+    val backdrop = rememberLayerBackdrop()
 
     val isInDark = isInDarkTheme()
-    val enableBlur = LocalEnableBlur.current || globalShader
+    val enableBlur = LocalEnableBlur.current
     val effectBackground =
         remember(enableBlur) { isRuntimeShaderSupported() && enableBlur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM }
 
@@ -260,7 +256,6 @@ private fun AboutContent(
     )
 
     BgEffectBackground(
-        drawBackground = !globalShader,
         dynamicBackground = effectBackground,
         modifier = Modifier.fillMaxSize(),
         bgModifier = Modifier.layerBackdrop(backdrop),

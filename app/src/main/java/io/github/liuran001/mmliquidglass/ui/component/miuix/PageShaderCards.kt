@@ -2,6 +2,7 @@ package io.github.liuran001.mmliquidglass.ui.component.miuix
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -22,16 +23,16 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 
-val LocalGlobalShaderBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
+val LocalPageShaderBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 
 @Composable
-fun GlobalShaderBackground(content: @Composable () -> Unit) {
+fun PageShaderBackground(content: @Composable BoxScope.() -> Unit) {
     if (!LocalGlobalShaderBg.current) {
-        content()
+        Box(Modifier.fillMaxSize(), content = content)
         return
     }
     val backdrop = rememberLayerBackdrop()
-    CompositionLocalProvider(LocalGlobalShaderBackdrop provides backdrop) {
+    CompositionLocalProvider(LocalPageShaderBackdrop provides backdrop) {
         Box(Modifier.fillMaxSize()) {
             BgEffectBackground(
                 dynamicBackground = true,
@@ -45,13 +46,13 @@ fun GlobalShaderBackground(content: @Composable () -> Unit) {
     }
 }
 
-/** Same native Miuix Card and blend tokens as the About page's links card. */
+/** About-style glass confined to the main pager; content keeps its theme color. */
 @Composable
 fun ShaderCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val backdrop = LocalGlobalShaderBackdrop.current
+    val backdrop = LocalPageShaderBackdrop.current
     if (backdrop == null) {
         Card(modifier = modifier, content = content)
         return
@@ -66,7 +67,7 @@ fun ShaderCard(
             colors = BlurColors(blendColors = blendColors),
             enabled = true,
         ),
-        colors = CardDefaults.defaultColors(Color.Transparent, Color.Transparent),
+        colors = CardDefaults.defaultColors(color = Color.Transparent),
         content = content,
     )
 }

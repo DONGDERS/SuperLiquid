@@ -176,6 +176,7 @@ private fun HomeInfoSection(title: String, rows: List<Pair<Int, String>>) {
                                 top.yukonga.miuix.kmp.basic.Icon(
                                     homeInfoIcon(label, UiMode.Miuix), contentDescription = null,
                                     modifier = Modifier.size(24.dp).padding(end = 0.dp),
+                                    tint = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.onSurface,
                                 )
                             },
                         )

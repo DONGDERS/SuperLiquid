@@ -17,7 +17,7 @@ android {
         applicationId = "dongder.super.liquid"
         minSdk = 33
         targetSdk = 37
-        versionCode = 96
+        versionCode = 97
         versionName = "0.5.2-R2"
     }
 
