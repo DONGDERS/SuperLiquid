@@ -113,7 +113,14 @@ internal class GlasmioPanel(
                             val width = key.width
                             val height = key.height
                             if (key.visibility == View.VISIBLE && width > 0 && height > 0) {
-                                val scale = minOf(1f, size.width / width, size.height / height)
+                                val heybox = LiquidGlassModule.app() == HostApp.HEYBOX
+                                // HeyBox snapshots are already shrunk to fit the standard bar.
+                                // Fit the visible snapshot rather than its padded tab column.
+                                val content = if (heybox) (key as? ViewGroup)?.getChildAt(0) else null
+                                val contentWidth = content?.width?.takeIf { it > 0 } ?: width
+                                val contentHeight = content?.height?.takeIf { it > 0 } ?: height
+                                val scale = minOf(if (heybox) 1.30f else 1f,
+                                    size.width / contentWidth, size.height / contentHeight)
                                 val canvas = drawContext.canvas.nativeCanvas
                                 val save = canvas.save()
                                 try {
@@ -140,6 +147,7 @@ internal class GlasmioPanel(
                                 }
                             },
                             backdrop = source,
+                            keepIndicatorCapsule = LiquidGlassModule.app() == HostApp.QQ,
                         )
                     }
                 }

@@ -273,6 +273,7 @@ fun <T> GlasmioNavigationBar(
     onItemBoundsChanged: ((T, Rect) -> Unit)? = null,
     compactItem: GlasmioTabItem<T>? = null,
     onItemIconBoundsChanged: ((T, Rect) -> Unit)? = null,
+    keepIndicatorCapsule: Boolean = false,
 ) {
     require(items.isNotEmpty())
     val compactState = remember(compactProgress) {
@@ -801,11 +802,13 @@ fun <T> GlasmioNavigationBar(
             selectionFeedbackEnabled,
             panelPressScale,
             isLtr,
+            keepIndicatorCapsule,
         ) {
             {
                 val flex = selectionFeedbackEnabled.value
                 scaleX = panelPressScale.value * if (flex) selectionMotion.scaleX else 1f
-                scaleY = panelPressScale.value * if (flex) selectionMotion.scaleY else 1f
+                scaleY = if (keepIndicatorCapsule) scaleX else panelPressScale.value *
+                    if (flex) selectionMotion.scaleY else 1f
                 translationX = if (flex && isLtr) selectionMotion.flexOffsetPx
                     else if (flex) -selectionMotion.flexOffsetPx else 0f
                 // drawBackdrop installs this block on the backdrop layer itself. Keep the
@@ -1030,6 +1033,7 @@ fun <T> GlasmioNavigationBar(
                 Box(
                     Modifier.fillMaxSize()
                         .tabIndicatorGeometry(
+                            verticalGrowth = if (keepIndicatorCapsule) 0.dp else 16.dp,
                             horizontalProgress = {
                                 if (appearance.usesRefraction) selectionPressProgressState.value else 0f
                             },
@@ -1419,11 +1423,14 @@ internal fun <T> BoxScope.MorphingSelectedNavigationItem(
 }
 
 // Tab indicator geometry from Glasmio 0.1.4 GlassControls.kt.
-private fun Modifier.tabIndicatorGeometry(horizontalProgress: () -> Float): Modifier =
+private fun Modifier.tabIndicatorGeometry(
+    horizontalProgress: () -> Float,
+    verticalGrowth: Dp,
+): Modifier =
     layout { measurable, constraints ->
         val growth = 16.dp.toPx() * horizontalProgress()
         val width = (constraints.maxWidth + growth).fastRoundToInt().coerceAtLeast(1)
-        val height = (constraints.maxHeight + growth).fastRoundToInt().coerceAtLeast(1)
+        val height = (constraints.maxHeight + verticalGrowth.toPx() * horizontalProgress()).fastRoundToInt().coerceAtLeast(1)
         val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(width, height))
         layout(constraints.maxWidth, constraints.maxHeight) {
             placeable.place((constraints.maxWidth - width) / 2, (constraints.maxHeight - height) / 2)
