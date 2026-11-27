@@ -141,8 +141,8 @@ final class RailwayHomeBar {
                 boolean changed = active ? reserve.expand(page, bar, divider, frame) : reserve.restore(page);
                 int checked = bar.getCheckedRadioButtonId();
                 boolean home = checked == homeId;
-                // This build keeps offscreen UC WebViews attached to the pager.
-                LiquidGlassInstaller.setMaterialOnly(glass, page, active && !home);
+                // Test build: keep backdrop capture enabled on every Railway tab.
+                LiquidGlassInstaller.setMaterialOnly(glass, page, false);
                 View tips = active && home && tipsId != 0 ? page.findViewById(tipsId) : null;
                 float offset = 0f;
                 if (tips != null && tips.isShown()) {
