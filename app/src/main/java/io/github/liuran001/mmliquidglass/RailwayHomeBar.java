@@ -239,13 +239,34 @@ final class RailwayHomeBar {
         }
     }
 
+    /** Read the native checked state, not the mirror from the preceding draw. */
+    static int selectedSlot(ViewGroup row) {
+        if (row == null) return -1;
+        int slot = 0;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View child = row.getChildAt(i);
+            if (child.getVisibility() == View.GONE) continue;
+            if (child instanceof TabCopy copy && copy.source.isChecked()) return slot;
+            slot++;
+        }
+        return -1;
+    }
+
     static final class TabCopy extends View {
         final RadioButton source;
 
         TabCopy(RadioButton source) {
             super(source.getContext());
             this.source = source;
-            setOnClickListener(v -> source.performClick());
+            setOnClickListener(v -> {
+                source.performClick();
+                if (getParent() instanceof ViewGroup row) {
+                    for (int i = 0; i < row.getChildCount(); i++) {
+                        if (row.getChildAt(i) instanceof TabCopy copy) copy.sync();
+                    }
+                }
+                LiquidGlassInstaller.requestSelectionSync();
+            });
             sync();
         }
 
@@ -260,9 +281,12 @@ final class RailwayHomeBar {
             if (!android.text.TextUtils.equals(getContentDescription(), label)) setContentDescription(label);
         }
 
+        int contentWidth() {
+            return Math.round(50f * getResources().getDisplayMetrics().density);
+        }
+
         @Override protected void onMeasure(int widthSpec, int heightSpec) {
-            int width = Math.round(50f * getResources().getDisplayMetrics().density);
-            setMeasuredDimension(resolveSize(width, widthSpec), resolveSize(source.getHeight(), heightSpec));
+            setMeasuredDimension(resolveSize(contentWidth(), widthSpec), resolveSize(source.getHeight(), heightSpec));
         }
 
         @Override protected void onDraw(Canvas canvas) {

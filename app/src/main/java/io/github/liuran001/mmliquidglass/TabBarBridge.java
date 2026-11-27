@@ -469,6 +469,9 @@ final class TabBarBridge {
         if (LiquidGlassModule.app() == HostApp.KUGOU) {
             return KugouHomeBar.selectedSlot(tabRow);
         }
+        if (LiquidGlassModule.app() == HostApp.RAILWAY) {
+            return RailwayHomeBar.selectedSlot(tabRow);
+        }
         if (NativeTabLayout.hasOrder(tabRow)) return NativeTabLayout.selectedSlot(tabRow);
         int slot = 0;
         for (int i = 0; i < tabRow.getChildCount(); i++) {

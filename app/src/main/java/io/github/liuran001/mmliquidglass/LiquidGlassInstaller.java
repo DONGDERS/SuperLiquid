@@ -1296,6 +1296,9 @@ final class LiquidGlassInstaller {
         if (v.getVisibility() != View.VISIBLE) {
             return 0;
         }
+        // Railway mirrors draw native content, but their laid-out width is
+        // already tuned. Feeding it back compounds the scale on every refresh.
+        if (v instanceof RailwayHomeBar.TabCopy copy) return copy.contentWidth();
         if (v instanceof ViewGroup) {
             ViewGroup g = (ViewGroup) v;
             int widest = 0;
@@ -1561,6 +1564,9 @@ final class LiquidGlassInstaller {
         }
         holdHidden(sHairlineRef.get(), false);
         if (app == HostApp.ALIPAY) {
+            // Check the current content before every draw: tab switches and
+            // asynchronous native relayouts can both recreate the bottom gap.
+            boolean pageRelayout = AlipayHomeBar.extendSecondaryPage(sPagerRef.get());
             AlipayHomeBar.hideChrome(sTabViewRef.get());
             ViewGroup row = sTabRowRef.get();
             NativeTabLayout.place(row);
@@ -1574,8 +1580,9 @@ final class LiquidGlassInstaller {
                     float dy = (home.getHeight() - icon.getHeight()) * 0.5f - icon.getTop();
                     setIconOnlyTranslation(icon, home.isSelected(), dy);
                 }
-                return iconRelayout;
+                return iconRelayout || pageRelayout;
             }
+            return pageRelayout;
         }
         if (app == HostApp.TAOBAO) {
             ViewGroup row = sTabRowRef.get();

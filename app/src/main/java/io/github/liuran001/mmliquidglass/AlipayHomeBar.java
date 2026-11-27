@@ -9,7 +9,6 @@ import android.widget.TabHost;
 import android.widget.TabWidget;
 import android.widget.TextView;
 
-import java.lang.ref.WeakReference;
 
 final class AlipayHomeBar {
     private static final int BACKGROUND = 0x4507001f;
@@ -69,8 +68,6 @@ final class AlipayHomeBar {
     }
 
     private static boolean sHomeSizeHooked;
-    private static WeakReference<View> sExpandedContent = new WeakReference<>(null);
-    private static FrameLayout.LayoutParams sDockedContentParams;
 
     static void hookHomeIconSizing(View home) {
         if (sHomeSizeHooked) return;
@@ -94,32 +91,20 @@ final class AlipayHomeBar {
         }
     }
 
-    static void extendSecondaryPage(ViewGroup content) {
+    /** Native TabHost reintroduces its docked-bar reserve during page switches. */
+    static boolean extendSecondaryPage(ViewGroup content) {
         if (content == null || content.getId() != android.R.id.tabcontent
-                || !(content.getParent() instanceof TabHost)) return;
-        if (sExpandedContent.get() != content) {
-            sExpandedContent = new WeakReference<>(content);
-            sDockedContentParams = null;
-        }
-        int tab = ((TabHost) content.getParent()).getCurrentTab();
-        if (!(content.getLayoutParams() instanceof FrameLayout.LayoutParams)) return;
-        FrameLayout.LayoutParams current = (FrameLayout.LayoutParams) content.getLayoutParams();
-        boolean fullHeight = current.height == ViewGroup.LayoutParams.MATCH_PARENT
-                && current.bottomMargin == 0;
-        // Logical indices, unchanged by the floating bar's visual order.
-        if (tab != 1 && tab != 3 && tab != 4) {
-            if (fullHeight && sDockedContentParams != null) {
-                content.setLayoutParams(sDockedContentParams);
-            }
-            sDockedContentParams = null;
-            return;
-        }
-        if (fullHeight) return;
-        sDockedContentParams = new FrameLayout.LayoutParams(current);
+                || !(content.getParent() instanceof TabHost tabs)
+                || tabs.getCurrentTab() < 0) return false;
+        if (!(content.getLayoutParams() instanceof FrameLayout.LayoutParams current)) return false;
+        if (current.height == ViewGroup.LayoutParams.MATCH_PARENT && current.bottomMargin == 0) return false;
+        // The floating bar overlays every tab, including home. Never restore
+        // a docked snapshot on return: that is precisely the revived gap.
         FrameLayout.LayoutParams expanded = new FrameLayout.LayoutParams(current);
         expanded.height = ViewGroup.LayoutParams.MATCH_PARENT;
         expanded.bottomMargin = 0;
         content.setLayoutParams(expanded);
+        return true;
     }
 
     static boolean keepSelectedHomeIconStill(ViewGroup row, View home) {
