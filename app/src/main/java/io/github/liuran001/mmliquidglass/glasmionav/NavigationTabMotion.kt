@@ -34,7 +34,7 @@ internal class NavigationTabMotion(
     private val heightPx: Float,
     private val dragCoordinateSpace: () -> LayoutCoordinates?,
     private val onDragStarted: NavigationTabMotion.(position: Offset) -> Unit,
-    private val onDragStopped: NavigationTabMotion.(position: Offset) -> Unit,
+    private val onDragStopped: NavigationTabMotion.(position: Offset, tap: Boolean) -> Unit,
     private val onDragCancelled: NavigationTabMotion.() -> Unit,
     private val onDrag: NavigationTabMotion.(position: Offset, amount: Offset) -> Unit,
 ) {
@@ -85,6 +85,7 @@ internal class NavigationTabMotion(
                 val down = awaitFirstDown(requireUnconsumed = false)
                 val downPosition = inTabCoordinates(down.position)
                 var previousX = downPosition.x
+                var moved = false
                 isDragging = true
                 try {
                     press()
@@ -94,14 +95,17 @@ internal class NavigationTabMotion(
                         val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
                         if (change.changedToUpIgnoreConsumed()) {
                             if (change.isConsumed) break
+                            change.consume()
                             isDragging = false
-                            onDragStopped(inTabCoordinates(change.position))
+                            val up = inTabCoordinates(change.position)
+                            onDragStopped(up, !moved && (up - downPosition).getDistance() <= viewConfiguration.touchSlop)
                             release()
                             break
                         }
                         if (change.position == change.previousPosition) continue
                         if (change.isConsumed) break
                         val position = inTabCoordinates(change.position)
+                        moved = moved || (position - downPosition).getDistance() > viewConfiguration.touchSlop
                         if (position.x != previousX) {
                             onDrag(position, position - downPosition)
                             previousX = position.x

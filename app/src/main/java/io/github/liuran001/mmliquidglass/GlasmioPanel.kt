@@ -8,6 +8,10 @@ import android.graphics.Canvas
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.ui.Alignment
+import io.github.neoruaa.glasmio.ui.GlasmioIconButton
+import io.github.neoruaa.glasmio.icons.SfIcon
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -41,8 +45,12 @@ internal class GlasmioPanel(
     context: Context, private val page: ViewGroup, night: Boolean,
     private val onSelected: (View) -> Unit,
     private val failed: (Throwable) -> Unit,
+    private val onAdd: Runnable? = null,
 ) : FrameLayout(context) {
     private var dark by mutableStateOf(night)
+    private var blur by mutableStateOf(configuredBlur())
+    private fun configuredBlur() = (5f * GlassConfig.blurRadius.coerceIn(1, 8) / 3f).dp
+    fun updateButton(night: Boolean) { dark = night }
     private var items by mutableStateOf(emptyList<GlasmioTabItem<View>>())
     private var selected by mutableStateOf<View?>(null)
     private var accent by mutableStateOf<Int?>(null)
@@ -75,6 +83,7 @@ internal class GlasmioPanel(
         if (items != tabs || selected !== key || dark != night || this.accent != accent ||
             contentColor != content || tabs.any { it.key.isDirty }
         ) refreshTabContent()
+        blur = configuredBlur()
         items = tabs
         selected = key
         this.accent = accent
@@ -101,6 +110,15 @@ internal class GlasmioPanel(
             compose.setContent {
                 val tabs = items
                 val expanded = remember { mutableStateOf(0f) }
+                if (onAdd != null) {
+                    GlasmioTheme(isDark = dark, colorScheme = glasmioColorScheme(dark)) {
+                        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            GlasmioIconButton(onClick = { onAdd.run() }, backdrop = source,
+                                size = minOf(maxWidth, maxHeight)) { SfIcon("plus", "发布") }
+                        }
+                    }
+                    return@setContent
+                }
                 if (tabs.isEmpty()) return@setContent
                 val scheme = accent?.let { glasmioColorScheme(dark, Color(it)) } ?: glasmioColorScheme(dark)
                 val defaults = defaultGlassColors(dark, scheme.primary)
@@ -147,6 +165,7 @@ internal class GlasmioPanel(
                                 }
                             },
                             backdrop = source,
+                            blurRadius = blur,
                             keepIndicatorCapsule = LiquidGlassModule.app() == HostApp.QQ,
                         )
                     }

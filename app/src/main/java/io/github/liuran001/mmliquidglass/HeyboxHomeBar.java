@@ -818,6 +818,7 @@ final class HeyboxHomeBar {
                 glp = converted;
             }
             parent.addView(host, glp);
+            GlasmioActionInstaller.install(host, backdrop, row);
             return host;
         } catch (Throwable t) {
             LiquidGlassModule.logErr("heybox: plus pill failed", t);

@@ -2005,12 +2005,12 @@ final class LiquidGlassInstaller {
                 }
                 try {
                     ViewGroup current = sTabRowRef.get();
+                    if (current == null) return true;
                     if (row != current) {
-                        clear();
                         row = current;
-                        if (row != null) installer = installGlasmio(host, backdrop, row);
+                        if (installer == null) installer = installGlasmio(host, backdrop, row);
+                        else installer.bindRow(row);
                     }
-                    if (installer == null) return true;
                     boolean active = tabView.isShown() && tabView.getParent() == host
                             && backdrop.isShown() && tabView.getAlpha() > 0f;
                     installer.show(true, active, host.isDark(), 0, 0, 1f, 1f,

@@ -274,6 +274,7 @@ fun <T> GlasmioNavigationBar(
     compactItem: GlasmioTabItem<T>? = null,
     onItemIconBoundsChanged: ((T, Rect) -> Unit)? = null,
     keepIndicatorCapsule: Boolean = false,
+    blurRadius: Dp = Dp.Unspecified,
 ) {
     require(items.isNotEmpty())
     val compactState = remember(compactProgress) {
@@ -433,14 +434,14 @@ fun <T> GlasmioNavigationBar(
                     touchAnchor = ((logicalX - center) / geometry.widthPx).coerceIn(-0.5f, 0.5f)
                     moveTo(center, geometry.widthPx)
                 },
-                onDragStopped = { position ->
+                onDragStopped = { position, tap ->
                     val compact = compactState.value >= 0.74f
                     val target = if (compact) selectedIndexState.value else touchedIndex(logicalTouchX(position))
                     val geometry = currentExpandedTabs.value
                     moveTo(geometry.center(target.toFloat()), geometry.widthPx)
                     if (compact) {
                         onExpandState.value()
-                    } else if (target != selectedItemIndexState.value) {
+                    } else if (tap || target != selectedItemIndexState.value) {
                         stableOnSelected(tabItemsState.value[target].key)
                     }
                     settlePlatter()
@@ -701,6 +702,7 @@ fun <T> GlasmioNavigationBar(
             pressLayerBlock,
             appearance,
             materialContext,
+            blurRadius,
         ) {
             Modifier.navigationGlassBackground(
                 backdrop = backdrop,
@@ -713,6 +715,7 @@ fun <T> GlasmioNavigationBar(
                 pressProgressState = pressProgressState,
                 layerBlock = pressLayerBlock,
                 appearance = appearance,
+                blurRadius = blurRadius,
             )
         }
         val hiddenLayerBackdropModifier = remember(tabsBackdrop) {
@@ -806,11 +809,10 @@ fun <T> GlasmioNavigationBar(
         ) {
             {
                 val flex = selectionFeedbackEnabled.value
-                scaleX = panelPressScale.value * if (flex) selectionMotion.scaleX else 1f
-                scaleY = if (keepIndicatorCapsule) scaleX else panelPressScale.value *
-                    if (flex) selectionMotion.scaleY else 1f
-                translationX = if (flex && isLtr) selectionMotion.flexOffsetPx
-                    else if (flex) -selectionMotion.flexOffsetPx else 0f
+                scaleX = panelPressScale.value * if (flex && !keepIndicatorCapsule) selectionMotion.scaleX else 1f
+                scaleY = panelPressScale.value * if (flex && !keepIndicatorCapsule) selectionMotion.scaleY else 1f
+                translationX = if (!flex || keepIndicatorCapsule) 0f
+                    else if (isLtr) selectionMotion.flexOffsetPx else -selectionMotion.flexOffsetPx
                 // drawBackdrop installs this block on the backdrop layer itself. Keep the
                 // complete refractive surface, highlight and shadows on the same alpha curve.
                 alpha = innerGlassVisibilityState.value
@@ -1035,7 +1037,7 @@ fun <T> GlasmioNavigationBar(
                         .tabIndicatorGeometry(
                             verticalGrowth = if (keepIndicatorCapsule) 0.dp else 16.dp,
                             horizontalProgress = {
-                                if (appearance.usesRefraction) selectionPressProgressState.value else 0f
+                                if (appearance.usesRefraction && !keepIndicatorCapsule) selectionPressProgressState.value else 0f
                             },
                         )
                         .then(indicatorBackdropModifier),

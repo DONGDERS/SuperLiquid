@@ -133,13 +133,17 @@ final class LiquidGlassHostLayout extends FrameLayout {
     }
 
     private View extremePanel;
+    private View standardAction;
+
+    void setStandardAction(View action) { standardAction = action; }
     private int standardAccessibility;
 
     void setExtremePanel(View panel) {
         if (extremePanel == panel) return;
-        if (extremePanel == null) standardAccessibility = mBar.getImportantForAccessibility();
+        View standard = mBar != null ? mBar : standardAction;
+        if (extremePanel == null && standard != null) standardAccessibility = standard.getImportantForAccessibility();
         extremePanel = panel;
-        mBar.setImportantForAccessibility(panel != null
+        if (standard != null) standard.setImportantForAccessibility(panel != null
                 ? IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : standardAccessibility);
         invalidate();
     }

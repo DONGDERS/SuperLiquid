@@ -14,13 +14,15 @@ import kotlin.math.roundToInt
 internal class GlasmioNavigationInstaller(
     private val container: FrameLayout,
     private val page: ViewGroup,
-    private val row: ViewGroup,
+    private var row: ViewGroup,
 ) {
     private var panel: GlasmioPanel? = null
     private var failed = false
     private var items = emptyList<GlasmioTabItem<View>>()
 
     fun activePanel(): View? = panel?.takeIf { !failed && it.visibility == View.VISIBLE && it.isLaidOut && it.width > 0 && it.height > 0 }
+
+    fun bindRow(next: ViewGroup) { row = next }
 
     @JvmOverloads
     fun show(
