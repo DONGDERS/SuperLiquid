@@ -130,7 +130,6 @@ val CompactBottomControlSize = 48.dp
 val NavigationBarSurfaceHeight = 62.dp
 
 private val ExpandedNavigationIconSize = 28.dp
-private val ExpandedNavigationItemHeight = 54.dp
 private val ExpandedNavigationItemMinWidth = 75.dp
 private val NavigationItemIconClearance = 4.dp
 
@@ -275,8 +274,10 @@ fun <T> GlasmioNavigationBar(
     onItemIconBoundsChanged: ((T, Rect) -> Unit)? = null,
     keepIndicatorCapsule: Boolean = false,
     blurRadius: Dp = Dp.Unspecified,
+    surfaceHeight: Dp = NavigationBarSurfaceHeight,
 ) {
     require(items.isNotEmpty())
+    val indicatorHeight = (surfaceHeight - 8.dp).coerceAtLeast(1.dp)
     val compactState = remember(compactProgress) {
         derivedStateOf { compactProgress.value.coerceIn(0f, 1f) }
     }
@@ -333,16 +334,16 @@ fun <T> GlasmioNavigationBar(
     val dragCoordinateSpace = remember { mutableStateOf<LayoutCoordinates?>(null) }
     ProvideGlassMaterialContext(materialContext) {
     BoxWithConstraints(
-        modifier.height(NavigationBarSurfaceHeight).onGloballyPositioned { dragCoordinateSpace.value = it },
+        modifier.height(surfaceHeight).onGloballyPositioned { dragCoordinateSpace.value = it },
         contentAlignment = Alignment.CenterStart,
     ) {
         val density = LocalDensity.current
         val fullWidthPx = constraints.maxWidth.toFloat()
         val compactWidthPx = with(density) { compactSize.toPx() }
-        val compactInsetPx = with(density) { (NavigationBarSurfaceHeight - compactSize).toPx() / 2f }
-        val expandedHeightPx = with(density) { NavigationBarSurfaceHeight.toPx() }
+        val compactInsetPx = with(density) { (surfaceHeight - compactSize).toPx() / 2f }
+        val expandedHeightPx = with(density) { surfaceHeight.toPx() }
         val surfaceGeometry = remember(
-            compactProgress, fullWidthPx, compactWidthPx, expandedHeightPx, compactInsetPx, density, compactSize,
+            compactProgress, fullWidthPx, compactWidthPx, expandedHeightPx, compactInsetPx, density, compactSize, surfaceHeight,
         ) {
             derivedStateOf {
                 val progress = compactProgress.value
@@ -351,7 +352,7 @@ fun <T> GlasmioNavigationBar(
                     layoutSize = Size(
                         lerp(fullWidthPx, compactWidthPx, layoutProgress),
                         with(density) {
-                            androidx.compose.ui.unit.lerp(NavigationBarSurfaceHeight, compactSize, layoutProgress).toPx()
+                            androidx.compose.ui.unit.lerp(surfaceHeight, compactSize, layoutProgress).toPx()
                         },
                     ),
                     visualSize = Size(
@@ -397,7 +398,7 @@ fun <T> GlasmioNavigationBar(
         val expandedTabWidthPx = expandedTabs.widthPx
         val labelMaxWidth = expandedTabs.labelMaxWidth(tabItems.size, density)
         val compactInnerWidthPx = (compactWidthPx - paddingPx * 2f).coerceAtLeast(1f)
-        val indicatorHeightPx = with(density) { ExpandedNavigationItemHeight.toPx() }
+        val indicatorHeightPx = with(density) { indicatorHeight.toPx() }
         val currentExpandedTabs = rememberUpdatedState(expandedTabs)
         val currentFullWidthPx = rememberUpdatedState(fullWidthPx)
         val currentPaddingPx = rememberUpdatedState(paddingPx)
@@ -487,7 +488,7 @@ fun <T> GlasmioNavigationBar(
             derivedStateOf { compactIndicatorVisibility(compactState.value) }
         }
         val indicatorSizeModifier = remember(
-            compactState, selectionMotion, compactInnerWidthPx, compactWidthPx, compactSize,
+            compactState, selectionMotion, compactInnerWidthPx, compactWidthPx, compactSize, indicatorHeight,
         ) {
             Modifier.layout { measurable, constraints ->
                 val progress = compactState.value
@@ -495,7 +496,7 @@ fun <T> GlasmioNavigationBar(
                 val width = constraints.constrainWidth((if (settled) compactWidthPx else
                     lerp(selectionMotion.widthPx, compactInnerWidthPx, progress)).roundToInt())
                 val height = constraints.constrainHeight((if (settled) compactSize else
-                    androidx.compose.ui.unit.lerp(ExpandedNavigationItemHeight, compactSize - 8.dp, progress)).roundToPx())
+                    androidx.compose.ui.unit.lerp(indicatorHeight, compactSize - 8.dp, progress)).roundToPx())
                 val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(width, height))
                 layout(width, height) { placeable.placeRelative(0, 0) }
             }
@@ -556,7 +557,7 @@ fun <T> GlasmioNavigationBar(
         val pressProgressState = selectionMotion.pressProgressState
         val platterPuff = remember { Animatable(0f, .001f) }
         val flexWidth = if (compactMode) compactWidthPx else fullWidthPx
-        val flexHeight = with(density) { (if (compactMode) compactSize else NavigationBarSurfaceHeight).toPx() }
+        val flexHeight = with(density) { (if (compactMode) compactSize else surfaceHeight).toPx() }
         val flexShortDimension = minOf(flexWidth, flexHeight) / density.density
         val flexLongDimension = maxOf(flexWidth, flexHeight) / density.density
         val flexSizeProgress = if (flexLongDimension < 120f) 0f else ((flexShortDimension - 44f) / 116f).coerceIn(0f, 1f)
@@ -821,6 +822,7 @@ fun <T> GlasmioNavigationBar(
         val indicatorBackdropModifier = if (hasSelection && !indicatorSettled) {
             remember(
                 sourceBackdrop,
+                backdrop,
                 tabsBackdrop,
                 compactState,
                 containerColor,
@@ -830,10 +832,12 @@ fun <T> GlasmioNavigationBar(
                 appearance,
                 isLtr,
                 tabItems.size,
+                keepIndicatorCapsule,
             ) {
                 Modifier
                     .drawPlainBackdrop(
-                        backdrop = if (appearance.usesRefraction) sourceBackdrop else emptyBackdrop(),
+                        backdrop = if (!appearance.usesRefraction) emptyBackdrop()
+                            else if (keepIndicatorCapsule) backdrop else sourceBackdrop,
                         shape = { Capsule() },
                         effects = {
                             if (appearance.usesRefraction) {
@@ -841,7 +845,7 @@ fun <T> GlasmioNavigationBar(
                                     style = NativeControlLensStyle.TabBarIndicator,
                                     liftProgress = selectionPressProgressState.value,
                                     isDark = !isLight,
-                                    liftedContent = tabsBackdrop,
+                                    liftedContent = if (keepIndicatorCapsule) null else tabsBackdrop,
                                 )
                             }
                         },
@@ -867,6 +871,26 @@ fun <T> GlasmioNavigationBar(
             Modifier
         }
 
+        val indicator: @Composable () -> Unit = {
+            if (hasSelection || compactMode) CompositionLocalProvider(LocalViewConfiguration provides navigationViewConfiguration) {
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer(indicatorPositionLayerBlock)
+                        .then(indicatorSizeModifier),
+                ) {
+                    Box(
+                        Modifier.fillMaxSize()
+                            .tabIndicatorGeometry(
+                                verticalGrowth = if (keepIndicatorCapsule) 0.dp else 16.dp,
+                                horizontalProgress = {
+                                    if (appearance.usesRefraction && !keepIndicatorCapsule) selectionPressProgressState.value else 0f
+                                },
+                            )
+                            .then(indicatorBackdropModifier),
+                    )
+                }
+            }
+        }
         // The platter's outermost-layer puff carries both ordinary content and the lens.
         // The lifted source retains its additional per-item 1.16 transform.
         CompositionLocalProvider(
@@ -895,6 +919,7 @@ fun <T> GlasmioNavigationBar(
                         .then(if (sharesContactSurface) Modifier else interactiveHighlight.modifier))
                 }
             }
+            if (keepIndicatorCapsule) indicator()
             Row(
                 modifier = Modifier
                     .then(surfaceSizeModifier)
@@ -968,7 +993,7 @@ fun <T> GlasmioNavigationBar(
             }
         }
 
-        if (hasSelection && !indicatorSettled && appearance.usesRefraction) {
+        if (hasSelection && !indicatorSettled && appearance.usesRefraction && !keepIndicatorCapsule) {
             CompositionLocalProvider(
                 LocalLiquidTabScale provides lensSourceTabContentScale,
                 LocalViewConfiguration provides navigationViewConfiguration,
@@ -1026,24 +1051,7 @@ fun <T> GlasmioNavigationBar(
             }
         }
 
-        if (hasSelection || compactMode) CompositionLocalProvider(LocalViewConfiguration provides navigationViewConfiguration) {
-            Box(
-                modifier = Modifier
-                    .graphicsLayer(indicatorPositionLayerBlock)
-                    .then(indicatorSizeModifier),
-            ) {
-                Box(
-                    Modifier.fillMaxSize()
-                        .tabIndicatorGeometry(
-                            verticalGrowth = if (keepIndicatorCapsule) 0.dp else 16.dp,
-                            horizontalProgress = {
-                                if (appearance.usesRefraction && !keepIndicatorCapsule) selectionPressProgressState.value else 0f
-                            },
-                        )
-                        .then(indicatorBackdropModifier),
-                )
-            }
-        }
+        if (!keepIndicatorCapsule) indicator()
         if (!compactMode) CompositionLocalProvider(LocalViewConfiguration provides navigationViewConfiguration) {
             // Keep input stationary and full-width while the lens moves to the pressed tab.
             // Per-item click semantics and keyboard activation remain in the content row.

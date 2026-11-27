@@ -67,7 +67,8 @@ internal class GlasmioNavigationInstaller(
         val maxWidth = (container.width - reserve).coerceAtLeast(1)
         val width = if (fitHost) maxWidth else
             ((82 * items.size + 8) * density * widthScale).roundToInt().coerceIn(1, maxWidth)
-        val height = (NavigationBarSurfaceHeight.value * density).roundToInt().coerceAtLeast(1)
+        val height = if (fitHost && LiquidGlassModule.app() == HostApp.QQ && row.height > 0) row.height
+            else (NavigationBarSurfaceHeight.value * density).roundToInt().coerceAtLeast(1)
         try {
             val view = panel ?: GlasmioPanel(container.context, page, night, { cell ->
                 if (cell.parent === row && cell.visibility == View.VISIBLE && cell.isEnabled) {
@@ -77,6 +78,7 @@ internal class GlasmioNavigationInstaller(
             }, ::fail)
                 .also {
                     panel = it
+                    it.updateSurfaceHeight(height)
                     it.update(items, selected, night, accent, content)
                     container.addView(it, FrameLayout.LayoutParams(width, height, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
                         .apply { bottomMargin = bottom })
@@ -95,6 +97,7 @@ internal class GlasmioNavigationInstaller(
             view.translationX = offsetX.toFloat()
             view.scaleX = scale
             view.scaleY = scale
+            view.updateSurfaceHeight(height)
             view.update(items, selected, night, accent, content)
             view.visibility = View.VISIBLE
             return true
