@@ -51,6 +51,9 @@ fun SettingsPage(
             Config.setUiMode(UiMode.entries[index].value)
             SettingsState.refresh()
         }
+        val performanceItems = listOf(stringResource(R.string.performance_standard), stringResource(R.string.performance_extreme))
+        val performanceIndex = if (Config.performanceMode == "extreme") 1 else 0
+        val selectPerformance: (Int) -> Unit = { Config.setPerformanceMode(if (it == 1) "extreme" else "standard") }
         val appearance = stringResource(R.string.settings_appearance)
         val configuration = stringResource(R.string.settings_config_management)
         when (LocalUiMode.current) {
@@ -77,6 +80,17 @@ fun SettingsPage(
                     }),
                 )
                 Spacer(Modifier.height(16.dp))
+                MaterialSectionTitle(stringResource(R.string.performance_title))
+                SegmentedColumn(modifier = Modifier.fillMaxWidth(), content = listOf({
+                    SegmentedDropdownItem(
+                        icon = Icons.Filled.DisplaySettings,
+                        title = stringResource(R.string.performance_title),
+                        summary = stringResource(R.string.performance_summary),
+                        items = performanceItems, selectedIndex = performanceIndex,
+                        onItemSelected = selectPerformance,
+                    )
+                }))
+                Spacer(Modifier.height(16.dp))
                 MaterialSectionTitle(configuration)
                 ConfigBackupRows(onResetDefaults, onDone = { SettingsState.refresh() })
             }
@@ -94,6 +108,16 @@ fun SettingsPage(
                         title = stringResource(R.string.settings_theme),
                         summary = stringResource(R.string.settings_theme_summary),
                         onClick = onOpenTheme,
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                SmallTitle(text = stringResource(R.string.performance_title), insideMargin = PaddingValues(16.dp, 8.dp))
+                io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
+                    OverlayDropdownPreference(
+                        title = stringResource(R.string.performance_title),
+                        summary = stringResource(R.string.performance_summary),
+                        items = performanceItems, selectedIndex = performanceIndex,
+                        onSelectedIndexChange = selectPerformance,
                     )
                 }
                 Spacer(Modifier.height(12.dp))

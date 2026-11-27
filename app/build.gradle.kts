@@ -17,7 +17,7 @@ android {
         applicationId = "dongder.super.liquid"
         minSdk = 33
         targetSdk = 37
-        versionCode = 106
+        versionCode = 107
         versionName = "0.5.2-R3"
     }
 
@@ -55,7 +55,10 @@ android {
 
     packaging {
         resources {
-            excludes += "META-INF/**"
+            excludes += "META-INF/*.SF"
+            excludes += "META-INF/*.RSA"
+            excludes += "META-INF/*.DSA"
+            excludes += "META-INF/*.kotlin_module"
             excludes += "META-INF/services/**"
             excludes += "**.properties"
         }
@@ -69,6 +72,8 @@ kotlin {
 }
 
 dependencies {
+    implementation("io.github.neoruaa.glasmio:glasmio-glass:0.1.4")
+    implementation("androidx.savedstate:savedstate:1.3.3")
     testImplementation("junit:junit:4.13.2")
     // libxposed API: provided by the LSPosed loader at hook time.
     compileOnly(files("libs/xposed-api-102.jar"))

@@ -652,7 +652,7 @@ final class DropletPanel extends View {
                         nw * 0.5f, nh * 0.5f);
             }
             c.translate(mPad - (self[0] - src[0]), mPad - (self[1] - src[1]));
-            if (pill instanceof LiquidGlassPanel
+            if (pill instanceof LiquidGlassPanel && pill.getVisibility() == VISIBLE
                     && ViewGeom.unscaledScreenPos(pill, mTmp)) {
                 int ps = c.save();
                 c.translate(mTmp[0] - src[0], mTmp[1] - src[1]);

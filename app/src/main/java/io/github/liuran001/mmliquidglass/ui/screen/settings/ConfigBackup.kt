@@ -20,6 +20,7 @@ object ConfigBackup {
         val root = JSONObject()
         root.put("app", "superliquid")
         root.put("schema", 1)
+        root.put("performanceMode", Config.performanceMode)
         root.put("version", BuildConfig.VERSION_NAME)
 
         fun appCfg(c: Config.AppCfg) = JSONObject().apply {
@@ -72,6 +73,10 @@ object ConfigBackup {
     fun applyJson(text: String): Int {
         val root = JSONObject(text) // whole-file garbage → throws → 0 applied
         var applied = 0
+        if (root.optString("performanceMode") in listOf("standard", "extreme")) {
+            Config.setPerformanceMode(root.getString("performanceMode"))
+            applied++
+        }
 
         fun app(key: String): Config.AppCfg? {
             val o = root.optJSONObject(key) ?: return null

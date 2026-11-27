@@ -1,0 +1,103 @@
+package io.github.liuran001.mmliquidglass
+
+import android.content.Context
+import android.graphics.Canvas
+import android.view.MotionEvent
+import android.view.ViewGroup
+import android.view.ViewTreeObserver
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import android.widget.FrameLayout
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import io.github.neoruaa.glasmio.core.GlasmioTheme
+import io.github.neoruaa.glasmio.glass.GlassSurface
+import io.github.neoruaa.glasmio.glass.NavigationGlassMaterial
+import com.kyant.shapes.Capsule
+import androidx.compose.ui.unit.dp
+
+/** Rendering-only child below native tabs; it never consumes their touch events. */
+internal class GlasmioPanel(
+    context: Context, private val page: ViewGroup, night: Boolean,
+    private val failed: (Throwable) -> Unit,
+) : FrameLayout(context) {
+    private var dark by mutableStateOf(night)
+    private var configRevision by mutableIntStateOf(0)
+    private var owner: GlasmioOwner? = null
+    private val source = GlasmioViewBackdrop(page, this, { dark }, failed)
+    private var requested = false
+    private val position = IntArray(2)
+    private var geometry = ""
+    private val beforeDraw = ViewTreeObserver.OnPreDrawListener {
+        val visible = isShown && alpha > 0f && page.isShown
+        if (visible) {
+            ViewGeom.unscaledScreenPos(this, position)
+            val key = "${position[0]}:${position[1]}:$width:$height:${ViewGeom.cumulativeScale(this)}"
+            val stale = page.isDirty || key != geometry || !requested
+            geometry = key
+            requested = stale
+            if (stale) source.refresh()
+        } else requested = false
+        true
+    }
+    init {
+        importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        isClickable = false
+        isFocusable = false
+    }
+    fun refresh(night: Boolean) {
+        dark = night
+        configRevision++
+        source.refresh()
+    }
+    init {
+        val module = context.createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY)
+            .createConfigurationContext(context.resources.configuration)
+        addView(ComposeView(module).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            setContent {
+                configRevision
+                GlasmioTheme(isDark = dark) {
+                    GlassSurface(
+                        modifier = Modifier.fillMaxSize(), backdrop = source, shape = Capsule(),
+                        material = NavigationGlassMaterial.RegularSmall,
+                        frostRadius = (5f * GlassConfig.blurRadius.coerceIn(1, 8) / 3f).dp,
+                        navigationSurfaceAlphaMultiplier = GlassConfig.tintStrength.coerceIn(.2f, 2f),
+                    ) {}
+                }
+            }
+        }, LayoutParams(-1, -1))
+    }
+    override fun onAttachedToWindow() {
+        val local = GlasmioOwner().also { owner = it }
+        setViewTreeLifecycleOwner(local)
+        setViewTreeSavedStateRegistryOwner(local)
+        local.start()
+        super.onAttachedToWindow()
+        viewTreeObserver.addOnPreDrawListener(beforeDraw)
+    }
+    override fun onDetachedFromWindow() {
+        if (viewTreeObserver.isAlive) viewTreeObserver.removeOnPreDrawListener(beforeDraw)
+        super.onDetachedFromWindow()
+        owner?.stop()
+        owner = null
+    }
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        if (MeasureSpec.getMode(widthMeasureSpec) != MeasureSpec.EXACTLY ||
+            MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.EXACTLY) setMeasuredDimension(0, 0)
+        else super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    }
+    override fun dispatchDraw(canvas: Canvas) {
+        val save = canvas.save()
+        try { super.dispatchDraw(canvas) }
+        catch (error: Throwable) { failed(error) }
+        finally { canvas.restoreToCount(save) }
+    }
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean = false
+}

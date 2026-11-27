@@ -61,6 +61,16 @@ object Config {
         val isDefault: Boolean get() = order.isEmpty() && hidden.isEmpty() && labels.isEmpty()
     }
 
+    private val _performanceMode = mutableStateOf("standard")
+    val performanceMode: String get() = _performanceMode.value
+
+    fun setPerformanceMode(value: String) {
+        val mode = if (value == "extreme") "extreme" else "standard"
+        _performanceMode.value = mode
+        hookPrefs?.edit()?.putString("performance_mode", mode)?.apply()
+        remotePrefs?.edit()?.putString("performance_mode", mode)?.apply()
+    }
+
     const val REMOTE_NAME = "superliquid"
 
     lateinit var uiPrefs: SharedPreferences
@@ -259,6 +269,7 @@ object Config {
      * button look half-broken.
      */
     fun resetDefaults() {
+        setPerformanceMode("standard")
         setApp("mm", AppCfg())
         setApp("qq", AppCfg())
         setBili(BiliCfg())
@@ -310,6 +321,7 @@ object Config {
     }
 
     private fun readHook(p: SharedPreferences) {
+        _performanceMode.value = if (p.getString("performance_mode", "standard") == "extreme") "extreme" else "standard"
         fun app(key: String, def: AppCfg): AppCfg = AppCfg(
             // No per-app enable switch any more (LSPosed gates the module):
             // ignore legacy stored values so an old "off" can't stick.

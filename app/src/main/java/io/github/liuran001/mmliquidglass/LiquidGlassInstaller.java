@@ -60,6 +60,7 @@ final class LiquidGlassInstaller {
                 refreshTabStructure(host);
                 applyRuntimeGeometry(host);
             }
+            if (LiquidGlassModule.app() == HostApp.RAILWAY) RailwayGlassMode.refresh(host);
             if (LiquidGlassModule.app() == HostApp.BILIBILI) BiliHomeBar.refreshGlassConfig();
             if (LiquidGlassModule.app() == HostApp.HEYBOX) HeyboxHomeBar.refreshGlassConfig();
             for (int i = 0; i < host.getChildCount(); i++) host.getChildAt(i).invalidate();
@@ -2774,6 +2775,7 @@ final class LiquidGlassInstaller {
                 public void onTheme(boolean dark) {
                     glass.setTheme(dark);
                     droplet.setTheme(dark);
+                    if (LiquidGlassModule.app() == HostApp.RAILWAY) RailwayGlassMode.refresh(host);
                 }
             });
 
@@ -2784,6 +2786,8 @@ final class LiquidGlassInstaller {
                 sDrag.setHost(host);
                 host.setDragHandler(sDrag);
             }
+
+            if (LiquidGlassModule.app() == HostApp.RAILWAY) RailwayGlassMode.attach(host, backdrop, glass);
 
             LiquidGlassModule.log(android.util.Log.INFO,
                     "renderer=KernelSU-style glass (saturation+blur"

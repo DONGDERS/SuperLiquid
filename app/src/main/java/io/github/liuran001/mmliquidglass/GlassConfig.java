@@ -35,6 +35,7 @@ public final class GlassConfig {
 
     /** Distance between the bottom of the glass pill and the screen edge, dp. */
     static volatile int barOffsetDp = 12;
+    static volatile boolean extremePerformance = false;
     /** Horizontal offset of the glass pill from screen centre, dp (negative = left). */
     static volatile int barOffsetXDp = 0;
     /** Pill width multiplier, per app (bili default 0.7, others 1.0). */
@@ -107,7 +108,7 @@ public final class GlassConfig {
     };
     // SharedPreferences keeps listeners weakly: retain this instance for the process lifetime.
     private static final SharedPreferences.OnSharedPreferenceChangeListener CHANGED = (prefs, key) -> {
-        if (key == null || key.startsWith(keyPrefix + "_")) {
+        if (key == null || "performance_mode".equals(key) || key.startsWith(keyPrefix + "_")) {
             MAIN.removeCallbacks(REFRESH);
             MAIN.postDelayed(REFRESH, 40);
         }
@@ -211,6 +212,7 @@ public final class GlassConfig {
         // Reset to per-app defaults before layering, so a prefix switch in a
         // long-lived process cannot inherit another app's values.
         enabled = true;
+        extremePerformance = false;
         kugouPlayerLiftDp = DEFAULT_KUGOU_PLAYER_LIFT_DP;
         railwayNoticeLiftDp = DEFAULT_RAILWAY_NOTICE_LIFT_DP;
         barOffsetDp = RailwayHomeBar.KEY.equals(keyPrefix) ? DEFAULT_RAILWAY_OFFSET_DP : 12;
@@ -267,6 +269,7 @@ public final class GlassConfig {
     }
 
     private static void apply(SharedPreferences p) {
+        extremePerformance = "extreme".equals(p.getString("performance_mode", extremePerformance ? "extreme" : "standard"));
         enabled = p.getBoolean(k("enabled"), enabled);
         barOffsetDp = p.getInt(k("offset_dp"), barOffsetDp);
         barOffsetXDp = p.getInt(k("offsetx_dp"), barOffsetXDp);
