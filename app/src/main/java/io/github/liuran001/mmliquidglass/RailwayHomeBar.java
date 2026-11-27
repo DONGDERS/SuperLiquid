@@ -11,8 +11,15 @@ import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
+import java.util.ArrayList;
+import java.util.List;
+import io.github.neoruaa.glasmio.icons.SfSymbol;
+import io.github.neoruaa.glasmio.ui.GlasmioTabItem;
+
 
 final class RailwayHomeBar {
+    private static final SfSymbol[] SYMBOLS = {SfSymbol.House, SfSymbol.Safari,
+            SfSymbol.Clock, SfSymbol.Star, SfSymbol.PersonFilled};
     static final String KEY = "railway";
     private static final String BAR = "ticket_home_bottom_bar";
     private static final String PAGE = "ticket_home_content_container";
@@ -107,8 +114,11 @@ final class RailwayHomeBar {
             LiquidGlassInstaller.install(row, page);
             if (!(row.getParent() instanceof LiquidGlassHostLayout glass)) return false;
             host = glass;
+            java.util.concurrent.atomic.AtomicReference<List<GlasmioTabItem<Integer>>> tabs =
+                    new java.util.concurrent.atomic.AtomicReference<>(List.of());
             Runnable applyConfig = () -> {
                 TabLayoutApplier.apply(row, KEY);
+                tabs.set(GlassConfig.extremePerformance ? navigationItems(row, bar) : List.of());
                 FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) glass.getLayoutParams();
                 int width = LiquidGlassInstaller.hugContentWidth(row, density, parent.getWidth());
                 if (width > 0) params.width = width + glass.shadowPad() * 2;
@@ -130,16 +140,27 @@ final class RailwayHomeBar {
             ViewTreeObserver observer = glass.getViewTreeObserver();
             PageReserve reserve = new PageReserve();
             TipsLift lift = new TipsLift();
+            GlasmioNavigationInstaller extreme = LiquidGlassInstaller.installGlasmio(parent, page, key -> {
+                View destination = bar.findViewById(key);
+                if (destination instanceof RadioButton source && source.isEnabled()) {
+                    source.performClick();
+                    glass.invalidate();
+                }
+            });
             ViewTreeObserver.OnPreDrawListener sync = () -> {
                 boolean active = GlassConfig.enabled && bar.isShown() && bar.getParent() == frame
                         && page.getParent() == frame;
-                glass.setVisibility(active ? View.VISIBLE : View.INVISIBLE);
+                int checked = bar.getCheckedRadioButtonId();
+                boolean glasmio = extreme.show(GlassConfig.extremePerformance, active,
+                        tabs.get(),
+                        checked, glass.isDark(), extraBottom + Math.round(density * GlassConfig.barOffsetDp),
+                        Math.round(density * GlassConfig.barOffsetXDp), GlassConfig.widthScale, GlassConfig.pillScale);
+                glass.setVisibility(active && !glasmio ? View.VISIBLE : View.INVISIBLE);
                 bar.setAlpha(active ? 0f : stockAlpha);
                 bar.setImportantForAccessibility(active ? View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
                         : stockAccessibility);
                 if (divider != null) divider.setAlpha(active ? 0f : dividerAlpha);
                 boolean changed = active ? reserve.expand(page, bar, divider, frame) : reserve.restore(page);
-                int checked = bar.getCheckedRadioButtonId();
                 boolean home = checked == homeId;
                 // Test build: keep backdrop capture enabled on every Railway tab.
                 LiquidGlassInstaller.setMaterialOnly(glass, page, false);
@@ -164,6 +185,7 @@ final class RailwayHomeBar {
                 @Override public void onViewAttachedToWindow(View v) {}
                 @Override public void onViewDetachedFromWindow(View v) {
                     if (observer.isAlive()) observer.removeOnPreDrawListener(sync);
+                    extreme.close();
                     if (refreshConfig == applyConfig) refreshConfig = null;
                     lift.update(null, 0);
                     reserve.restore(page);
@@ -182,6 +204,21 @@ final class RailwayHomeBar {
             if (!success) parent.removeView(host != null ? host : row);
         }
     }
+
+    private static List<GlasmioTabItem<Integer>> navigationItems(LinearLayout row, RadioGroup bar) {
+        List<GlasmioTabItem<Integer>> items = new ArrayList<>(row.getChildCount());
+        for (int i = 0; i < row.getChildCount(); i++) {
+            if (!(row.getChildAt(i) instanceof TabCopy copy) || copy.getVisibility() == View.GONE) continue;
+            int nativeIndex = bar.indexOfChild(copy.source);
+            int key = copy.source.getId();
+            if (nativeIndex < 0 || nativeIndex >= SYMBOLS.length || key == View.NO_ID) continue;
+            String label = RuntimeTabCatalog.label(copy);
+            if (label.isBlank() && copy.source.getText() != null) label = copy.source.getText().toString();
+            items.add(new GlasmioTabItem<>(key, label, SYMBOLS[nativeIndex], label));
+        }
+        return items;
+    }
+
 
     private static final class PageReserve {
         RelativeLayout.LayoutParams original;

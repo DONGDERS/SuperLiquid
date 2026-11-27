@@ -60,7 +60,6 @@ final class LiquidGlassInstaller {
                 refreshTabStructure(host);
                 applyRuntimeGeometry(host);
             }
-            if (LiquidGlassModule.app() == HostApp.RAILWAY) RailwayGlassMode.refresh(host);
             if (LiquidGlassModule.app() == HostApp.BILIBILI) BiliHomeBar.refreshGlassConfig();
             if (LiquidGlassModule.app() == HostApp.HEYBOX) HeyboxHomeBar.refreshGlassConfig();
             for (int i = 0; i < host.getChildCount(); i++) host.getChildAt(i).invalidate();
@@ -321,6 +320,12 @@ final class LiquidGlassInstaller {
     /** Package-private: BiliHomeBar (bilibili's Compose bar) feeds a self-built row. */
     static void install(ViewGroup tabView) {
         install(tabView, null);
+    }
+
+    /** Installs a full Glasmio navigation bar alongside the standard installer. */
+    static GlasmioNavigationInstaller installGlasmio(FrameLayout mount, ViewGroup page,
+                                                    java.util.function.IntConsumer select) {
+        return new GlasmioNavigationInstaller(mount, page, select);
     }
 
     // Kugou's page is not a sibling of the tab view: its sibling is the player.
@@ -2775,7 +2780,6 @@ final class LiquidGlassInstaller {
                 public void onTheme(boolean dark) {
                     glass.setTheme(dark);
                     droplet.setTheme(dark);
-                    if (LiquidGlassModule.app() == HostApp.RAILWAY) RailwayGlassMode.refresh(host);
                 }
             });
 
@@ -2787,7 +2791,6 @@ final class LiquidGlassInstaller {
                 host.setDragHandler(sDrag);
             }
 
-            if (LiquidGlassModule.app() == HostApp.RAILWAY) RailwayGlassMode.attach(host, backdrop, glass);
 
             LiquidGlassModule.log(android.util.Log.INFO,
                     "renderer=KernelSU-style glass (saturation+blur"

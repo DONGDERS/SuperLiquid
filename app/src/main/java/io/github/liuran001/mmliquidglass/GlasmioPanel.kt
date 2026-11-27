@@ -5,12 +5,11 @@ import android.content.Context
 import android.content.ContextWrapper
 
 import android.graphics.Canvas
-import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -24,18 +23,19 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import io.github.neoruaa.glasmio.core.GlasmioTheme
-import io.github.neoruaa.glasmio.glass.GlassSurface
-import io.github.neoruaa.glasmio.glass.NavigationGlassMaterial
-import com.kyant.shapes.Capsule
+import io.github.neoruaa.glasmio.ui.GlasmioNavigationBar
+import io.github.neoruaa.glasmio.ui.GlasmioTabItem
 import androidx.compose.ui.unit.dp
 
-/** Rendering-only child below native tabs; it never consumes their touch events. */
+/** The complete Glasmio bottom navigation, including its own input handling. */
 internal class GlasmioPanel(
     context: Context, private val page: ViewGroup, night: Boolean,
+    private val onSelected: (Int) -> Unit,
     private val failed: (Throwable) -> Unit,
 ) : FrameLayout(context) {
     private var dark by mutableStateOf(night)
-    private var configRevision by mutableIntStateOf(0)
+    private var items by mutableStateOf(emptyList<GlasmioTabItem<Int>>())
+    private var selected by mutableStateOf(-1)
     private var owner: GlasmioOwner? = null
     private val source = GlasmioViewBackdrop(page, this, { dark }, failed)
     private var requested = false
@@ -54,14 +54,14 @@ internal class GlasmioPanel(
         true
     }
     init {
-        importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-        isClickable = false
-        isFocusable = false
+        clipChildren = false
+        clipToPadding = false
     }
-    fun refresh(night: Boolean) {
+    fun update(tabs: List<GlasmioTabItem<Int>>, key: Int, night: Boolean) {
+        items = tabs
+        selected = key
+        if (dark != night) source.refresh()
         dark = night
-        configRevision++
-        source.refresh()
     }
     private val moduleContext = GlasmioResourceContext(
         context.createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY)
@@ -80,21 +80,26 @@ internal class GlasmioPanel(
         try {
             compose.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             compose.setContent {
-                configRevision
+                val tabs = items
+                val expanded = remember { mutableStateOf(0f) }
+                if (tabs.isEmpty()) return@setContent
                 GlasmioTheme(isDark = dark) {
-                    GlassSurface(
-                        modifier = Modifier.fillMaxSize().drawWithContent {
+                    GlasmioNavigationBar(
+                        items = tabs,
+                        selectedKey = selected,
+                        onSelected = onSelected,
+                        onExpand = {},
+                        compactProgress = expanded,
+                        compactSize = 44.dp,
+                        modifier = Modifier.fillMaxWidth().drawWithContent {
                             drawContent()
                             if (firstDraw && size.width > 0f && size.height > 0f) {
                                 firstDraw = false
-                                LiquidGlassModule.log(android.util.Log.INFO, "Glasmio Railway first draw")
+                                LiquidGlassModule.log(android.util.Log.INFO, "Glasmio navigation first draw")
                             }
                         },
-                        backdrop = source, shape = Capsule(),
-                        material = NavigationGlassMaterial.RegularSmall,
-                        frostRadius = (5f * GlassConfig.blurRadius.coerceIn(1, 8) / 3f).dp,
-                        navigationSurfaceAlphaMultiplier = GlassConfig.tintStrength.coerceIn(.2f, 2f),
-                    ) {}
+                        backdrop = source,
+                    )
                 }
             }
             // The native content root has no Compose lifecycle. Keep the recomposer local.
@@ -133,7 +138,6 @@ internal class GlasmioPanel(
         catch (error: Throwable) { failed(error) }
         finally { canvas.restoreToCount(save) }
     }
-    override fun dispatchTouchEvent(event: MotionEvent): Boolean = false
 }
 
 // The module is not an Application in the host process. Keep module resources,
