@@ -45,6 +45,45 @@ final class LiquidGlassInstaller {
     private static final int[] sPos = new int[2];
     private static boolean sKeepFailed;
     private static WeakReference<Activity> sActivityRef = new WeakReference<>(null);
+    private static int sConfigBottomReserve;
+    private static final java.util.WeakHashMap<LiquidGlassHostLayout, Integer> EXTRA_BOTTOM = new java.util.WeakHashMap<>();
+    static void setConfigBottomReserve(LiquidGlassHostLayout host, int reserve) {
+        EXTRA_BOTTOM.put(host, reserve);
+        applyRuntimeGeometry(host);
+    }
+    static void refreshConfig() {
+        LiquidGlassHostLayout host = sHostRef.get();
+        if (host == null || !host.isAttachedToWindow()) return;
+        try {
+            if (LiquidGlassModule.app() == HostApp.RAILWAY) RailwayHomeBar.refreshConfig();
+            else {
+                refreshTabStructure(host);
+                applyRuntimeGeometry(host);
+            }
+            if (LiquidGlassModule.app() == HostApp.BILIBILI) BiliHomeBar.refreshGlassConfig();
+            if (LiquidGlassModule.app() == HostApp.HEYBOX) HeyboxHomeBar.refreshGlassConfig();
+            for (int i = 0; i < host.getChildCount(); i++) host.getChildAt(i).invalidate();
+            host.invalidate();
+        } catch (Throwable failure) {
+            LiquidGlassModule.logErr("runtime glass config", failure);
+        }
+    }
+    private static void applyRuntimeGeometry(LiquidGlassHostLayout host) {
+        if (host != sHostRef.get()) return;
+        float d = host.getResources().getDisplayMetrics().density;
+        ViewGroup.LayoutParams raw = host.getLayoutParams();
+        if (raw instanceof ViewGroup.MarginLayoutParams lp) {
+            int reserve = EXTRA_BOTTOM.containsKey(host) ? EXTRA_BOTTOM.get(host) : sConfigBottomReserve;
+            lp.bottomMargin = reserve + Math.round(d * GlassConfig.barOffsetDp) - host.shadowPad();
+            host.setLayoutParams(lp);
+        }
+        host.setTranslationX(Math.round(d * GlassConfig.barOffsetXDp));
+        host.setPivotX(host.getWidth() / 2f);
+        host.setPivotY(host.getHeight() - host.shadowPad());
+        host.setScaleX(GlassConfig.pillScale);
+        host.setScaleY(GlassConfig.pillScale);
+    }
+
     private static WeakReference<LiquidGlassHostLayout> sHostRef = new WeakReference<>(null);
     private static WeakReference<View> sDropletRef = new WeakReference<>(null);
     private static WeakReference<ViewGroup> sTabRowRef = new WeakReference<>(null);
@@ -387,10 +426,9 @@ final class LiquidGlassInstaller {
         // would silently drop the correction and let the bar sink onto the
         // gesture pill.
         if (hostLp instanceof ViewGroup.MarginLayoutParams) {
-            // Never let the shadow compensation sink the glass onto the
-            // gesture bar: keep a visible floor of 4dp.
+            // Compensate shadow padding without flattening the low offset range.
             ((ViewGroup.MarginLayoutParams) hostLp).bottomMargin =
-                    Math.max(bottomOffset - shadowPad, Math.round(4 * density));
+                    bottomOffset - shadowPad;
         }
         FrameLayout.LayoutParams tabLp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -405,47 +443,6 @@ final class LiquidGlassInstaller {
             parent.removeView(tabView);
             parent.addView(host, index, hostLp);
             host.addView(tabView, tabLp);
-            // Horizontal position knob: shift the whole glass (pill + bar)
-            // sideways; 0 keeps the stock centre alignment.
-            final int xo = GlassConfig.barOffsetXDp;
-            if (xo != 0 && LiquidGlassModule.app() != HostApp.RAILWAY) {
-                host.post(() -> {
-                    try {
-                        host.setTranslationX(Math.round(xo * density));
-                    } catch (Throwable t) {
-                        LiquidGlassModule.logErr("offset x failed", t);
-                    }
-                });
-            }
-            // Whole-tab-bar size knob: uniform view scale, pivot bottom-centre.
-            final float ps = GlassConfig.pillScale;
-            if (ps != 1f && LiquidGlassModule.app() != HostApp.RAILWAY) {
-                // Apply only after a REAL layout pass: pre-layout dims give
-                // pivot 0/0 (scale unfolds from the top-left = squashed and
-                // skewed until the first touch re-applied it per-frame).
-                final android.view.ViewTreeObserver vto = host.getViewTreeObserver();
-                vto.addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
-                    @Override
-                    public void onGlobalLayout() {
-                        if (host.getWidth() == 0 || host.getHeight() == 0) {
-                            return; // still waiting for real dimensions
-                        }
-                        host.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                        try {
-                            host.setPivotY(host.getHeight());
-                            host.setPivotX(host.getWidth() / 2f);
-                            host.setScaleX(ps);
-                            host.setScaleY(ps);
-                            LiquidGlassModule.log(android.util.Log.INFO,
-                                    "pill scale applied: ps=" + ps
-                                            + " w=" + host.getWidth() + " h=" + host.getHeight()
-                                            + " pivot=(" + host.getPivotX() + "," + host.getPivotY() + ")");
-                        } catch (Throwable t) {
-                            LiquidGlassModule.logErr("pill scale failed", t);
-                        }
-                    }
-                });
-            }
         } catch (Throwable t) {
             restoreAfterFailedReparent(parent, tabView, host, index, originalLp);
             LiquidGlassModule.logErr("could not reparent the stock tab bar", t);
@@ -516,6 +513,12 @@ final class LiquidGlassInstaller {
             host.post(() -> syncHostBottomInset(host, sNavigationInset));
         }
 
+        sConfigBottomReserve = insetCounts ? navigationInset : 0;
+        applyRuntimeGeometry(host);
+        host.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
+            host.setPivotX((r - l) / 2f);
+            host.setPivotY(b - t - host.shadowPad());
+        });
         // Open up clipping all the way to the content root: the droplet grows
         // past the pill while dragging, and any ancestor still clipping its
         // children would shear that overflow off.
@@ -1323,6 +1326,7 @@ final class LiquidGlassInstaller {
      * row is {@code IntrinsicSize.Min} and every tab shares the widest column's
      * width.
      */
+    private static final java.util.WeakHashMap<View, Integer> NATIVE_WIDTHS = new java.util.WeakHashMap<>();
     private static int hugContentWidth(ViewGroup tabRow, float density) {
         return hugContentWidth(tabRow, density, Integer.MAX_VALUE);
     }
@@ -1345,7 +1349,16 @@ final class LiquidGlassInstaller {
                 continue;
             }
             count++;
-            tab.measure(unspecified, unspecified);
+            // Measuring a width already multiplied by the previous setting
+            // makes repeated live changes compound. Always use the native basis.
+            ViewGroup.LayoutParams measureLp = tab.getLayoutParams();
+            int previousWidth = measureLp == null ? 0 : measureLp.width;
+            if (measureLp != null) {
+                if (!NATIVE_WIDTHS.containsKey(tab)) NATIVE_WIDTHS.put(tab, previousWidth);
+                measureLp.width = NATIVE_WIDTHS.get(tab);
+            }
+            try { tab.measure(unspecified, unspecified); }
+            finally { if (measureLp != null) measureLp.width = previousWidth; }
             measured = Math.max(measured, tab.getMeasuredWidth());
             leaf = Math.max(leaf, leafContentWidth(tab));
             slot = Math.max(slot, tab.getWidth());
@@ -2678,13 +2691,14 @@ final class LiquidGlassInstaller {
     /** Keeps an already-installed pill anchored when system insets change. */
     private static void syncHostBottomInset(LiquidGlassHostLayout host, int inset) {
         ViewGroup.LayoutParams raw = host.getLayoutParams();
-        if (!(raw instanceof FrameLayout.LayoutParams)) {
-            return;
-        }
-        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) raw;
+        if (LiquidGlassModule.app() == HostApp.RAILWAY
+                || EXTRA_BOTTOM.containsKey(host)) return;
+        if (!(raw instanceof ViewGroup.MarginLayoutParams)) return;
+        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) raw;
+        sConfigBottomReserve = Math.max(0, inset);
         float density = host.getResources().getDisplayMetrics().density;
         int desired = Math.round(density * GlassConfig.barOffsetDp)
-                - host.shadowPad() + Math.max(0, inset);
+                - host.shadowPad() + sConfigBottomReserve;
         if (lp.bottomMargin == desired) {
             return;
         }
@@ -2720,7 +2734,7 @@ final class LiquidGlassInstaller {
             // see LiquidGlassPanel.
             final LiquidGlassPanel glass =
                     new LiquidGlassPanel(ctx, backdrop, density, night);
-            if (LiquidGlassModule.app() == HostApp.RAILWAY) glass.useAppTuning();
+            glass.useAppTuning();
             host.addView(glass, 0, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT));

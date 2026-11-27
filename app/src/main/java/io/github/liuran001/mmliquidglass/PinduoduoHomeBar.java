@@ -214,9 +214,7 @@ final class PinduoduoHomeBar {
             if (!(row.getParent() instanceof LiquidGlassHostLayout)) return false;
             host = (LiquidGlassHostLayout) row.getParent();
             final LiquidGlassHostLayout live = host;
-            FrameLayout.LayoutParams glassLp = (FrameLayout.LayoutParams) host.getLayoutParams();
-            glassLp.bottomMargin += reserve;
-            host.setLayoutParams(glassLp);
+            LiquidGlassInstaller.setConfigBottomReserve(host, reserve);
             LiquidGlassInstaller.setMaterialOnly(host, backdrop, needsMaterialOnly(backdrop));
             bar.setAlpha(0f);
             if (divider != null) divider.setAlpha(0f);

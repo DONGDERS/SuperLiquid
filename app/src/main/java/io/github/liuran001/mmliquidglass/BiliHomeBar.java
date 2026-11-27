@@ -505,33 +505,6 @@ final class BiliHomeBar {
             sLeftHost = new WeakReference<>(leftHost);
             sRealBar = new WeakReference<>(real);
             applyNativeBarVisibility();
-            // Whole-tab-bar size knob, pivot bottom-centre.
-            final float lps = GlassConfig.pillScale;
-            if (lps != 1f) {
-                final android.view.View leftHostF = leftHost;
-                leftHost.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
-                    @Override
-                    public void onGlobalLayout() {
-                        if (leftHostF.getWidth() == 0 || leftHostF.getHeight() == 0) {
-                            return;
-                        }
-                        leftHostF.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                        try {
-                        leftHostF.setPivotY(leftHostF.getHeight());
-                        leftHost.setPivotX(leftHost.getWidth() / 2f);
-                        leftHostF.setScaleX(lps);
-                        leftHostF.setScaleY(lps);
-                        LiquidGlassModule.log(android.util.Log.INFO,
-                                "bili scale applied: ps=" + lps
-                                        + " w=" + leftHostF.getWidth() + " h=" + leftHostF.getHeight()
-                                        + " pivot=(" + leftHostF.getPivotX() + "," + leftHostF.getPivotY() + ")");
-                        } catch (Throwable t) {
-                            LiquidGlassModule.logErr("bili pill scale failed", t);
-                        }
-                    }
-                });
-            }
-
             // Width is owned by the installer's hug (hugContentWidth → per-tab
             // column rewrite). Pinning it again here from row.getMeasuredWidth()
             // read the post-hug width and overwrote the capped value with
@@ -654,6 +627,7 @@ final class BiliHomeBar {
 
             if (android.os.Build.VERSION.SDK_INT >= LiquidGlassPanel.MIN_SDK) {
                 LiquidGlassPanel glass = new LiquidGlassPanel(ctx, backdrop, d, night);
+                glass.useAppTuning();
                 sPublishPanel = new WeakReference<>(glass);
                 host.addView(glass, 0, new FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -715,6 +689,34 @@ final class BiliHomeBar {
             LiquidGlassModule.logErr("bili: publish pill failed", t);
             return null;
         }
+    }
+
+    static void refreshGlassConfig() {
+        LiquidGlassHostLayout host = sPublishHost.get();
+        Activity activity = sHomeActivity.get();
+        if (host == null || activity == null || !host.isAttachedToWindow()) return;
+        float d = host.getResources().getDisplayMetrics().density;
+        float scale = Math.max(0.5f, Math.min(2f, GlassConfig.pubScale));
+        ViewGroup.LayoutParams raw = host.getLayoutParams();
+        raw.width = Math.round(56 * d * scale) + host.shadowPad() * 2;
+        raw.height = Math.round(52 * d * scale) + host.shadowPad() * 2;
+        if (raw instanceof ViewGroup.MarginLayoutParams lp) {
+            lp.bottomMargin = Math.round(GlassConfig.pubBottomDp * d) - host.shadowPad() + navInset(activity);
+            lp.rightMargin = Math.round(GlassConfig.pubSideDp * d);
+        }
+        host.setLayoutParams(raw);
+        for (int i = 0; i < host.getChildCount(); i++) {
+            View child = host.getChildAt(i);
+            if (child instanceof LinearLayout row && row.getChildCount() > 0) {
+                View icon = row.getChildAt(0);
+                ViewGroup.LayoutParams iconLp = icon.getLayoutParams();
+                iconLp.width = Math.round(26 * d * scale);
+                iconLp.height = Math.round(26 * d * scale);
+                icon.setLayoutParams(iconLp);
+            }
+            child.invalidate();
+        }
+        host.invalidate();
     }
 
     private static int navInset(Activity act) {

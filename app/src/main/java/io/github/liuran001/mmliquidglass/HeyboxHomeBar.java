@@ -751,6 +751,7 @@ final class HeyboxHomeBar {
 
             if (android.os.Build.VERSION.SDK_INT >= LiquidGlassPanel.MIN_SDK) {
                 LiquidGlassPanel glass = new LiquidGlassPanel(act, backdrop, d, isNight(act));
+                glass.useAppTuning();
                 sPlusPanel = new WeakReference<>(glass);
                 host.addView(glass, 0, new FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -848,8 +849,11 @@ final class HeyboxHomeBar {
             super.onDraw(canvas);
             mPaint.setColor(sAccent);
             float c = getWidth() / 2f;
-            canvas.drawLine(c - mLen / 2, c, c + mLen / 2, c, mPaint);
-            canvas.drawLine(c, c - mLen / 2, c, c + mLen / 2, mPaint);
+            float scale = Math.max(0.5f, Math.min(2f, GlassConfig.pubScale));
+            float length = mLen * scale;
+            mPaint.setStrokeWidth(mStroke * scale);
+            canvas.drawLine(c - length / 2, c, c + length / 2, c, mPaint);
+            canvas.drawLine(c, c - length / 2, c, c + length / 2, mPaint);
         }
     }
 
@@ -1082,6 +1086,34 @@ final class HeyboxHomeBar {
         return (ctx.getResources().getConfiguration().uiMode
                 & android.content.res.Configuration.UI_MODE_NIGHT_MASK)
                 == android.content.res.Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    static void refreshGlassConfig() {
+        LiquidGlassHostLayout host = sPlusHost.get();
+        Activity activity = sHomeActivity.get();
+        if (host == null || activity == null || !host.isAttachedToWindow()) return;
+        float d = host.getResources().getDisplayMetrics().density;
+        float scale = Math.max(0.5f, Math.min(2f, GlassConfig.pubScale));
+        ViewGroup.LayoutParams raw = host.getLayoutParams();
+        raw.width = Math.round(56 * d * scale) + host.shadowPad() * 2;
+        raw.height = Math.round(52 * d * scale) + host.shadowPad() * 2;
+        if (raw instanceof ViewGroup.MarginLayoutParams lp) {
+            lp.bottomMargin = Math.round(GlassConfig.pubBottomDp * d) - host.shadowPad() + navInset(activity);
+            lp.rightMargin = Math.round(GlassConfig.pubSideDp * d);
+        }
+        host.setLayoutParams(raw);
+        for (int i = 0; i < host.getChildCount(); i++) {
+            View child = host.getChildAt(i);
+            if (child instanceof LinearLayout row && row.getChildCount() > 0) {
+                View icon = row.getChildAt(0);
+                ViewGroup.LayoutParams iconLp = icon.getLayoutParams();
+                iconLp.width = Math.round(PLUS_GLYPH_DP * d * scale);
+                iconLp.height = Math.round(PLUS_GLYPH_DP * d * scale);
+                icon.setLayoutParams(iconLp);
+            }
+            child.invalidate();
+        }
+        host.invalidate();
     }
 
     private static int navInset(Activity act) {

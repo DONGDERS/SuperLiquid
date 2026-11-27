@@ -83,7 +83,9 @@ public final class GlassConfig {
 
     static volatile boolean enabled = true;
     public static final int DEFAULT_KUGOU_PLAYER_LIFT_DP = 20;
-    static volatile int railwayNoticeLiftDp;
+    public static final int DEFAULT_RAILWAY_OFFSET_DP = 3;
+    public static final int DEFAULT_RAILWAY_NOTICE_LIFT_DP = 16;
+    static volatile int railwayNoticeLiftDp = DEFAULT_RAILWAY_NOTICE_LIFT_DP;
     static volatile int kugouPlayerLiftDp = DEFAULT_KUGOU_PLAYER_LIFT_DP;
 
     private static volatile String keyPrefix = "";
@@ -92,6 +94,48 @@ public final class GlassConfig {
     /** App key ("mm"/"qq"/"bili"/"heybox"), "" when unknown. */
     static String key() {
         return keyPrefix;
+    }
+
+    private static String hostPackage;
+    private static SharedPreferences remotePrefs;
+    private static SharedPreferences fallbackPrefs;
+    private static java.util.Map<String, ?> lastRemote = java.util.Collections.emptyMap();
+    private static java.util.Map<String, ?> lastFallback = java.util.Collections.emptyMap();
+    private static final android.os.Handler MAIN = new android.os.Handler(android.os.Looper.getMainLooper());
+    private static final Runnable REFRESH = () -> {
+        if (reload(true)) LiquidGlassInstaller.refreshConfig();
+    };
+    // SharedPreferences keeps listeners weakly: retain this instance for the process lifetime.
+    private static final SharedPreferences.OnSharedPreferenceChangeListener CHANGED = (prefs, key) -> {
+        if (key == null || key.startsWith(keyPrefix + "_")) {
+            MAIN.removeCallbacks(REFRESH);
+            MAIN.postDelayed(REFRESH, 40);
+        }
+    };
+
+    /** Re-read a running host without resetting its version-bound tab catalog. */
+    static boolean reload(boolean reloadFallback) {
+        try {
+            if (fallbackPrefs != null && reloadFallback) {
+                fallbackPrefs.getClass().getMethod("reload").invoke(fallbackPrefs);
+            }
+            java.util.Map<String, ?> local = fallbackPrefs == null
+                    ? java.util.Collections.emptyMap() : fallbackPrefs.getAll();
+            java.util.Map<String, ?> remote = remotePrefs == null
+                    ? java.util.Collections.emptyMap() : remotePrefs.getAll();
+            if (local.equals(lastFallback) && remote.equals(lastRemote)) return false;
+            lastFallback = new java.util.HashMap<>(local);
+            lastRemote = new java.util.HashMap<>(remote);
+            resetValues();
+            if (fallbackPrefs != null) apply(fallbackPrefs);
+            if (remotePrefs != null) apply(remotePrefs);
+            HostApp app = HostApp.forPackage(hostPackage);
+            if (app != null) app.widthScale = widthScale;
+            return true;
+        } catch (Throwable error) {
+            LiquidGlassModule.logErr("config: runtime reload failed", error);
+            return false;
+        }
     }
 
     private GlassConfig() {
@@ -122,12 +166,54 @@ public final class GlassConfig {
      */
     static void setModule(XposedInterface xp, String pkg) {
         keyPrefix = prefixFor(pkg);
+        hostPackage = pkg;
+        resetValues();
+        try {
+            remotePrefs = xp.getRemotePreferences(REMOTE_NAME);
+            remotePrefs.registerOnSharedPreferenceChangeListener(CHANGED);
+        } catch (Throwable t) {
+            LiquidGlassModule.logErr("config: remote prefs unavailable", t);
+        }
+        try {
+            Class<?> cls = Class.forName("de.robv.android.xposed.XSharedPreferences");
+            Constructor<?> ctor = cls.getConstructor(String.class, String.class);
+            Object xsp = ctor.newInstance(BuildConfig.APPLICATION_ID, REMOTE_NAME);
+            xsp.getClass().getMethod("reload").invoke(xsp);
+            // No canRead() gate here: the module's prefs dir is not visible to
+            // the host process, but LSPosed's XSharedPreferences reads it
+            // daemon-side. canRead() from the host was always false, which
+            // silently disabled this channel. Defaults are returned when the
+            // file genuinely can't be read.
+            fallbackPrefs = (SharedPreferences) xsp;
+            fallbackPrefs.registerOnSharedPreferenceChangeListener(CHANGED);
+        } catch (Throwable t) {
+            // XSharedPreferences channel is optional; remote prefs or the
+            // legacy host file still cover it.
+        }
+        if (fallbackPrefs != null) apply(fallbackPrefs);
+        if (remotePrefs != null) apply(remotePrefs);
+        lastFallback = fallbackPrefs == null ? java.util.Collections.emptyMap()
+                : new java.util.HashMap<>(fallbackPrefs.getAll());
+        lastRemote = remotePrefs == null ? java.util.Collections.emptyMap()
+                : new java.util.HashMap<>(remotePrefs.getAll());
+        // Width lives on HostApp, consumed by the installer's hug pass.
+        try {
+            HostApp app = HostApp.forPackage(pkg);
+            if (app != null) {
+                app.widthScale = widthScale;
+            }
+        } catch (Throwable t) {
+            LiquidGlassModule.logErr("config: widthScale handoff failed", t);
+        }
+    }
+
+    private static void resetValues() {
         // Reset to per-app defaults before layering, so a prefix switch in a
         // long-lived process cannot inherit another app's values.
         enabled = true;
         kugouPlayerLiftDp = DEFAULT_KUGOU_PLAYER_LIFT_DP;
-        railwayNoticeLiftDp = 0;
-        barOffsetDp = 12;
+        railwayNoticeLiftDp = DEFAULT_RAILWAY_NOTICE_LIFT_DP;
+        barOffsetDp = RailwayHomeBar.KEY.equals(keyPrefix) ? DEFAULT_RAILWAY_OFFSET_DP : 12;
         barOffsetXDp = 0;
         // r12 lesson (log-arbitrated): the handoff below OVERWRITES
         // HostApp.widthScale, so the per-app default must live HERE. "bili"
@@ -149,43 +235,12 @@ public final class GlassConfig {
         tabHidden = new String[0];
         tabCatalogToken = "";
         tabLabels = new org.json.JSONObject();
-        hostVersionCode = -1;
-        hostUpdatedAt = 0;
         pubScale = 1f;
         pubBottomDp = 12;
         pubSideDp = 16;
         biliPublishFallback = "bilibili://uper/center_plus";
         moduleLayerRead = false;
 
-        try {
-            apply(xp.getRemotePreferences(REMOTE_NAME));
-        } catch (Throwable t) {
-            LiquidGlassModule.logErr("config: remote prefs unavailable", t);
-        }
-        try {
-            Class<?> cls = Class.forName("de.robv.android.xposed.XSharedPreferences");
-            Constructor<?> ctor = cls.getConstructor(String.class, String.class);
-            Object xsp = ctor.newInstance(BuildConfig.APPLICATION_ID, REMOTE_NAME);
-            xsp.getClass().getMethod("reload").invoke(xsp);
-            // No canRead() gate here: the module's prefs dir is not visible to
-            // the host process, but LSPosed's XSharedPreferences reads it
-            // daemon-side. canRead() from the host was always false, which
-            // silently disabled this channel. Defaults are returned when the
-            // file genuinely can't be read.
-            apply((SharedPreferences) xsp);
-        } catch (Throwable t) {
-            // XSharedPreferences channel is optional; remote prefs or the
-            // legacy host file still cover it.
-        }
-        // Width lives on HostApp, consumed by the installer's hug pass.
-        try {
-            HostApp app = HostApp.forPackage(pkg);
-            if (app != null) {
-                app.widthScale = widthScale;
-            }
-        } catch (Throwable t) {
-            LiquidGlassModule.logErr("config: widthScale handoff failed", t);
-        }
     }
 
     static void ensureHostVersion(Context ctx) {
@@ -223,7 +278,7 @@ public final class GlassConfig {
         glossStrength = p.getFloat(k("gloss"), glossStrength);
         borderWidthScale = p.getFloat(k("border"), borderWidthScale);
         if (RailwayHomeBar.KEY.equals(keyPrefix)) {
-            railwayNoticeLiftDp = Math.max(0, Math.min(48, p.getInt(k("notice_lift_dp"), 0)));
+            railwayNoticeLiftDp = Math.max(0, Math.min(48, p.getInt(k("notice_lift_dp"), DEFAULT_RAILWAY_NOTICE_LIFT_DP)));
         }
         if ("kugou".equals(keyPrefix)) {
             kugouPlayerLiftDp = Math.max(0, Math.min(48, p.getInt(k("player_lift_dp"), DEFAULT_KUGOU_PLAYER_LIFT_DP)));

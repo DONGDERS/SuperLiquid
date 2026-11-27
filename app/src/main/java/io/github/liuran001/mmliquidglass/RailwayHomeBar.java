@@ -25,6 +25,9 @@ final class RailwayHomeBar {
 
     private static Runnable refreshConfig;
 
+    static void refreshConfig() {
+        if (refreshConfig != null) refreshConfig.run();
+    }
     private RailwayHomeBar() {}
 
     static void onHomeResume(Activity activity) {

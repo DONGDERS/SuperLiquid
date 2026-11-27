@@ -8,6 +8,8 @@ import androidx.compose.runtime.setValue
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import io.github.liuran001.mmliquidglass.GlassConfig.DEFAULT_KUGOU_PLAYER_LIFT_DP
+import io.github.liuran001.mmliquidglass.GlassConfig.DEFAULT_RAILWAY_OFFSET_DP
+import io.github.liuran001.mmliquidglass.GlassConfig.DEFAULT_RAILWAY_NOTICE_LIFT_DP
 
 /**
  * Config store for the manager.
@@ -107,9 +109,9 @@ object Config {
     private val _alipay = mutableStateOf(AppCfg())
     val taobao: AppCfg get() = _taobao.value
     val alipay: AppCfg get() = _alipay.value
-    private val _railway = mutableStateOf(AppCfg())
+    private val _railway = mutableStateOf(AppCfg(offsetDp = DEFAULT_RAILWAY_OFFSET_DP))
     val railway: AppCfg get() = _railway.value
-    private val _railwayNoticeLiftDp = mutableStateOf(0)
+    private val _railwayNoticeLiftDp = mutableStateOf(DEFAULT_RAILWAY_NOTICE_LIFT_DP)
     val railwayNoticeLiftDp: Int get() = _railwayNoticeLiftDp.value
     private val _kugouPlayerLiftDp = mutableStateOf(DEFAULT_KUGOU_PLAYER_LIFT_DP)
     val kugouPlayerLiftDp: Int get() = _kugouPlayerLiftDp.value
@@ -266,8 +268,8 @@ object Config {
         setApp("pinduoduo", AppCfg())
         setApp("taobao", AppCfg())
         setApp("alipay", AppCfg())
-        setApp("railway", AppCfg())
-        setRailwayNoticeLiftDp(0)
+        setApp("railway", AppCfg(offsetDp = DEFAULT_RAILWAY_OFFSET_DP))
+        setRailwayNoticeLiftDp(DEFAULT_RAILWAY_NOTICE_LIFT_DP)
         setKugouPlayerLiftDp(DEFAULT_KUGOU_PLAYER_LIFT_DP)
         for (key in listOf("mm", "qq", "bili", "heybox", "kugou", "pinduoduo", "taobao", "alipay", "railway")) {
             setTabLayout(key, TabLayout())
@@ -329,8 +331,8 @@ object Config {
         _pinduoduo.value = app("pinduoduo", AppCfg())
         _taobao.value = app("taobao", AppCfg())
         _alipay.value = app("alipay", AppCfg())
-        _railway.value = app("railway", AppCfg())
-        _railwayNoticeLiftDp.value = p.getInt("railway_notice_lift_dp", 0).coerceIn(0, 48)
+        _railway.value = app("railway", AppCfg(offsetDp = DEFAULT_RAILWAY_OFFSET_DP))
+        _railwayNoticeLiftDp.value = p.getInt("railway_notice_lift_dp", DEFAULT_RAILWAY_NOTICE_LIFT_DP).coerceIn(0, 48)
         _kugouPlayerLiftDp.value = p.getInt("kugou_player_lift_dp", DEFAULT_KUGOU_PLAYER_LIFT_DP).coerceIn(0, 48)
         _heyboxPlus.value = readPlus(p, "heybox")
         _tabs.value = mapOf(
