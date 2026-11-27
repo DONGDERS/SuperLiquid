@@ -125,5 +125,5 @@
     <string name="performance_follow">跟随全局</string>
     <string name="performance_standard">标准</string>
     <string name="performance_extreme">极致</string>
-    <string name="performance_summary">标准：现有底栏；极致：Glasmio 底栏（当前仅适配 12306）</string>
+    <string name="performance_summary">标准：高性能液态玻璃；极致：Glasmio真实液态玻璃</string>
 </resources>

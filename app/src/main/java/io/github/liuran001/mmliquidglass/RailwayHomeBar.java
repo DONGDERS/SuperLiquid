@@ -136,9 +136,14 @@ final class RailwayHomeBar {
                 boolean active = GlassConfig.enabled && bar.isShown() && bar.getParent() == frame
                         && page.getParent() == frame;
                 int checked = bar.getCheckedRadioButtonId();
-                boolean glasmio = extreme.show(GlassConfig.extremePerformance, active,
+                for (int i = 0; i < row.getChildCount(); i++) {
+                    ((TabCopy) row.getChildAt(i)).sync();
+                }
+                extreme.show(GlassConfig.extremePerformance, active,
                         glass.isDark(), extraBottom + Math.round(density * GlassConfig.barOffsetDp),
-                        Math.round(density * GlassConfig.barOffsetXDp), GlassConfig.widthScale, GlassConfig.pillScale);
+                        Math.round(density * GlassConfig.barOffsetXDp), GlassConfig.widthScale,
+                        GlassConfig.pillScale, selectedSlot(row));
+                boolean glasmio = extreme.activePanel() != null;
                 glass.setVisibility(active && !glasmio ? View.VISIBLE : View.INVISIBLE);
                 bar.setAlpha(active ? 0f : stockAlpha);
                 bar.setImportantForAccessibility(active ? View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
@@ -158,10 +163,6 @@ final class RailwayHomeBar {
                             - Math.round(density * GlassConfig.railwayNoticeLiftDp);
                 }
                 lift.update(tips, offset);
-                for (int i = 0; i < row.getChildCount(); i++) {
-                    TabCopy copy = (TabCopy) row.getChildAt(i);
-                    copy.sync();
-                }
                 return !changed;
             };
             observer.addOnPreDrawListener(sync);

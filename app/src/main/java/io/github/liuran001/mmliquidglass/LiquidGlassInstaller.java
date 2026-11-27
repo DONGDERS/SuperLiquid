@@ -531,6 +531,7 @@ final class LiquidGlassInstaller {
         unclipAncestors(parent);
         attachRenderer(ctx, host, backdrop, density);
         installSelectionWatcher(host);
+        installSharedGlasmio(host, tabView, backdrop);
         if (LiquidGlassModule.app() == HostApp.TAOBAO) {
             watchTaobaoLayout(host, backdrop);
         }
@@ -1970,6 +1971,79 @@ final class LiquidGlassInstaller {
     static void requestSelectionSync() {
         LiquidGlassHostLayout host = sHostRef.get();
         if (host != null && host.isAttachedToWindow()) host.invalidate();
+    }
+
+    private static void installSharedGlasmio(LiquidGlassHostLayout host, ViewGroup tabView,
+                                             ViewGroup backdrop) {
+        if (LiquidGlassModule.app() == HostApp.RAILWAY) return;
+        // Drawing an ancestor as the backdrop would capture the panel itself.
+        for (View v = host; v != null; v = v.getParent() instanceof View parent ? parent : null) {
+            if (v == backdrop) return;
+        }
+        class Binding implements ViewTreeObserver.OnPreDrawListener, View.OnAttachStateChangeListener {
+            private ViewTreeObserver observer;
+            private ViewGroup row;
+            private GlasmioNavigationInstaller installer;
+            private boolean failed;
+
+            private void clear() {
+                host.setExtremePanel(null);
+                if (installer != null) installer.close();
+                installer = null;
+                row = null;
+            }
+
+            @Override public boolean onPreDraw() {
+                if (!GlassConfig.enabled || !GlassConfig.extremePerformance) {
+                    clear();
+                    failed = false;
+                    return true;
+                }
+                if (failed || host != sHostRef.get()) {
+                    clear();
+                    return true;
+                }
+                try {
+                    ViewGroup current = sTabRowRef.get();
+                    if (row != current) {
+                        clear();
+                        row = current;
+                        if (row != null) installer = installGlasmio(host, backdrop, row);
+                    }
+                    if (installer == null) return true;
+                    boolean active = tabView.isShown() && tabView.getParent() == host
+                            && backdrop.isShown() && tabView.getAlpha() > 0f;
+                    installer.show(true, active, host.isDark(), 0, 0, 1f, 1f,
+                            active ? visibleTabSelection(row) : -1, true);
+                    View panel = installer.activePanel();
+                    if (panel != null) {
+                        panel.setAlpha(tabView.getAlpha());
+                        panel.setTranslationX(tabView.getTranslationX());
+                        panel.setTranslationY(tabView.getTranslationY());
+                    }
+                    host.setExtremePanel(panel);
+                } catch (Throwable t) {
+                    failed = true;
+                    clear();
+                    LiquidGlassModule.logErr("shared Glasmio navigation failed", t);
+                }
+                return true;
+            }
+
+            @Override public void onViewAttachedToWindow(View v) {
+                observer = host.getViewTreeObserver();
+                observer.addOnPreDrawListener(this);
+            }
+
+            @Override public void onViewDetachedFromWindow(View v) {
+                if (observer != null && observer.isAlive()) observer.removeOnPreDrawListener(this);
+                observer = null;
+                clear();
+            }
+        }
+        Binding binding = new Binding();
+        host.addOnAttachStateChangeListener(binding);
+        if (host.isAttachedToWindow()) binding.onViewAttachedToWindow(host);
     }
 
     private static void installSelectionWatcher(LiquidGlassHostLayout host) {

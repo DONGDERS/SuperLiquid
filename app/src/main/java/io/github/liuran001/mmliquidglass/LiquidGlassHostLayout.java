@@ -132,6 +132,27 @@ final class LiquidGlassHostLayout extends FrameLayout {
         canvas.restoreToCount(save);
     }
 
+    private View extremePanel;
+    private int standardAccessibility;
+
+    void setExtremePanel(View panel) {
+        if (extremePanel == panel) return;
+        if (extremePanel == null) standardAccessibility = mBar.getImportantForAccessibility();
+        extremePanel = panel;
+        mBar.setImportantForAccessibility(panel != null
+                ? IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : standardAccessibility);
+        invalidate();
+    }
+
+    @Override protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
+        if (extremePanel != null && child != extremePanel) return false;
+        return super.drawChild(canvas, child, drawingTime);
+    }
+
+    boolean usesExtremePanel() {
+        return extremePanel != null;
+    }
+
     /**
      * Optional gesture owner. It gets first refusal on every touch, but is
      * expected to claim only drags so WeChat's own tab views keep their taps.
@@ -207,6 +228,7 @@ final class LiquidGlassHostLayout extends FrameLayout {
     @Override
     public boolean onInterceptTouchEvent(android.view.MotionEvent ev) {
         protectGestureFromAncestors(ev);
+        if (usesExtremePanel()) return false;
         try {
             if (mDragHandler != null && mDragHandler.onIntercept(ev)) {
                 return true;
@@ -220,6 +242,7 @@ final class LiquidGlassHostLayout extends FrameLayout {
     @Override
     public boolean onTouchEvent(android.view.MotionEvent ev) {
         protectGestureFromAncestors(ev);
+        if (usesExtremePanel()) return false;
         try {
             if (mDragHandler != null && mDragHandler.onTouch(ev)) {
                 return true;
@@ -476,8 +499,8 @@ final class LiquidGlassHostLayout extends FrameLayout {
         try {
             mCapturing = true;
             mThemeProbe.request();
-            if (mTuner != null) {
-                // LiquidGlassPanel records the pages itself; no bitmaps needed.
+            if (usesExtremePanel() || mTuner != null) {
+                // The active panel records the pages itself; no bitmaps needed.
                 return;
             }
             int w = getWidth();
@@ -591,6 +614,7 @@ final class LiquidGlassHostLayout extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (usesExtremePanel()) return;
         drawPillShadow(canvas);
         if (mTuner != null) {
             // LiquidGlassPanel draws as child view index 0 beneath us.

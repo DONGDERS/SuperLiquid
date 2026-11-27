@@ -20,6 +20,9 @@ internal class GlasmioNavigationInstaller(
     private var failed = false
     private var items = emptyList<GlasmioTabItem<View>>()
 
+    fun activePanel(): View? = panel?.takeIf { !failed && it.visibility == View.VISIBLE && it.isLaidOut && it.width > 0 && it.height > 0 }
+
+    @JvmOverloads
     fun show(
         requested: Boolean,
         active: Boolean,
@@ -28,6 +31,8 @@ internal class GlasmioNavigationInstaller(
         offsetX: Int,
         widthScale: Float,
         scale: Float,
+        selection: Int = TabBarBridge.selectedIndex(row),
+        fitHost: Boolean = false,
     ): Boolean {
         if (!requested || failed) {
             close()
@@ -38,7 +43,7 @@ internal class GlasmioNavigationInstaller(
             panel?.visibility = View.INVISIBLE
             return false
         }
-        val cells = (0 until row.childCount).map(row::getChildAt).filter { it.visibility != View.GONE }
+        val cells = (0 until TabBarBridge.tabCount(row)).mapNotNull { TabBarBridge.tabAt(row, it) }
         if (cells.isEmpty() || cells.any { it.width == 0 || it.height == 0 }) {
             panel?.visibility = View.INVISIBLE
             return false
@@ -50,17 +55,23 @@ internal class GlasmioNavigationInstaller(
                 GlasmioTabItem(cell, label, SfSymbol.House, label)
             }
         }
-        val selected = cells.getOrNull(TabBarBridge.selectedIndex(row))
+        val selected = if (selection >= 0) TabBarBridge.tabAt(row, selection) else null
         val accent = selected?.let { RuntimeTabCatalog.titleView(it)?.currentTextColor }
         val content = cells.firstOrNull { it !== selected }?.let { RuntimeTabCatalog.titleView(it)?.currentTextColor }
 
         val density = container.resources.displayMetrics.density
-        val maxWidth = (container.width - (24 * density).roundToInt()).coerceAtLeast(1)
-        val width = ((82 * items.size + 8) * density * widthScale).roundToInt().coerceIn(1, maxWidth)
+        val reserve = if (fitHost) container.paddingLeft + container.paddingRight
+            else (24 * density).roundToInt()
+        val maxWidth = (container.width - reserve).coerceAtLeast(1)
+        val width = if (fitHost) maxWidth else
+            ((82 * items.size + 8) * density * widthScale).roundToInt().coerceIn(1, maxWidth)
         val height = (NavigationBarSurfaceHeight.value * density).roundToInt().coerceAtLeast(1)
         try {
             val view = panel ?: GlasmioPanel(container.context, page, night, { cell ->
-                if (cell.parent === row && cell.visibility == View.VISIBLE && cell.isEnabled) cell.performClick()
+                if (cell.parent === row && cell.visibility == View.VISIBLE && cell.isEnabled) {
+                    cell.performClick()
+                    LiquidGlassInstaller.requestSelectionSync()
+                }
             }, ::fail)
                 .also {
                     panel = it

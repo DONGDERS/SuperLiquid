@@ -47,6 +47,9 @@ internal class GlasmioPanel(
     private var selected by mutableStateOf<View?>(null)
     private var accent by mutableStateOf<Int?>(null)
     private var contentColor by mutableStateOf<Int?>(null)
+    private val contentRevision = androidx.compose.runtime.mutableIntStateOf(0)
+
+    private fun refreshTabContent() { contentRevision.intValue++ }
     private var owner: GlasmioOwner? = null
     private val source = GlasmioViewBackdrop(page, this, { dark }, failed)
     private var requested = false
@@ -69,6 +72,9 @@ internal class GlasmioPanel(
         clipToPadding = false
     }
     fun update(tabs: List<GlasmioTabItem<View>>, key: View?, night: Boolean, accent: Int?, content: Int?) {
+        if (items != tabs || selected !== key || dark != night || this.accent != accent ||
+            contentColor != content || tabs.any { it.key.isDirty }
+        ) refreshTabContent()
         items = tabs
         selected = key
         this.accent = accent
@@ -79,7 +85,7 @@ internal class GlasmioPanel(
     private val moduleContext = GlasmioResourceContext(
         context.createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY)
             .createConfigurationContext(context.resources.configuration),
-        requireNotNull(context.applicationContext) { "Railway application context unavailable" },
+        requireNotNull(context.applicationContext) { "Host application context unavailable" },
     )
 
     override fun onAttachedToWindow() {
@@ -102,6 +108,8 @@ internal class GlasmioPanel(
                 GlasmioTheme(isDark = dark, colorScheme = scheme, colors = colors) {
                     val drawCell: @androidx.compose.runtime.Composable (Any?) -> Unit = { key ->
                         if (key is View) ComposeCanvas(Modifier.fillMaxSize()) {
+                            // Read in the draw phase to invalidate every recorded tab on selection changes.
+                            contentRevision.intValue
                             val width = key.width
                             val height = key.height
                             if (key.visibility == View.VISIBLE && width > 0 && height > 0) {
