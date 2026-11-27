@@ -77,18 +77,33 @@ final class PinduoduoHomeBar {
         return RuntimeTabCatalog.titleView(view);
     }
 
+    /**
+     * Pinduoduo's coupon page uses MeCox's parallel WebView hierarchy rather
+     * than android.webkit.WebView. Sampling that page's display list causes a
+     * visible relit/flicker loop, so the page must use the material-only path.
+     */
     private static boolean needsMaterialOnly(ViewGroup page) {
-        return findWebView(page);
+        return findWebViewLike(page);
     }
 
-    private static boolean findWebView(View view) {
-        if (view instanceof android.webkit.WebView && view.isShown()
+    private static boolean findWebViewLike(View view) {
+        if (isWebViewLike(view) && view.isShown()
                 && view.getWidth() > 0 && view.getHeight() > 0) return true;
         if (view instanceof ViewGroup group) {
             for (int i = 0; i < group.getChildCount(); i++) {
                 View child = group.getChildAt(i);
-                if (child != view && findWebView(child)) return true;
+                if (child != view && findWebViewLike(child)) return true;
             }
+        }
+        return false;
+    }
+
+    private static boolean isWebViewLike(View view) {
+        if (view instanceof android.webkit.WebView) return true;
+        // The coupon page uses MeCox's WebView-compatible class. Walk the
+        // superclass chain because PDD exposes it through OverFlingWebView.
+        for (Class<?> type = view.getClass(); type != null; type = type.getSuperclass()) {
+            if ("mecox.webkit.WebView".equals(type.getName())) return true;
         }
         return false;
     }
