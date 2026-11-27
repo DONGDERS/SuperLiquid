@@ -491,7 +491,8 @@ final class LiquidGlassInstaller {
         // and report the degraded effect rather than trying to tear it back out.
         try {
             hideOwnBlurLayers(parent, tabView);
-            if (!kugou && LiquidGlassModule.app() != HostApp.PINDUODUO) hideBarHairline(parent, tabView);
+            if (!kugou && LiquidGlassModule.app() != HostApp.PINDUODUO
+                    && LiquidGlassModule.app() != HostApp.RAILWAY) hideBarHairline(parent, tabView);
             stripSolidBackgrounds(tabView);
             disableTabWidgetStrips(tabView);
         } catch (Throwable t) {
@@ -691,7 +692,7 @@ final class LiquidGlassInstaller {
             AlipayHomeBar.extendSecondaryPage(pager);
             return;
         }
-        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return;
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO || LiquidGlassModule.app() == HostApp.RAILWAY) return;
         if (LiquidGlassModule.app() == HostApp.TAOBAO) {
             extendTaobaoPages(pager);
             return;
@@ -772,6 +773,7 @@ final class LiquidGlassInstaller {
      */
     private static void dropBottomFrostAll() {
         if (LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.RAILWAY
                 || LiquidGlassModule.app() == HostApp.TAOBAO
                 || LiquidGlassModule.app() == HostApp.ALIPAY) return;
         ViewGroup pager = sPagerRef.get();
@@ -1633,6 +1635,7 @@ final class LiquidGlassInstaller {
      */
     private static void keepNavBarClear() {
         if (LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.RAILWAY
                 || LiquidGlassModule.app() == HostApp.TAOBAO
                 || LiquidGlassModule.app() == HostApp.ALIPAY) return;
         Activity a = sActivityRef.get();
@@ -2034,7 +2037,7 @@ final class LiquidGlassInstaller {
      */
     private static int visibleTabSelection(ViewGroup tabRow) {
         int selected = TabBarBridge.selectedIndex(tabRow);
-        if (LiquidGlassModule.app() == HostApp.PINDUODUO) return selected;
+        if (LiquidGlassModule.app() == HostApp.PINDUODUO || LiquidGlassModule.app() == HostApp.RAILWAY) return selected;
         int page = TabBarBridge.pageSlot(sPagerRef.get(), tabRow);
         LiquidGlassHostLayout host = sHostRef.get();
         if (page < 0 || page == selected) {
@@ -2493,6 +2496,7 @@ final class LiquidGlassInstaller {
      */
     private static boolean extendUnderNavBar(Context ctx) {
         if (LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.RAILWAY
                 || LiquidGlassModule.app() == HostApp.TAOBAO
                 || LiquidGlassModule.app() == HostApp.ALIPAY) return false;
         if (Build.VERSION.SDK_INT < 30) {
@@ -2564,6 +2568,7 @@ final class LiquidGlassInstaller {
      */
     private static void watchBottomInset(LiquidGlassHostLayout host, ViewGroup backdrop) {
         if (LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.RAILWAY
                 || LiquidGlassModule.app() == HostApp.TAOBAO
                 || LiquidGlassModule.app() == HostApp.ALIPAY) return;
         backdrop.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or2, ob) -> {

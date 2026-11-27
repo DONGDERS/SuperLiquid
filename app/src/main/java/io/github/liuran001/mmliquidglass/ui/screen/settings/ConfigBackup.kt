@@ -35,6 +35,9 @@ object ConfigBackup {
         }
         root.put("mm", appCfg(Config.mm))
         root.put("qq", appCfg(Config.qq))
+        root.put("railway", appCfg(Config.railway).apply {
+            put("noticeLiftDp", Config.railwayNoticeLiftDp)
+        })
         root.put("kugou", appCfg(Config.kugou).apply {
             put("playerLiftDp", Config.kugouPlayerLiftDp)
         })
@@ -76,6 +79,7 @@ object ConfigBackup {
                 "mm" -> Config.mm; "qq" -> Config.qq
                 "heybox" -> Config.heybox; "bili" -> Config.bili.base
                 "kugou" -> Config.kugou
+                "railway" -> Config.railway
                 else -> return null
             }
             var c = cur
@@ -91,6 +95,12 @@ object ConfigBackup {
         }
         app("mm")?.let { Config.setApp("mm", it); applied++ }
         app("qq")?.let { Config.setApp("qq", it); applied++ }
+        app("railway")?.let { cfg ->
+            Config.setApp("railway", cfg)
+            runCatching { root.getJSONObject("railway").getInt("noticeLiftDp") }
+                .getOrNull()?.let(Config::setRailwayNoticeLiftDp)
+            applied++
+        }
         app("kugou")?.let { cfg ->
             Config.setApp("kugou", cfg)
             runCatching { root.getJSONObject("kugou").getInt("playerLiftDp") }

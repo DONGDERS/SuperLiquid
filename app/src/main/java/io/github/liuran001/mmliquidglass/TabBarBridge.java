@@ -636,6 +636,7 @@ final class TabBarBridge {
         // Turning a native jump into a slide can publish intermediate tab tags.
         if (LiquidGlassModule.app() == HostApp.KUGOU
                 || LiquidGlassModule.app() == HostApp.PINDUODUO
+                || LiquidGlassModule.app() == HostApp.RAILWAY
                 || LiquidGlassModule.app() == HostApp.TAOBAO) return;
         installPagerDiagnostics(pager);
         if (sHookedPager || pager == null) return;

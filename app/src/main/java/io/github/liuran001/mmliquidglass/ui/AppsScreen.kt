@@ -70,6 +70,7 @@ private val TARGETS = listOf(
     Target("pinduoduo", "拼多多", "com.xunmeng.pinduoduo"),
     Target("taobao", "淘宝", "com.taobao.taobao"),
     Target("alipay", "支付宝", "com.eg.android.AlipayGphone"),
+    Target("railway", "铁路 12306", "com.MobileTicket"),
 )
 
 private data class AppIdentity(val installed: Boolean, val label: String?, val icon: ImageBitmap?)
@@ -163,6 +164,7 @@ fun AppsScreen(bottomOverlay: Dp) {
                             "pinduoduo" -> Config.pinduoduo
                             "taobao" -> Config.taobao
                             "alipay" -> Config.alipay
+                            "railway" -> Config.railway
                             else -> Config.bili.base
                         }
                         val tabs = RuntimeTabs.snapshot(t.key)
@@ -186,6 +188,12 @@ fun AppsScreen(bottomOverlay: Dp) {
                             },
                         )
                         when (t.key) {
+                            "railway" -> LSliderRow(
+                                stringResourceCompat(R.string.apps_railway_notice_lift),
+                                Config.railwayNoticeLiftDp.toFloat(),
+                                0f..48f,
+                                steps = 47,
+                            ) { Config.setRailwayNoticeLiftDp(it.toInt()) }
                             "kugou" -> LSliderRow(
                                 stringResourceCompat(R.string.apps_kugou_player_lift),
                                 Config.kugouPlayerLiftDp.toFloat(),

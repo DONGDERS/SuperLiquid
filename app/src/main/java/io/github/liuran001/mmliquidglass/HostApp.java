@@ -157,11 +157,16 @@ final class HostApp {
     static final HostApp ALIPAY = new HostApp(
             "com.eg.android.AlipayGphone", "com.eg.android.AlipayGphone.AlipayLogin",
             new String[0], new String[0], "", new String[0], new String[0], true, "com.alipay.");
-    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX, KUGOU, PINDUODUO, TAOBAO, ALIPAY};
+    static final HostApp RAILWAY = new HostApp(
+            "com.MobileTicket", "com.MobileTicket.ui.activity.MainActivity",
+            new String[0], new String[0], "", new String[0], new String[0],
+            false, "com.MobileTicket.");
+    private static final HostApp[] ALL = {WECHAT, QQ, BILIBILI, HEYBOX, KUGOU, PINDUODUO, TAOBAO, ALIPAY, RAILWAY};
 
     static {
         KUGOU.allowShapeFallback = false;
         PINDUODUO.allowShapeFallback = false;
+        RAILWAY.allowShapeFallback = false;
         TAOBAO.allowShapeFallback = false;
         // Bilibili is full of tab-shaped rows (feed tabs, channel strips), so
         // the shape fallback would latch onto the wrong one. Its bar is found

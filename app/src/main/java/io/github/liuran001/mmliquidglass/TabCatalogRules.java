@@ -19,6 +19,7 @@ public final class TabCatalogRules {
         PACKAGES.put("pinduoduo", "com.xunmeng.pinduoduo");
         PACKAGES.put("taobao", "com.taobao.taobao");
         PACKAGES.put("alipay", "com.eg.android.AlipayGphone");
+        PACKAGES.put("railway", "com.MobileTicket");
     }
     private TabCatalogRules() {}
     public static String packageFor(String key) { return PACKAGES.get(key); }

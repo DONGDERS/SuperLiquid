@@ -35,7 +35,7 @@ object RuntimeTabs {
     private var snapshots by mutableStateOf<Map<String, Snapshot>>(emptyMap())
     private var context: Context? = null
     private var prefs: SharedPreferences? = null
-    private val keys = listOf("mm", "qq", "bili", "heybox", "kugou", "pinduoduo", "taobao", "alipay")
+    private val keys = listOf("mm", "qq", "bili", "heybox", "kugou", "pinduoduo", "taobao", "alipay", "railway")
     private val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> refresh() }
     fun init(ctx: Context) {
         context = ctx.applicationContext

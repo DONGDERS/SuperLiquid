@@ -83,6 +83,7 @@ public final class GlassConfig {
 
     static volatile boolean enabled = true;
     public static final int DEFAULT_KUGOU_PLAYER_LIFT_DP = 20;
+    static volatile int railwayNoticeLiftDp;
     static volatile int kugouPlayerLiftDp = DEFAULT_KUGOU_PLAYER_LIFT_DP;
 
     private static volatile String keyPrefix = "";
@@ -106,6 +107,7 @@ public final class GlassConfig {
         if (HostApp.PINDUODUO.pkg.equals(pkg)) return "pinduoduo";
         if (HostApp.TAOBAO.pkg.equals(pkg)) return "taobao";
         if (HostApp.ALIPAY.pkg.equals(pkg)) return "alipay";
+        if (HostApp.RAILWAY.pkg.equals(pkg)) return RailwayHomeBar.KEY;
         return "";
     }
 
@@ -124,6 +126,7 @@ public final class GlassConfig {
         // long-lived process cannot inherit another app's values.
         enabled = true;
         kugouPlayerLiftDp = DEFAULT_KUGOU_PLAYER_LIFT_DP;
+        railwayNoticeLiftDp = 0;
         barOffsetDp = 12;
         barOffsetXDp = 0;
         // r12 lesson (log-arbitrated): the handoff below OVERWRITES
@@ -219,6 +222,9 @@ public final class GlassConfig {
         saturationBoost = p.getFloat(k("saturation"), saturationBoost);
         glossStrength = p.getFloat(k("gloss"), glossStrength);
         borderWidthScale = p.getFloat(k("border"), borderWidthScale);
+        if (RailwayHomeBar.KEY.equals(keyPrefix)) {
+            railwayNoticeLiftDp = Math.max(0, Math.min(48, p.getInt(k("notice_lift_dp"), 0)));
+        }
         if ("kugou".equals(keyPrefix)) {
             kugouPlayerLiftDp = Math.max(0, Math.min(48, p.getInt(k("player_lift_dp"), DEFAULT_KUGOU_PLAYER_LIFT_DP)));
         }

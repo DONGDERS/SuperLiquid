@@ -107,6 +107,10 @@ object Config {
     private val _alipay = mutableStateOf(AppCfg())
     val taobao: AppCfg get() = _taobao.value
     val alipay: AppCfg get() = _alipay.value
+    private val _railway = mutableStateOf(AppCfg())
+    val railway: AppCfg get() = _railway.value
+    private val _railwayNoticeLiftDp = mutableStateOf(0)
+    val railwayNoticeLiftDp: Int get() = _railwayNoticeLiftDp.value
     private val _kugouPlayerLiftDp = mutableStateOf(DEFAULT_KUGOU_PLAYER_LIFT_DP)
     val kugouPlayerLiftDp: Int get() = _kugouPlayerLiftDp.value
     private val _heybox = mutableStateOf(AppCfg(widthScale = 0.5f))
@@ -120,6 +124,7 @@ object Config {
         "bili" to TabLayout(), "heybox" to TabLayout(),
         "kugou" to TabLayout(),
         "pinduoduo" to TabLayout(),
+        "railway" to TabLayout(),
         "alipay" to TabLayout(), "taobao" to TabLayout(),
     ))
     fun tabLayout(key: String): TabLayout = _tabs.value[key] ?: TabLayout()
@@ -213,6 +218,7 @@ object Config {
             "pinduoduo" -> _pinduoduo.value = cfg
             "taobao" -> _taobao.value = cfg
             "alipay" -> _alipay.value = cfg
+            "railway" -> _railway.value = cfg
             "bili" -> _bili.value = _bili.value.copy(base = cfg)
         }
         write(key, cfg)
@@ -222,6 +228,13 @@ object Config {
         _bili.value = cfg
         write("bili", cfg.base)
         writePlus("bili", cfg.plus)
+    }
+
+    fun setRailwayNoticeLiftDp(value: Int) {
+        val dp = value.coerceIn(0, 48)
+        _railwayNoticeLiftDp.value = dp
+        remotePrefs?.edit()?.putInt("railway_notice_lift_dp", dp)?.apply()
+        hookPrefs?.edit()?.putInt("railway_notice_lift_dp", dp)?.apply()
     }
 
     fun setKugouPlayerLiftDp(value: Int) {
@@ -253,8 +266,10 @@ object Config {
         setApp("pinduoduo", AppCfg())
         setApp("taobao", AppCfg())
         setApp("alipay", AppCfg())
+        setApp("railway", AppCfg())
+        setRailwayNoticeLiftDp(0)
         setKugouPlayerLiftDp(DEFAULT_KUGOU_PLAYER_LIFT_DP)
-        for (key in listOf("mm", "qq", "bili", "heybox", "kugou", "pinduoduo", "taobao", "alipay")) {
+        for (key in listOf("mm", "qq", "bili", "heybox", "kugou", "pinduoduo", "taobao", "alipay", "railway")) {
             setTabLayout(key, TabLayout())
         }
     }
@@ -314,6 +329,8 @@ object Config {
         _pinduoduo.value = app("pinduoduo", AppCfg())
         _taobao.value = app("taobao", AppCfg())
         _alipay.value = app("alipay", AppCfg())
+        _railway.value = app("railway", AppCfg())
+        _railwayNoticeLiftDp.value = p.getInt("railway_notice_lift_dp", 0).coerceIn(0, 48)
         _kugouPlayerLiftDp.value = p.getInt("kugou_player_lift_dp", DEFAULT_KUGOU_PLAYER_LIFT_DP).coerceIn(0, 48)
         _heyboxPlus.value = readPlus(p, "heybox")
         _tabs.value = mapOf(
@@ -321,6 +338,7 @@ object Config {
             "bili" to readTabLayout(p, "bili"), "heybox" to readTabLayout(p, "heybox"),
             "kugou" to readTabLayout(p, "kugou"),
             "pinduoduo" to readTabLayout(p, "pinduoduo"),
+            "railway" to readTabLayout(p, "railway"),
             "alipay" to readTabLayout(p, "alipay"), "taobao" to readTabLayout(p, "taobao"),
         )
         _bili.value = BiliCfg(

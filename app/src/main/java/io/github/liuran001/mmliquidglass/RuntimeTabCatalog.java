@@ -102,6 +102,7 @@ final class RuntimeTabCatalog {
     private static final Map<String, Catalog> CATALOGS = new java.util.HashMap<>();
 
     private static View source(View cell) {
+        if (cell instanceof RailwayHomeBar.TabCopy copy) return copy.source;
         return cell instanceof PinduoduoHomeBar.TabCopy copy ? copy.source : cell;
     }
     private static final class TextReading {
