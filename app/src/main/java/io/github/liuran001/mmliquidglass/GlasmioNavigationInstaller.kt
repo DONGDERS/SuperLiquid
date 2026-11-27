@@ -5,24 +5,24 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import io.github.neoruaa.glasmio.ui.GlasmioTabItem
-import io.github.neoruaa.glasmio.ui.NavigationBarSurfaceHeight
+import io.github.liuran001.mmliquidglass.glasmionav.GlasmioTabItem
+import io.github.liuran001.mmliquidglass.glasmionav.NavigationBarSurfaceHeight
+import io.github.neoruaa.glasmio.icons.SfSymbol
 import kotlin.math.roundToInt
 
-/** A sibling of the standard bar, with no standard views in its render or input path. */
+/** Uses the same tab cells as the standard installer, without moving them. */
 internal class GlasmioNavigationInstaller(
     private val container: FrameLayout,
     private val page: ViewGroup,
-    private val onSelected: java.util.function.IntConsumer,
+    private val row: ViewGroup,
 ) {
     private var panel: GlasmioPanel? = null
     private var failed = false
+    private var items = emptyList<GlasmioTabItem<View>>()
 
     fun show(
         requested: Boolean,
         active: Boolean,
-        items: List<GlasmioTabItem<Int>>,
-        selected: Int,
         night: Boolean,
         bottom: Int,
         offsetX: Int,
@@ -34,19 +34,37 @@ internal class GlasmioNavigationInstaller(
             if (!requested) failed = false
             return false
         }
-        if (!active || items.isEmpty() || container.width <= 0) {
+        if (!active || container.width <= 0) {
             panel?.visibility = View.INVISIBLE
             return false
         }
+        val cells = (0 until row.childCount).map(row::getChildAt).filter { it.visibility != View.GONE }
+        if (cells.isEmpty() || cells.any { it.width == 0 || it.height == 0 }) {
+            panel?.visibility = View.INVISIBLE
+            return false
+        }
+        if (cells.size != items.size || cells.indices.any { cells[it] !== items[it].key }) {
+            items = cells.map { cell ->
+                val label = cell.contentDescription?.toString()?.takeIf { it.isNotBlank() }
+                    ?: RuntimeTabCatalog.label(cell)
+                GlasmioTabItem(cell, label, SfSymbol.House, label)
+            }
+        }
+        val selected = cells.getOrNull(TabBarBridge.selectedIndex(row))
+        val accent = selected?.let { RuntimeTabCatalog.titleView(it)?.currentTextColor }
+        val content = cells.firstOrNull { it !== selected }?.let { RuntimeTabCatalog.titleView(it)?.currentTextColor }
+
         val density = container.resources.displayMetrics.density
         val maxWidth = (container.width - (24 * density).roundToInt()).coerceAtLeast(1)
         val width = ((82 * items.size + 8) * density * widthScale).roundToInt().coerceIn(1, maxWidth)
         val height = (NavigationBarSurfaceHeight.value * density).roundToInt().coerceAtLeast(1)
         try {
-            val view = panel ?: GlasmioPanel(container.context, page, night, onSelected::accept, ::fail)
+            val view = panel ?: GlasmioPanel(container.context, page, night, { cell ->
+                if (cell.parent === row && cell.visibility == View.VISIBLE && cell.isEnabled) cell.performClick()
+            }, ::fail)
                 .also {
                     panel = it
-                    it.update(items, selected, night)
+                    it.update(items, selected, night, accent, content)
                     container.addView(it, FrameLayout.LayoutParams(width, height, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
                         .apply { bottomMargin = bottom })
                     if (!failed) LiquidGlassModule.log(Log.INFO, "Glasmio navigation installed")
@@ -64,7 +82,7 @@ internal class GlasmioNavigationInstaller(
             view.translationX = offsetX.toFloat()
             view.scaleX = scale
             view.scaleY = scale
-            view.update(items, selected, night)
+            view.update(items, selected, night, accent, content)
             view.visibility = View.VISIBLE
             return true
         } catch (error: Throwable) {

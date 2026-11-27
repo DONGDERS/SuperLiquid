@@ -315,6 +315,21 @@ private fun AppParams(
                 LActionRow(stringResourceCompat(R.string.apps_tab_layout),
                     stringResourceCompat(R.string.apps_tab_layout_summary), onEditTabs)
             }
+            val modes = listOf("follow", "standard", "extreme")
+            val items = listOf(stringResourceCompat(R.string.performance_follow),
+                stringResourceCompat(R.string.performance_standard), stringResourceCompat(R.string.performance_extreme))
+            val title = stringResourceCompat(R.string.performance_title)
+            val summary = stringResourceCompat(R.string.performance_summary)
+            val index = modes.indexOf(cfg.performance).coerceAtLeast(0)
+            val select: (Int) -> Unit = { set(cfg.copy(performance = modes[it])) }
+            when (LocalUiMode.current) {
+                UiMode.Material -> io.github.liuran001.mmliquidglass.ui.component.material.SegmentedDropdownItem(
+                    title = title, summary = summary, items = items, selectedIndex = index, onItemSelected = select,
+                )
+                UiMode.Miuix -> top.yukonga.miuix.kmp.preference.OverlayDropdownPreference(
+                    title = title, summary = summary, items = items, selectedIndex = index, onSelectedIndexChange = select,
+                )
+            }
             LSliderRow(stringResourceCompat(R.string.apps_width_scale), cfg.widthScale, widthRange) {
                 set(cfg.copy(widthScale = (it * 100).toInt() / 100f))
             }

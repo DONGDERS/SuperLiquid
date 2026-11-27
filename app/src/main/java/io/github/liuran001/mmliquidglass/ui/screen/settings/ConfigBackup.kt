@@ -33,6 +33,7 @@ object ConfigBackup {
             put("saturation", c.saturation.toDouble())
             put("gloss", c.gloss.toDouble())
             put("border", c.border.toDouble())
+            put("performance", c.performance)
         }
         root.put("mm", appCfg(Config.mm))
         root.put("qq", appCfg(Config.qq))
@@ -96,7 +97,7 @@ object ConfigBackup {
             for (f in listOf("offsetDp", "offsetXdp", "blur")) {
                 runCatching { c = setI(c, f, o.getInt(f)) }
             }
-            return c
+            return c.copy(performance = readPerformance(o, c.performance))
         }
         app("mm")?.let { Config.setApp("mm", it); applied++ }
         app("qq")?.let { Config.setApp("qq", it); applied++ }
@@ -129,7 +130,7 @@ object ConfigBackup {
                 runCatching { base = setI(base, f, o.getInt(f)) }
             }
             Config.setBili(Config.BiliCfg(
-                base = base,
+                base = base.copy(performance = readPerformance(o, base.performance)),
                 plus = o.readPlus(b.plus),
             ))
             applied++
@@ -181,6 +182,11 @@ object ConfigBackup {
     )
 
     // AppCfg is a data class — set via copy() keyed by field name.
+    private fun readPerformance(o: JSONObject, fallback: String): String =
+        o.optString("performance").takeIf { it in listOf("follow", "standard", "extreme") }
+            ?: fallback
+
+
     private fun setF(c: Config.AppCfg, f: String, v: Float) = when (f) {
         "widthScale" -> c.copy(widthScale = v)
         "tint" -> c.copy(tint = v)

@@ -269,7 +269,11 @@ public final class GlassConfig {
     }
 
     private static void apply(SharedPreferences p) {
-        extremePerformance = "extreme".equals(p.getString("performance_mode", extremePerformance ? "extreme" : "standard"));
+        extremePerformance = switch (p.getString(k("performance"), "follow")) {
+            case "standard" -> false;
+            case "extreme" -> true;
+            default -> "extreme".equals(p.getString("performance_mode", "standard"));
+        };
         enabled = p.getBoolean(k("enabled"), enabled);
         barOffsetDp = p.getInt(k("offset_dp"), barOffsetDp);
         barOffsetXDp = p.getInt(k("offsetx_dp"), barOffsetXDp);

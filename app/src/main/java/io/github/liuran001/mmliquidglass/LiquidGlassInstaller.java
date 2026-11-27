@@ -324,8 +324,8 @@ final class LiquidGlassInstaller {
 
     /** Installs a full Glasmio navigation bar alongside the standard installer. */
     static GlasmioNavigationInstaller installGlasmio(FrameLayout mount, ViewGroup page,
-                                                    java.util.function.IntConsumer select) {
-        return new GlasmioNavigationInstaller(mount, page, select);
+                                                    ViewGroup row) {
+        return new GlasmioNavigationInstaller(mount, page, row);
     }
 
     // Kugou's page is not a sibling of the tab view: its sibling is the player.

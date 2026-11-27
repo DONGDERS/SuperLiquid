@@ -23,19 +23,30 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import io.github.neoruaa.glasmio.core.GlasmioTheme
-import io.github.neoruaa.glasmio.ui.GlasmioNavigationBar
-import io.github.neoruaa.glasmio.ui.GlasmioTabItem
+import io.github.liuran001.mmliquidglass.glasmionav.GlasmioNavigationBar
+import io.github.liuran001.mmliquidglass.glasmionav.GlasmioTabItem
+import io.github.liuran001.mmliquidglass.glasmionav.LocalNavigationViewContent
+import io.github.neoruaa.glasmio.core.defaultGlassColors
+import io.github.neoruaa.glasmio.core.glasmioColorScheme
+import android.view.View
+import androidx.compose.foundation.Canvas as ComposeCanvas
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.dp
 
 /** The complete Glasmio bottom navigation, including its own input handling. */
 internal class GlasmioPanel(
     context: Context, private val page: ViewGroup, night: Boolean,
-    private val onSelected: (Int) -> Unit,
+    private val onSelected: (View) -> Unit,
     private val failed: (Throwable) -> Unit,
 ) : FrameLayout(context) {
     private var dark by mutableStateOf(night)
-    private var items by mutableStateOf(emptyList<GlasmioTabItem<Int>>())
-    private var selected by mutableStateOf(-1)
+    private var items by mutableStateOf(emptyList<GlasmioTabItem<View>>())
+    private var selected by mutableStateOf<View?>(null)
+    private var accent by mutableStateOf<Int?>(null)
+    private var contentColor by mutableStateOf<Int?>(null)
     private var owner: GlasmioOwner? = null
     private val source = GlasmioViewBackdrop(page, this, { dark }, failed)
     private var requested = false
@@ -57,9 +68,11 @@ internal class GlasmioPanel(
         clipChildren = false
         clipToPadding = false
     }
-    fun update(tabs: List<GlasmioTabItem<Int>>, key: Int, night: Boolean) {
+    fun update(tabs: List<GlasmioTabItem<View>>, key: View?, night: Boolean, accent: Int?, content: Int?) {
         items = tabs
         selected = key
+        this.accent = accent
+        contentColor = content
         if (dark != night) source.refresh()
         dark = night
     }
@@ -83,23 +96,44 @@ internal class GlasmioPanel(
                 val tabs = items
                 val expanded = remember { mutableStateOf(0f) }
                 if (tabs.isEmpty()) return@setContent
-                GlasmioTheme(isDark = dark) {
-                    GlasmioNavigationBar(
-                        items = tabs,
-                        selectedKey = selected,
-                        onSelected = onSelected,
-                        onExpand = {},
-                        compactProgress = expanded,
-                        compactSize = 44.dp,
-                        modifier = Modifier.fillMaxWidth().drawWithContent {
-                            drawContent()
-                            if (firstDraw && size.width > 0f && size.height > 0f) {
-                                firstDraw = false
-                                LiquidGlassModule.log(android.util.Log.INFO, "Glasmio navigation first draw")
+                val scheme = accent?.let { glasmioColorScheme(dark, Color(it)) } ?: glasmioColorScheme(dark)
+                val defaults = defaultGlassColors(dark, scheme.primary)
+                val colors = defaults.copy(content = contentColor?.let { Color(it) } ?: defaults.content)
+                GlasmioTheme(isDark = dark, colorScheme = scheme, colors = colors) {
+                    val drawCell: @androidx.compose.runtime.Composable (Any?) -> Unit = { key ->
+                        if (key is View) ComposeCanvas(Modifier.fillMaxSize()) {
+                            val width = key.width
+                            val height = key.height
+                            if (key.visibility == View.VISIBLE && width > 0 && height > 0) {
+                                val scale = minOf(1f, size.width / width, size.height / height)
+                                val canvas = drawContext.canvas.nativeCanvas
+                                val save = canvas.save()
+                                try {
+                                    canvas.translate((size.width - scale * width) / 2, (size.height - scale * height) / 2)
+                                    canvas.scale(scale, scale)
+                                    key.draw(canvas)
+                                } finally { canvas.restoreToCount(save) }
                             }
-                        },
-                        backdrop = source,
-                    )
+                        }
+                    }
+                    CompositionLocalProvider(LocalNavigationViewContent provides drawCell) {
+                        GlasmioNavigationBar(
+                            items = tabs,
+                            selectedKey = selected,
+                            onSelected = onSelected,
+                            onExpand = {},
+                            compactProgress = expanded,
+                            compactSize = 44.dp,
+                            modifier = Modifier.fillMaxWidth().drawWithContent {
+                                drawContent()
+                                if (firstDraw && size.width > 0f && size.height > 0f) {
+                                    firstDraw = false
+                                    LiquidGlassModule.log(android.util.Log.INFO, "Glasmio navigation first draw")
+                                }
+                            },
+                            backdrop = source,
+                        )
+                    }
                 }
             }
             // The native content root has no Compose lifecycle. Keep the recomposer local.

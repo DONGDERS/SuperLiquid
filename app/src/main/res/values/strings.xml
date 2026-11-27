@@ -122,6 +122,7 @@
     <string name="settings_app_expand_limit_summary">应用页同时展开的卡片超过上限时，自动收起最早展开的</string>
     <string name="settings_app_expand_limit_count">最多同时展开</string>
     <string name="performance_title">性能</string>
+    <string name="performance_follow">跟随全局</string>
     <string name="performance_standard">标准</string>
     <string name="performance_extreme">极致</string>
     <string name="performance_summary">标准：现有底栏；极致：Glasmio 底栏（当前仅适配 12306）</string>

@@ -35,6 +35,7 @@ object Config {
         val saturation: Float = 1.0f,
         val gloss: Float = 1.0f,
         val border: Float = 1.0f,
+        val performance: String = "follow",
     )
 
     data class BiliCfg(
@@ -300,6 +301,7 @@ object Config {
             putFloat("${k}_saturation", c.saturation)
             putFloat("${k}_gloss", c.gloss)
             putFloat("${k}_border", c.border)
+            putString("${k}_performance", c.performance)
         }
         editor.putApp(key, cfg)
         editor.apply()
@@ -335,6 +337,10 @@ object Config {
             saturation = p.getFloat("${key}_saturation", def.saturation),
             gloss = p.getFloat("${key}_gloss", def.gloss),
             border = p.getFloat("${key}_border", def.border),
+            performance = when (val mode = p.getString("${key}_performance", "follow")) {
+                "standard", "extreme" -> mode
+                else -> "follow"
+            },
         )
         _mm.value = app("mm", AppCfg())
         _qq.value = app("qq", AppCfg())
