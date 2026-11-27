@@ -1,6 +1,9 @@
 package io.github.liuran001.mmliquidglass
 
+import android.content.ComponentCallbacks
 import android.content.Context
+import android.content.ContextWrapper
+
 import android.graphics.Canvas
 import android.view.MotionEvent
 import android.view.ViewGroup
@@ -60,9 +63,11 @@ internal class GlasmioPanel(
         configRevision++
         source.refresh()
     }
-    private val moduleContext = context
-        .createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY)
-        .createConfigurationContext(context.resources.configuration)
+    private val moduleContext = GlasmioResourceContext(
+        context.createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY)
+            .createConfigurationContext(context.resources.configuration),
+        requireNotNull(context.applicationContext) { "Railway application context unavailable" },
+    )
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -129,4 +134,21 @@ internal class GlasmioPanel(
         finally { canvas.restoreToCount(save) }
     }
     override fun dispatchTouchEvent(event: MotionEvent): Boolean = false
+}
+
+// The module is not an Application in the host process. Keep module resources,
+// but use the running Application for process-wide services and callbacks.
+private class GlasmioResourceContext(
+    resourcesContext: Context,
+    private val hostApplication: Context,
+) : ContextWrapper(resourcesContext) {
+    override fun getApplicationContext(): Context = hostApplication
+
+    override fun registerComponentCallbacks(callback: ComponentCallbacks) {
+        hostApplication.registerComponentCallbacks(callback)
+    }
+
+    override fun unregisterComponentCallbacks(callback: ComponentCallbacks) {
+        hostApplication.unregisterComponentCallbacks(callback)
+    }
 }
