@@ -179,10 +179,6 @@ fun MainRoot(pager: PagerState) {
                 UiMode.Material, UiMode.LiquidGlass -> androidx.compose.material3.MaterialTheme.colorScheme.surface
             }
             val liquidContent = io.github.neoruaa.glasmio.glass.render.backdrops.rememberLayerBackdrop()
-            val menuBackdrop = rememberCombinedBackdrop(
-                rememberCrossWindowBackdrop(LocalGlassBackdrop.current),
-                rememberCrossWindowBackdrop(liquidContent),
-            )
             val pageBackdrop =
                 top.yukonga.miuix.kmp.blur.rememberLayerBackdrop {
                     drawRect(backdropSurface)
@@ -333,7 +329,13 @@ fun MainRoot(pager: PagerState) {
                     }
                     var searchBounds by remember { mutableStateOf<Rect?>(null) }
                     val searchTransition = rememberGlasmioSearchTransition(searchActive)
-                    val backdrop = rememberCombinedBackdrop(LocalGlassBackdrop.current, liquidContent)
+                    // Only LiquidGlass is hosted by LiquidScene and can read this local.
+                    val glassBackground = LocalGlassBackdrop.current
+                    val backdrop = rememberCombinedBackdrop(glassBackground, liquidContent)
+                    val menuBackdrop = rememberCombinedBackdrop(
+                        rememberCrossWindowBackdrop(glassBackground),
+                        rememberCrossWindowBackdrop(liquidContent),
+                    )
                     GlasmioFloatingSearch(
                         active = searchActive,
                         query = searchQuery,
