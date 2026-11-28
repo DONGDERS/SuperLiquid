@@ -121,22 +121,42 @@ final class PinduoduoHomeBar {
         return best;
     }
 
-    private static final int DIVIDER_ID = 0x7f090235;
-    private static final int CONTENT_ID = 0x7f090236;
-
-    private static View findDivider(ViewGroup frame, ViewGroup bar) {
-        View divider = frame.findViewById(DIVIDER_ID);
-        if (divider != null && divider.getParent() == frame && divider.getClass() == View.class) {
-            return divider;
-        }
-        int maxHeight = Math.max(2, Math.round(2 * frame.getResources().getDisplayMetrics().density));
-        for (int i=0; i<frame.getChildCount(); i++) {
+    // The dock can include a promotional header above its actual tab row.
+    // Anchor the divider to the cells, not the outer bar or a build's resource ID.
+    private static View findDivider(ViewGroup frame, ViewGroup bar, java.util.List<View> tabs) {
+        int edge = Integer.MAX_VALUE;
+        for (View tab : tabs) edge = Math.min(edge, bar.getTop() + tab.getTop());
+        int tolerance = Math.max(2, Math.round(2 * frame.getResources().getDisplayMetrics().density));
+        View match = null;
+        for (int i = 0; i < frame.getChildCount(); i++) {
             View child = frame.getChildAt(i);
-            if (child != bar && child.getClass() == View.class && child.getWidth() >= frame.getWidth() * 0.7f
-                    && child.getHeight() > 0 && child.getHeight() <= maxHeight
-                    && Math.abs(child.getTop() - bar.getTop()) <= maxHeight * 3) return child;
+            if (child.getClass() != View.class || child.getVisibility() != View.VISIBLE
+                    || child.isClickable() || child.getHeight() <= 0 || child.getHeight() > tolerance
+                    || child.getWidth() < bar.getWidth() * 0.9f
+                    || Math.abs(child.getLeft() - bar.getLeft()) > tolerance
+                    || Math.abs(child.getRight() - bar.getRight()) > tolerance
+                    || Math.abs(child.getTop() - edge) > tolerance) continue;
+            if (match != null) return null;
+            match = child;
         }
-        return null;
+        return match;
+    }
+
+    private static final class DockDivider {
+        private View held;
+        private float alpha;
+
+        void sync(View next) {
+            if (held != next) {
+                if (held != null && held.getAlpha() == 0f) held.setAlpha(alpha);
+                held = next;
+                if (next != null) alpha = next.getAlpha();
+            }
+            if (next != null && next.getAlpha() != 0f) {
+                alpha = next.getAlpha();
+                next.setAlpha(0f);
+            }
+        }
     }
 
     private static final class ContentReserve {
@@ -144,15 +164,15 @@ final class PinduoduoHomeBar {
         private int originalBottomMargin;
 
         void remove(ViewGroup frame, ViewGroup page, View bar, View divider) {
-            if (page.getId() != CONTENT_ID || page.getParent() != frame || divider == null
-                    || divider.getId() != DIVIDER_ID || divider.getParent() != frame) return;
+            if (page.getParent() != frame || divider == null || divider.getParent() != frame) return;
             int edge = frame.getHeight() - frame.getPaddingBottom();
             // The native divider marks the docked content edge, below the top
             // of PddTabView (which includes an extra header inside the bar).
             if (page.getBottom() >= edge || Math.abs(page.getBottom() - divider.getTop()) > 1
                     || divider.getTop() < bar.getTop() || divider.getTop() >= bar.getBottom()
                     || !(page.getLayoutParams() instanceof android.widget.RelativeLayout.LayoutParams lp)
-                    || lp.height != ViewGroup.LayoutParams.MATCH_PARENT || lp.bottomMargin <= 0) return;
+                    || lp.height != ViewGroup.LayoutParams.MATCH_PARENT || lp.bottomMargin <= 0
+                    || Math.abs(edge - page.getBottom() - lp.bottomMargin) > 1) return;
             originalBottomMargin = lp.bottomMargin;
             expanded = lp;
             // Keep the parent's relative rules and the host's top inset intact.
@@ -181,10 +201,7 @@ final class PinduoduoHomeBar {
         if (!FRAME.equals(frame.getClass().getName()) || frame.getParent() != parent) return false;
         ViewGroup backdrop = findPage(frame, bar);
         if (backdrop == null) return false;
-        View line = findDivider(frame, bar);
-        final View divider = line != null && line.getParent() == frame && line.getClass() == View.class
-                ? line : null;
-        float dividerAlpha = divider == null ? 0f : divider.getAlpha();
+        DockDivider dockDivider = new DockDivider();
         ContentReserve contentReserve = new ContentReserve();
         int[] location = new int[2];
         int[] origin = new int[2];
@@ -217,7 +234,7 @@ final class PinduoduoHomeBar {
             LiquidGlassInstaller.setConfigBottomReserve(host, reserve);
             LiquidGlassInstaller.setMaterialOnly(host, backdrop, needsMaterialOnly(backdrop));
             bar.setAlpha(0f);
-            if (divider != null) divider.setAlpha(0f);
+            dockDivider.sync(findDivider(frame, bar, tabs));
             bar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
             ViewTreeObserver observer = host.getViewTreeObserver();
             ViewTreeObserver.OnPreDrawListener sync = () -> {
@@ -232,10 +249,8 @@ final class PinduoduoHomeBar {
                 boolean visible = bar.isShown();
                 live.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
                 if (visible && bar.getAlpha() != 0f) bar.setAlpha(0f);
-                if (divider != null) {
-                    float targetAlpha = visible ? 0f : dividerAlpha;
-                    if (divider.getAlpha() != targetAlpha) divider.setAlpha(targetAlpha);
-                }
+                View divider = visible ? findDivider(frame, bar, tabs) : null;
+                dockDivider.sync(divider);
                 if (visible) {
                     contentReserve.remove(frame, backdrop, bar, divider);
                 } else {
@@ -262,7 +277,7 @@ final class PinduoduoHomeBar {
                 @Override public void onViewAttachedToWindow(View v) {}
                 @Override public void onViewDetachedFromWindow(View v) {
                     bar.setAlpha(alpha);
-                    if (divider != null) divider.setAlpha(dividerAlpha);
+                    dockDivider.sync(null);
                     contentReserve.restore(backdrop);
                     LiquidGlassInstaller.setMaterialOnly(live, backdrop, false);
                     if (observer.isAlive()) observer.removeOnPreDrawListener(sync);
@@ -280,7 +295,7 @@ final class PinduoduoHomeBar {
                         ? (View) row.getParent() : row;
                 parent.removeView(attached);
                 if (bar.getAlpha() != alpha) bar.setAlpha(alpha);
-                if (divider != null && divider.getAlpha() != dividerAlpha) divider.setAlpha(dividerAlpha);
+                dockDivider.sync(null);
                 if (host != null) LiquidGlassInstaller.setMaterialOnly(host, backdrop, false);
                 bar.setImportantForAccessibility(accessibility);
             }

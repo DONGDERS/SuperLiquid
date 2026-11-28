@@ -11,18 +11,12 @@ import android.widget.TextView;
 
 
 final class AlipayHomeBar {
-    private static final int BACKGROUND = 0x4507001f;
-    private static final int SELECTED_ICON_CONTAINER = 0x4507001d;
-    private static final int SELECTED_ICON_SIZE_DP = 36;
-    private static final int TAB_ICON = 0x45070023;
-    private static final int TAB_DESCRIPTION = 0x45070022;
     private static final java.util.Map<View, CharSequence> HOME_LABELS = new java.util.WeakHashMap<>();
 
     private AlipayHomeBar() { }
 
     static ViewGroup findBar(View root) {
-        View preferred = root.findViewById(0x45070020);
-        View bar = validBar(preferred) ? preferred : findBarInTree(root);
+        View bar = findBarInTree(root);
         if (!validBar(bar)) return null;
         return backdrop((ViewGroup) bar.getParent()) != null ? (ViewGroup) bar : null;
     }
@@ -55,40 +49,29 @@ final class AlipayHomeBar {
                 && content.getHeight() > 0 ? (ViewGroup) content : null;
     }
 
+    private static <T extends View> T childWithRole(View parent, String role, Class<T> type) {
+        if (!(parent instanceof ViewGroup group)) return null;
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (!type.isInstance(child) || child.getId() == View.NO_ID) continue;
+            try {
+                if (role.equals(child.getResources().getResourceEntryName(child.getId()))) {
+                    return type.cast(child);
+                }
+            } catch (android.content.res.Resources.NotFoundException ignored) { }
+        }
+        return null;
+    }
+
     static void keepHomeLabelVisible(View home) {
-        View label = home.findViewById(TAB_DESCRIPTION);
-        if (!(label instanceof TextView) || label.getParent() != home) return;
-        TextView description = (TextView) label;
+        TextView description = childWithRole(home, "tab_description", TextView.class);
+        if (description == null) return;
         CharSequence current = description.getText();
         if (!TextUtils.isEmpty(current)) HOME_LABELS.put(home, current.toString());
         CharSequence learned = HOME_LABELS.get(home);
         if (TextUtils.isEmpty(current) && learned != null) description.setText(learned);
         if (description.getVisibility() != View.VISIBLE) description.setVisibility(View.VISIBLE);
         if (description.getAlpha() != 1f) description.setAlpha(1f);
-    }
-
-    private static boolean sHomeSizeHooked;
-
-    static void hookHomeIconSizing(View home) {
-        if (sHomeSizeHooked) return;
-        sHomeSizeHooked = true;
-        try {
-            LiquidGlassModule.hookAfter(home.getClass().getMethod("updateSelectLayoutSize", boolean.class),
-                    chain -> {
-                        if (!(chain.getThisObject() instanceof View)) return;
-                        View cell = (View) chain.getThisObject();
-                        if (!(cell.getParent() instanceof TabWidget) || !cell.isSelected()) return;
-                        ViewGroup row = (ViewGroup) cell.getParent();
-                        if (!(row.getParent() instanceof View)) return;
-                        View bar = (View) row.getParent();
-                        if (bar.getParent() instanceof LiquidGlassHostLayout
-                                && ((View) bar.getParent()).getParent() instanceof TabHost) {
-                            keepSelectedHomeIconStill(row, cell);
-                        }
-                    });
-        } catch (ReflectiveOperationException | RuntimeException e) {
-            LiquidGlassModule.logErr("Alipay home icon sizing hook unavailable", e);
-        }
     }
 
     /** Native TabHost reintroduces its docked-bar reserve during page switches. */
@@ -109,14 +92,13 @@ final class AlipayHomeBar {
 
     static boolean keepSelectedHomeIconStill(ViewGroup row, View home) {
         if (!home.isSelected()) return false;
-        View selected = home.findViewById(SELECTED_ICON_CONTAINER);
-        if (!(selected instanceof FrameLayout) || selected.getParent() != home
-                || selected.getVisibility() != View.VISIBLE) return false;
+        FrameLayout selected = childWithRole(home, "selected_fl", FrameLayout.class);
+        ImageView peer = visiblePeerIcon(row, home);
+        if (selected == null || selected.getVisibility() != View.VISIBLE || peer == null) return false;
         ViewGroup.LayoutParams lp = selected.getLayoutParams();
         if (lp == null) return false;
-        // The native home feed switches selected_fl between 36dp and 50dp.
-        // Keep its compact size without replacing the icon or its layout rules.
-        int size = Math.round(SELECTED_ICON_SIZE_DP * selected.getResources().getDisplayMetrics().density);
+        // Take the compact dimensions and vertical alignment from the live row.
+        int size = Math.min(peer.getWidth(), peer.getHeight());
         boolean relayout = lp.width != size || lp.height != size;
         if (relayout) {
             lp.width = size;
@@ -127,35 +109,32 @@ final class AlipayHomeBar {
         // properties in pre-draw, scoped to this selected home indicator.
         if (selected.getScaleX() != 1f) selected.setScaleX(1f);
         if (selected.getScaleY() != 1f) selected.setScaleY(1f);
-        float offset = peerIconCenterY(row, home) - selected.getHeight() * 0.5f
-                - selected.getTop();
+        View peerCell = (View) peer.getParent();
+        float peerCenter = peerCell.getTop() - home.getTop() + peer.getTop() + peer.getHeight() * 0.5f;
+        float offset = peerCenter - selected.getHeight() * 0.5f - selected.getTop();
         if (selected.getTranslationY() != offset) selected.setTranslationY(offset);
-        FrameLayout indicator = (FrameLayout) selected;
-        for (int i = 0; i < indicator.getChildCount(); i++) {
-            View icon = indicator.getChildAt(i);
+        for (int i = 0; i < selected.getChildCount(); i++) {
+            View icon = selected.getChildAt(i);
             if (icon instanceof ImageView && icon.getVisibility() == View.VISIBLE
                     && icon.getTranslationY() != 0f) icon.setTranslationY(0f);
         }
         return relayout && (selected.getWidth() != size || selected.getHeight() != size);
     }
 
-    private static float peerIconCenterY(ViewGroup row, View home) {
+    private static ImageView visiblePeerIcon(ViewGroup row, View home) {
         for (int i = 1; i < row.getChildCount(); i++) {
             View cell = row.getChildAt(i);
             if (cell.getVisibility() != View.VISIBLE || cell.isSelected()) continue;
-            View icon = cell.findViewById(TAB_ICON);
-            if (icon == null || icon.getParent() != cell
-                    || icon.getVisibility() != View.VISIBLE || icon.getHeight() <= 0) continue;
-            return cell.getTop() - home.getTop() + icon.getTop() + icon.getHeight() * 0.5f;
+            ImageView icon = childWithRole(cell, "tab_icon", ImageView.class);
+            if (icon != null && icon.getVisibility() == View.VISIBLE
+                    && icon.getWidth() > 0 && icon.getHeight() > 0) return icon;
         }
-        // The native compact row puts the peer icon center 16dp below its top.
-        return 16f * home.getResources().getDisplayMetrics().density;
+        return null;
     }
 
     static void hideChrome(View bar) {
-        if (bar == null) return;
-        View chrome = bar.findViewById(BACKGROUND);
-        if (chrome != null && chrome.getParent() == bar && chrome.getAlpha() != 0f) {
+        View chrome = childWithRole(bar, "tab_bar_bg_iv", View.class);
+        if (chrome != null && chrome.getAlpha() != 0f) {
             chrome.setAlpha(0f);
         }
     }

@@ -1580,14 +1580,7 @@ final class LiquidGlassInstaller {
             View home = row != null ? row.getChildAt(0) : null;
             if (home != null) {
                 AlipayHomeBar.keepHomeLabelVisible(home);
-                AlipayHomeBar.hookHomeIconSizing(home);
-                boolean iconRelayout = AlipayHomeBar.keepSelectedHomeIconStill(row, home);
-                View icon = home.findViewById(0x45070023);
-                if (icon != null && icon.getParent() == home && icon.getHeight() > 0) {
-                    float dy = (home.getHeight() - icon.getHeight()) * 0.5f - icon.getTop();
-                    setIconOnlyTranslation(icon, home.isSelected(), dy);
-                }
-                return iconRelayout || pageRelayout;
+                return AlipayHomeBar.keepSelectedHomeIconStill(row, home) || pageRelayout;
             }
             return pageRelayout;
         }
