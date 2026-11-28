@@ -11,10 +11,14 @@ final class QqPageChrome {
     private View candidate;
     private boolean ambiguous;
     private View hidden;
+    private ViewGroup content;
+    private ViewGroup paddedPager;
+    private int originalBottomPadding;
     private float originalAlpha;
 
     void sync(ViewGroup page, int dockHeight) {
         candidate = null;
+        content = null;
         ambiguous = false;
         if (page != null && dockHeight > 0 && page.getGlobalVisibleRect(viewport)
                 && viewport.height() > dockHeight * 3) {
@@ -31,6 +35,10 @@ final class QqPageChrome {
                         + next.getHeight());
             }
         }
+        if (next != null && content != null) {
+            reclaimPagerReserve(content, dockHeight, 0);
+        }
+        content = null;
         if (hidden != null && hidden.getAlpha() != 0f) {
             originalAlpha = hidden.getAlpha();
             hidden.setAlpha(0f);
@@ -40,6 +48,43 @@ final class QqPageChrome {
     void clear() {
         if (hidden != null && hidden.getAlpha() == 0f) hidden.setAlpha(originalAlpha);
         hidden = null;
+        restorePagerReserve();
+    }
+
+    private void restorePagerReserve() {
+        if (paddedPager != null && paddedPager.getPaddingBottom() == 0) {
+            paddedPager.setPadding(paddedPager.getPaddingLeft(), paddedPager.getPaddingTop(),
+                    paddedPager.getPaddingRight(), originalBottomPadding);
+        }
+        paddedPager = null;
+    }
+
+    private boolean reclaimPagerReserve(ViewGroup root, int dockHeight, int depth) {
+        if (depth > 10) return false;
+        for (int i = 0; i < root.getChildCount(); i++) {
+            View child = root.getChildAt(i);
+            if (!(child instanceof ViewGroup group) || !child.isShown()
+                    || child.getHeight() <= dockHeight * 3
+                    || child.getWidth() < viewport.width() * 0.9f) continue;
+            if ("androidx.viewpager2.widget.ViewPager2".equals(root.getClass().getName())
+                    && root.getChildCount() == 1) {
+                if (root == paddedPager && root.getPaddingBottom() == 0) return true;
+                int bottom = root.getPaddingBottom();
+                if (Math.abs(bottom - dockHeight) > 2
+                        || Math.abs(root.getHeight() - child.getBottom() - bottom) > 2) continue;
+                restorePagerReserve();
+                paddedPager = root;
+                originalBottomPadding = bottom;
+                // Keep native scroll/content spacing. Only the pager viewport
+                // must reach the edge behind the floating pill.
+                root.setPadding(root.getPaddingLeft(), root.getPaddingTop(), root.getPaddingRight(), 0);
+                LiquidGlassModule.log(android.util.Log.INFO,
+                        "QQ: reclaimed page pager bottom reserve, height=" + bottom);
+                return true;
+            }
+            if (reclaimPagerReserve(group, dockHeight, depth + 1)) return true;
+        }
+        return false;
     }
 
     private void find(View view, int dockHeight) {
@@ -72,7 +117,10 @@ final class QqPageChrome {
             if (peer instanceof ViewGroup && peer.isShown() && peer.getGlobalVisibleRect(bounds)
                     && bounds.width() >= viewport.width() - slop
                     && bounds.bottom >= viewport.bottom - slop
-                    && bounds.height() > strip.getHeight() * 3) return true;
+                    && bounds.height() > strip.getHeight() * 3) {
+                if (candidate == null) content = (ViewGroup) peer;
+                return true;
+            }
         }
         return false;
     }
