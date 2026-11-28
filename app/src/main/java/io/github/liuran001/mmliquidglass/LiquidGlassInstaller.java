@@ -264,7 +264,10 @@ final class LiquidGlassInstaller {
     }
 
     /** Drops references to a previous Activity's views so a relaunch reinstalls. */
+    private static final QqPageChrome QQ_PAGE_CHROME = new QqPageChrome();
+
     private static void resetState() {
+        QQ_PAGE_CHROME.clear();
         if (LiquidGlassModule.app() == HostApp.TAOBAO) {
             restoreTaobaoCartReserve();
             Backdrop.setMaterialOnly(sPagerRef.get(), false);
@@ -2065,6 +2068,11 @@ final class LiquidGlassInstaller {
             try {
                 keepNavBarClear();
                 dropBottomFrostAll();
+                if (LiquidGlassModule.app() == HostApp.QQ) {
+                    ViewGroup row = sTabRowRef.get();
+                    QQ_PAGE_CHROME.sync(GlassConfig.enabled && host.isShown() ? sPagerRef.get() : null,
+                            row != null ? row.getHeight() : 0);
+                }
                 if (holdOwnBarChromeHidden(host)) return false;
             } catch (Throwable t) {
                 // Once only: this sits on a per-frame path.

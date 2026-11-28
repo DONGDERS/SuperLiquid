@@ -160,29 +160,46 @@ final class PinduoduoHomeBar {
     }
 
     private static final class ContentReserve {
-        private android.widget.RelativeLayout.LayoutParams expanded;
-        private int originalBottomMargin;
+        private ViewGroup.MarginLayoutParams expanded;
+        private int originalHeight, originalBottomMargin, appliedHeight, appliedBottomMargin;
 
         void remove(ViewGroup frame, ViewGroup page, View bar, View divider) {
             if (page.getParent() != frame || divider == null || divider.getParent() != frame) return;
             int edge = frame.getHeight() - frame.getPaddingBottom();
-            // The native divider marks the docked content edge, below the top
-            // of PddTabView (which includes an extra header inside the bar).
-            if (page.getBottom() >= edge || Math.abs(page.getBottom() - divider.getTop()) > 1
+            int gap = edge - page.getBottom();
+            int tolerance = Math.max(2, divider.getHeight());
+            if (gap <= 0 || Math.abs(page.getBottom() - divider.getTop()) > tolerance
                     || divider.getTop() < bar.getTop() || divider.getTop() >= bar.getBottom()
-                    || !(page.getLayoutParams() instanceof android.widget.RelativeLayout.LayoutParams lp)
-                    || lp.height != ViewGroup.LayoutParams.MATCH_PARENT || lp.bottomMargin <= 0
-                    || Math.abs(edge - page.getBottom() - lp.bottomMargin) > 1) return;
-            originalBottomMargin = lp.bottomMargin;
+                    || page.getWidth() < bar.getWidth() * 0.9f
+                    || page.getHeight() <= bar.getHeight()
+                    || !(page.getLayoutParams() instanceof ViewGroup.MarginLayoutParams lp)) return;
+            if (lp == expanded && lp.height == appliedHeight && lp.bottomMargin == appliedBottomMargin) return;
+            int nextHeight = lp.height;
+            int nextMargin = lp.bottomMargin;
+            if (lp.bottomMargin > 0 && Math.abs(lp.bottomMargin - gap) <= tolerance) {
+                nextMargin = 0;
+            } else if (lp.height > 0 && Math.abs(lp.height - page.getHeight()) <= tolerance
+                    && lp.bottomMargin == 0) {
+                // A fixed native page extent is rewritten on selection. Extend
+                // from the actual top so the status bar inset remains untouched.
+                nextHeight = edge - page.getTop();
+            } else {
+                return;
+            }
             expanded = lp;
-            // Keep the parent's relative rules and the host's top inset intact.
-            lp.bottomMargin = 0;
+            originalHeight = lp.height;
+            originalBottomMargin = lp.bottomMargin;
+            appliedHeight = nextHeight;
+            appliedBottomMargin = nextMargin;
+            lp.height = nextHeight;
+            lp.bottomMargin = nextMargin;
             page.setLayoutParams(lp);
         }
 
         void restore(ViewGroup page) {
             if (expanded != null && page.getLayoutParams() == expanded
-                    && expanded.bottomMargin == 0) {
+                    && expanded.height == appliedHeight && expanded.bottomMargin == appliedBottomMargin) {
+                expanded.height = originalHeight;
                 expanded.bottomMargin = originalBottomMargin;
                 page.setLayoutParams(expanded);
             }
@@ -251,7 +268,7 @@ final class PinduoduoHomeBar {
                 if (visible && bar.getAlpha() != 0f) bar.setAlpha(0f);
                 View divider = visible ? findDivider(frame, bar, tabs) : null;
                 dockDivider.sync(divider);
-                if (visible) {
+                if (visible && divider != null) {
                     contentReserve.remove(frame, backdrop, bar, divider);
                 } else {
                     contentReserve.restore(backdrop);
