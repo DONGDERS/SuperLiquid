@@ -272,7 +272,7 @@ fun TabLayoutDialog(
                 if (snapshot.current && !showAll) TextButton(text = "保存", onClick = { if (show) applyEdit() })
             }
         }
-        UiMode.Material -> {
+        UiMode.Material, UiMode.LiquidGlass -> {
             val transition = remember { MutableTransitionState(false) }
             transition.targetState = show
             LaunchedEffect(show, transition.isIdle, transition.currentState) {
@@ -287,12 +287,8 @@ fun TabLayoutDialog(
                     enter = fadeIn() + scaleIn(initialScale = 0.94f),
                     exit = fadeOut() + scaleOut(targetScale = 0.94f),
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 6.dp,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp),
-                    ) {
+                    val liquid = LocalUiMode.current == UiMode.LiquidGlass
+                    val panel: @Composable () -> Unit = {
                         Column(Modifier.fillMaxWidth().padding(20.dp)) {
                             M3Text(title, style = MaterialTheme.typography.titleLarge)
                             M3Text(summary, style = MaterialTheme.typography.bodySmall,
@@ -302,13 +298,24 @@ fun TabLayoutDialog(
                                 MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
                             Row(Modifier.fillMaxWidth()) {
                                 Spacer(Modifier.weight(1f))
-                                M3TextButton(onClick = dismiss, enabled = show) { M3Text(if (showAll) "返回" else "取消") }
-                                if (snapshot.current && !showAll) M3TextButton(onClick = { applyEdit() }, enabled = show) {
-                                    M3Text("保存")
+                                val cancelLabel = if (showAll) "返回" else "取消"
+                                if (liquid) {
+                                    io.github.neoruaa.glasmio.ui.GlasmioButton(dismiss, enabled = show, sampleBackdrop = false) { M3Text(cancelLabel) }
+                                    if (snapshot.current && !showAll) {
+                                        Spacer(Modifier.width(8.dp))
+                                        io.github.neoruaa.glasmio.ui.GlasmioButton({ applyEdit() }, enabled = show, sampleBackdrop = false) { M3Text("保存") }
+                                    }
+                                } else {
+                                    M3TextButton(onClick = dismiss, enabled = show) { M3Text(cancelLabel) }
+                                    if (snapshot.current && !showAll) M3TextButton(onClick = { applyEdit() }, enabled = show) { M3Text("保存") }
                                 }
                             }
                         }
                     }
+                    val modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp)
+                    if (liquid) io.github.neoruaa.glasmio.glass.GlassSurface(modifier, sampleBackdrop = false) { panel() }
+                    else Surface(modifier = modifier, shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surface, tonalElevation = 6.dp, content = panel)
                 }
             }
         }

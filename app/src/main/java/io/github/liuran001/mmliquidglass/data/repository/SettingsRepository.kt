@@ -69,9 +69,10 @@ class SettingsRepositoryImpl : SettingsRepository {
     override var enableFloatingBottomBarBlur: Boolean
         get() = p.getBoolean("enable_floating_bottom_bar_blur", false)
         set(value) { p.edit().putBoolean("enable_floating_bottom_bar_blur", value).apply() }
+    private val shaderKey get() = if (uiMode == "liquid_glass") "liquid_glass_light_effects" else "enable_global_shader_bg"
     override var enableGlobalShaderBg: Boolean
-        get() = uiMode == "miuix" && p.getBoolean("enable_global_shader_bg", true)
-        set(value) { p.edit().putBoolean("enable_global_shader_bg", value && uiMode == "miuix").apply() }
+        get() = io.github.liuran001.mmliquidglass.ui.UiMode.fromValue(uiMode).supportsLightEffects && p.getBoolean(shaderKey, true)
+        set(value) { p.edit().putBoolean(shaderKey, value && io.github.liuran001.mmliquidglass.ui.UiMode.fromValue(uiMode).supportsLightEffects).apply() }
     override var enableAppExpandLimit: Boolean
         get() = p.getBoolean("enable_app_expand_limit", true)
         set(value) { p.edit().putBoolean("enable_app_expand_limit", value).apply() }

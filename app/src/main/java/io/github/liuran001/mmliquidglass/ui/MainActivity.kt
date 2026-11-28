@@ -1,6 +1,8 @@
 package io.github.liuran001.mmliquidglass.ui
 
 import android.os.Bundle
+import io.github.neoruaa.glasmio.glass.render.backdrops.layerBackdrop as recordGlassLayer
+import io.github.liuran001.mmliquidglass.ui.component.LiquidBottomBar
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -108,7 +110,7 @@ class MainActivity : ComponentActivity() {
                 LocalUiMode provides uiMode,
                 LocalColorMode provides appSettings.colorMode.value,
                 LocalEnableBlur provides settings.enableBlur,
-                io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg provides (uiMode == UiMode.Miuix && settings.enableGlobalShaderBg &&
+                io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg provides (uiMode.supportsLightEffects && settings.enableGlobalShaderBg &&
                     android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM &&
                     top.yukonga.miuix.kmp.shader.isRuntimeShaderSupported()),
                 LocalEnableFloatingBottomBar provides settings.enableFloatingBottomBar,
@@ -159,12 +161,14 @@ fun MainRoot(pager: PagerState) {
     ) {
         entry<RouteMain> {
             val settings = SettingsState.flow.collectAsStateWithLifecycle().value
+            val liquid = LocalUiMode.current == UiMode.LiquidGlass
             val enableFloating = LocalUiMode.current == UiMode.Miuix && settings.enableFloatingBottomBar
             val globalShader = io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current
             val backdropSurface = when (LocalUiMode.current) {
                 UiMode.Miuix -> top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.surface
-                UiMode.Material -> androidx.compose.material3.MaterialTheme.colorScheme.surface
+                UiMode.Material, UiMode.LiquidGlass -> androidx.compose.material3.MaterialTheme.colorScheme.surface
             }
+            val liquidContent = io.github.neoruaa.glasmio.glass.render.backdrops.rememberLayerBackdrop()
             val pageBackdrop =
                 top.yukonga.miuix.kmp.blur.rememberLayerBackdrop {
                     drawRect(backdropSurface)
@@ -187,7 +191,7 @@ fun MainRoot(pager: PagerState) {
             // the end of the scroll content instead of shrinking the viewport.
             val pagerContent: @Composable (PaddingValues) -> Unit = { pad ->
                 val layoutDirection = LocalLayoutDirection.current
-                val drawsBehindBar = enableFloating || blurBackdrop != null
+                val drawsBehindBar = liquid || enableFloating || blurBackdrop != null
                 val bottomOverlay = if (drawsBehindBar) pad.calculateBottomPadding() else 0.dp
                 val viewportPadding = PaddingValues(
                     start = pad.calculateStartPadding(layoutDirection),
@@ -203,6 +207,7 @@ fun MainRoot(pager: PagerState) {
                         .padding(viewportPadding)
                         .consumeWindowInsets(viewportPadding)
                         .then(
+                            if (liquid) Modifier.recordGlassLayer(liquidContent) else
                             if (captureGlass) Modifier.layerBackdrop(pageBackdrop)
                             else Modifier
                         )
@@ -211,7 +216,7 @@ fun MainRoot(pager: PagerState) {
                             else Modifier
                         )
                 ) {
-                    io.github.liuran001.mmliquidglass.ui.component.miuix.PageShaderBackground {
+                    io.github.liuran001.mmliquidglass.ui.component.miuix.PageShaderBackground(enabled = globalShader && !liquid) {
                         HorizontalPager(
                             pager,
                             beyondViewportPageCount = 2,
@@ -307,6 +312,11 @@ fun MainRoot(pager: PagerState) {
             when (LocalUiMode.current) {
                 // The floating glass bar is a Miuix-skin feature (KSU parity):
                 // it reads MiuixTheme, which the Mat branch does not provide.
+                UiMode.LiquidGlass -> Scaffold(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal),
+                    bottomBar = { LiquidBottomBar(selectedPage, ::goto, liquidContent) },
+                ) { pad -> pagerContent(pad) }
                 UiMode.Material -> Scaffold(
                     containerColor = if (io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current) androidx.compose.ui.graphics.Color.Transparent else androidx.compose.material3.MaterialTheme.colorScheme.background,
                     contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal),

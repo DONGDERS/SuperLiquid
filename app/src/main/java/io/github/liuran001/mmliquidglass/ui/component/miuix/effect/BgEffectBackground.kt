@@ -29,9 +29,10 @@ fun BgEffectBackground(
     isFullSize: Boolean = false,
     effectBackground: Boolean = true,
     alpha: () -> Float = { 1f },
+    drawBackground: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    if (!isRuntimeShaderSupported()) {
+    if (!drawBackground || !isRuntimeShaderSupported()) {
         Box(modifier = modifier, content = content)
         return
     }

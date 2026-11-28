@@ -26,8 +26,8 @@ import top.yukonga.miuix.kmp.blur.textureBlur
 val LocalPageShaderBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
 
 @Composable
-fun PageShaderBackground(content: @Composable BoxScope.() -> Unit) {
-    if (!LocalGlobalShaderBg.current) {
+fun PageShaderBackground(enabled: Boolean = LocalGlobalShaderBg.current, content: @Composable BoxScope.() -> Unit) {
+    if (!enabled) {
         Box(Modifier.fillMaxSize(), content = content)
         return
     }
@@ -52,6 +52,10 @@ fun ShaderCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    if (io.github.liuran001.mmliquidglass.ui.component.isLiquidTheme()) {
+        io.github.liuran001.mmliquidglass.ui.component.LiquidCard(modifier, content)
+        return
+    }
     val backdrop = LocalPageShaderBackdrop.current
     if (backdrop == null) {
         Card(modifier = modifier, content = content)

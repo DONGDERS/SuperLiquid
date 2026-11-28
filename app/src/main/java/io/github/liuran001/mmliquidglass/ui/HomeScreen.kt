@@ -39,7 +39,7 @@ import io.github.liuran001.mmliquidglass.ui.theme.isInDarkTheme
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Card as MiuixCard
 import top.yukonga.miuix.kmp.basic.Text as MiuixText
-import top.yukonga.miuix.kmp.preference.ArrowPreference
+import io.github.liuran001.mmliquidglass.ui.component.ManagerArrow
 
 /**
  * Home: KSU's "working" hero status card + an About entry button.
@@ -52,7 +52,7 @@ fun HomeScreen(bottomOverlay: Dp, onOpenAbout: () -> Unit) {
 
     when (LocalUiMode.current) {
         UiMode.Material -> HomeScreenMaterial(connected, bottomOverlay, onOpenAbout)
-        UiMode.Miuix -> HomeScreenMiuix(connected, bottomOverlay, onOpenAbout)
+        UiMode.Miuix, UiMode.LiquidGlass -> HomeScreenMiuix(connected, bottomOverlay, onOpenAbout)
     }
 }
 
@@ -131,7 +131,15 @@ private fun HomeScreenMiuix(connected: Boolean, bottomOverlay: Dp, onOpenAbout: 
         else
             "请检查 LSPosed 中模块是否启用并勾选作用域，然后重启对应应用"
         // ---- hero status card: KSU HomeMiuix StatusCard ----
-        MiuixCard(
+        if (LocalUiMode.current == UiMode.LiquidGlass) {
+            io.github.liuran001.mmliquidglass.ui.component.LiquidCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    HeroStatusIcon(connected, iconTint, Modifier.size(40.dp))
+                    LText(title)
+                    LText(summary, subtitle = true)
+                }
+            }
+        } else MiuixCard(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.defaultColors(color = bg),
             // KSU StatusCard press feedback; no navigation wired.
@@ -165,7 +173,7 @@ private fun HomeScreenMiuix(connected: Boolean, bottomOverlay: Dp, onOpenAbout: 
 
         // ---- About entry ----
         io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
-            ArrowPreference(
+            ManagerArrow(
                 title = stringResource(R.string.about_title),
                 summary = stringResource(R.string.settings_repo_url),
                 onClick = onOpenAbout,

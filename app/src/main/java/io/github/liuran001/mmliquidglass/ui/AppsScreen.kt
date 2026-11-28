@@ -57,7 +57,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.GridView
 import top.yukonga.miuix.kmp.icon.extended.Search
-import top.yukonga.miuix.kmp.preference.ArrowPreference
+import io.github.liuran001.mmliquidglass.ui.component.ManagerArrow
 
 private data class Target(val key: String, val label: String, val pkg: String)
 
@@ -219,6 +219,9 @@ private fun AppSearchButton(open: Boolean, onClick: () -> Unit) {
         UiMode.Material -> IconButton(onClick = onClick) {
             Icon(if (open) Icons.Filled.Close else Icons.Filled.Search, description)
         }
+        UiMode.LiquidGlass -> io.github.neoruaa.glasmio.ui.GlasmioIconButton(onClick = onClick) {
+            Icon(if (open) Icons.Filled.Close else Icons.Filled.Search, description)
+        }
         UiMode.Miuix -> MiuixIconButton(onClick = onClick, minWidth = 48.dp, minHeight = 48.dp) {
             MiuixIcon(if (open) MiuixIcons.Close else MiuixIcons.Search, description, Modifier.size(24.dp))
         }
@@ -236,6 +239,7 @@ private fun AppSearchField(query: String, onQueryChange: (String) -> Unit) {
             value = query, onValueChange = onQueryChange, modifier = modifier,
             placeholder = { LText(hint, subtitle = true) }, singleLine = true,
         )
+        UiMode.LiquidGlass -> io.github.neoruaa.glasmio.ui.GlasmioTextField(query, onQueryChange, modifier, placeholder = hint)
         UiMode.Miuix -> MiuixTextField(
             value = query, onValueChange = onQueryChange, modifier = modifier,
             label = hint, useLabelAsPlaceholder = true, singleLine = true,
@@ -255,8 +259,8 @@ private fun AppCard(
     val title = t.label + (if (identity.installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed))
     val toggle = onToggle
     when (LocalUiMode.current) {
-        UiMode.Miuix -> io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
-            ArrowPreference(
+        UiMode.Miuix, UiMode.LiquidGlass -> io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
+            ManagerArrow(
                 title = title,
                 summary = t.pkg,
                 startAction = { AppIcon(identity.icon) },
@@ -295,7 +299,7 @@ private fun AppIcon(bitmap: ImageBitmap?) {
         Image(bitmap, contentDescription = null, modifier = modifier)
     } else when (LocalUiMode.current) {
         UiMode.Material -> Icon(Icons.Filled.Apps, null, modifier, MaterialTheme.colorScheme.onSurfaceVariant)
-        UiMode.Miuix -> MiuixIcon(MiuixIcons.GridView, null, modifier)
+        UiMode.Miuix, UiMode.LiquidGlass -> MiuixIcon(MiuixIcons.GridView, null, modifier)
     }
 }
 
@@ -326,7 +330,7 @@ private fun AppParams(
                 UiMode.Material -> io.github.liuran001.mmliquidglass.ui.component.material.SegmentedDropdownItem(
                     title = title, summary = summary, items = items, selectedIndex = index, onItemSelected = select,
                 )
-                UiMode.Miuix -> top.yukonga.miuix.kmp.preference.OverlayDropdownPreference(
+                UiMode.Miuix, UiMode.LiquidGlass -> io.github.liuran001.mmliquidglass.ui.component.ManagerDropdown(
                     title = title, summary = summary, items = items, selectedIndex = index, onSelectedIndexChange = select,
                 )
             }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -45,11 +46,30 @@ internal fun MainTabScaffold(
     val mode = LocalUiMode.current
     val globalShader = io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current
     val surface = when (mode) {
-        UiMode.Material -> MaterialTheme.colorScheme.surface
+        UiMode.Material, UiMode.LiquidGlass -> MaterialTheme.colorScheme.surface
         UiMode.Miuix -> MiuixTheme.colorScheme.surface
     }
-    val backdrop = rememberBlurBackdrop(LocalEnableBlur.current && !globalShader, surface)
+    val backdrop = rememberBlurBackdrop(LocalEnableBlur.current && !globalShader && mode != UiMode.LiquidGlass, surface)
     when (mode) {
+        UiMode.LiquidGlass -> {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent,
+                topBar = {
+                    Column {
+                        io.github.neoruaa.glasmio.glass.GlassSurface(Modifier.fillMaxWidth()) {
+                            TopAppBar(
+                                title = { Text(title) }, actions = actions,
+                                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                            )
+                        }
+                        belowTopBar()
+                    }
+                },
+                contentWindowInsets = insets,
+            ) { bars ->
+                content(Modifier.fillMaxSize(), PaddingValues(top = bars.calculateTopPadding() + 8.dp))
+            }
+        }
         UiMode.Material -> {
             val scroll = TopAppBarDefaults.pinnedScrollBehavior()
             Scaffold(

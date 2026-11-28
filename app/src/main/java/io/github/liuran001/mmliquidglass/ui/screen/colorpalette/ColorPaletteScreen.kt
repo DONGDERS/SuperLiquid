@@ -54,7 +54,7 @@ fun ColorPaletteScreen(onBack: () -> Unit) {
     )
 
     when (LocalUiMode.current) {
-        UiMode.Miuix -> ColorPaletteScreenMiuix(state, actions)
+        UiMode.Miuix, UiMode.LiquidGlass -> ColorPaletteScreenMiuix(state, actions)
         UiMode.Material -> ColorPaletteScreenMaterial(state, actions)
     }
 }

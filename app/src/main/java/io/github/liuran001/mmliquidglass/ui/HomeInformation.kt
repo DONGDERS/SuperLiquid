@@ -164,7 +164,7 @@ private fun HomeInfoSection(title: String, rows: List<Pair<Int, String>>) {
                 }
             }
         }
-        UiMode.Miuix -> {
+        UiMode.Miuix, UiMode.LiquidGlass -> {
             SmallTitle(text = title, insideMargin = PaddingValues(16.dp, 8.dp))
             io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
                 rows.forEach { (label, value) ->
@@ -197,7 +197,7 @@ private fun homeInfoIcon(label: Int, mode: UiMode) = when (mode) {
         R.string.home_lsp_status -> Icons.Outlined.CheckCircle
         else -> Icons.Outlined.Apps
     }
-    UiMode.Miuix -> when (label) {
+    UiMode.Miuix, UiMode.LiquidGlass -> when (label) {
         R.string.home_info_device -> MiuixIcons.Phone
         R.string.home_info_kernel -> MiuixIcons.Layers
         R.string.home_info_android -> MiuixIcons.Info

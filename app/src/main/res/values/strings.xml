@@ -116,7 +116,7 @@
     <string name="settings_theme_mode_light">浅色</string>
     <string name="settings_theme_mode_system">跟随系统</string>
     <string name="settings_global_shader_bg">全局光影背景</string>
-    <string name="settings_global_shader_bg_summary">Miuix 主页、App 和设置页的光影与透明卡片，切换到 Mat 后自动关闭</string>
+    <string name="settings_global_shader_bg_summary">Miuix 主页面或 LiquidGlass 各页面的动态光影背景</string>
     <string name="settings_global_shader_bg_miuix_only">仅适用于 Miuix；Mat 主题下已关闭</string>
     <string name="settings_app_expand_limit">限制展开卡片数量</string>
     <string name="settings_app_expand_limit_summary">应用页同时展开的卡片超过上限时，自动收起最早展开的</string>

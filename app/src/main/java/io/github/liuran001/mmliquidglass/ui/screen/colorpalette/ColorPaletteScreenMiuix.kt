@@ -67,22 +67,22 @@ import io.github.liuran001.mmliquidglass.ui.theme.keyColorOptions
 import io.github.liuran001.mmliquidglass.ui.util.BlurredBar
 import io.github.liuran001.mmliquidglass.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
+import io.github.liuran001.mmliquidglass.ui.component.ManagerCard
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
+import io.github.liuran001.mmliquidglass.ui.component.ManagerIconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Slider
 import top.yukonga.miuix.kmp.basic.SliderDefaults
-import top.yukonga.miuix.kmp.basic.TabRow
+import io.github.liuran001.mmliquidglass.ui.component.ManagerSegments
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
+import io.github.liuran001.mmliquidglass.ui.component.ManagerArrow
+import io.github.liuran001.mmliquidglass.ui.component.ManagerDropdown
+import io.github.liuran001.mmliquidglass.ui.component.ManagerSwitch
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -105,22 +105,24 @@ fun ColorPaletteScreenMiuix(
     actions: ColorPaletteScreenActions,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
-    val enableBlurState = LocalEnableBlur.current
+    val liquid = io.github.liuran001.mmliquidglass.ui.component.isLiquidTheme()
+    val enableBlurState = LocalEnableBlur.current && !liquid
     val backdrop = rememberBlurBackdrop(enableBlurState)
     val blurActive = backdrop != null
-    val barColor = if (blurActive) Color.Transparent else colorScheme.surface
+    val barColor = if (liquid || blurActive) Color.Transparent else colorScheme.surface
     val uiState = state.uiState
     val currentColorMode = state.currentColorMode
     val isDark = currentColorMode.isDark || currentColorMode.isSystem && isSystemInDarkTheme()
 
     Scaffold(
+        containerColor = if (liquid) Color.Transparent else colorScheme.surface,
         topBar = {
             BlurredBar(backdrop) {
                 TopAppBar(
                     color = barColor,
                     title = stringResource(R.string.settings_theme),
                     navigationIcon = {
-                        IconButton(
+                        ManagerIconButton(
                             onClick = actions.onBack
                         ) {
                             val layoutDirection = LocalLayoutDirection.current
@@ -170,7 +172,7 @@ fun ColorPaletteScreenMiuix(
                         stringResource(id = R.string.settings_theme_mode_light),
                         stringResource(id = R.string.settings_theme_mode_dark),
                     )
-                    TabRow(
+                    ManagerSegments(
                         tabs = themeItems,
                         selectedTabIndex = (if (uiState.themeMode >= 3) uiState.themeMode - 3 else uiState.themeMode).coerceIn(0, 2),
                         onTabSelected = { index ->
@@ -178,12 +180,12 @@ fun ColorPaletteScreenMiuix(
                         },
                     )
 
-                    Card(
+                    ManagerCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
-                        SwitchPreference(
+                        ManagerSwitch(
                             title = stringResource(id = R.string.settings_monet),
                             startAction = {
                                 Icon(
@@ -222,7 +224,7 @@ fun ColorPaletteScreenMiuix(
                                     stringResource(id = R.string.color_sakura),
                                 )
                                 val colorValues = listOf(0) + keyColorOptions
-                                OverlayDropdownPreference(
+                                ManagerDropdown(
                                     title = stringResource(id = R.string.settings_key_color),
                                     items = colorItems,
                                     startAction = {
@@ -244,7 +246,7 @@ fun ColorPaletteScreenMiuix(
                                 ) {
                                     Column {
                                         val styles = PaletteStyle.entries
-                                        OverlayDropdownPreference(
+                                        ManagerDropdown(
                                             title = stringResource(R.string.settings_color_style),
                                             startAction = {
                                                 Icon(
@@ -262,7 +264,7 @@ fun ColorPaletteScreenMiuix(
                                         )
 
                                         val specs = ColorSpec.SpecVersion.entries
-                                        OverlayDropdownPreference(
+                                        ManagerDropdown(
                                             title = stringResource(R.string.settings_color_spec),
                                             startAction = {
                                                 Icon(
@@ -284,13 +286,13 @@ fun ColorPaletteScreenMiuix(
                         }
                     }
 
-                    Card(
+                    ManagerCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            SwitchPreference(
+                            ManagerSwitch(
                                 title = stringResource(id = R.string.settings_enable_blur),
                                 summary = stringResource(id = R.string.settings_enable_blur_summary),
                                 startAction = {
@@ -305,46 +307,48 @@ fun ColorPaletteScreenMiuix(
                                 onCheckedChange = actions.onSetEnableBlur,
                             )
                         }
-                        SwitchPreference(
-                            title = stringResource(id = R.string.settings_floating_bottom_bar),
-                            summary = stringResource(id = R.string.settings_floating_bottom_bar_summary),
-                            startAction = {
-                                Icon(
-                                    Icons.Filled.ViewCarousel,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.settings_floating_bottom_bar),
-                                    tint = colorScheme.onBackground,
-                                )
-                            },
-                            checked = uiState.enableFloatingBottomBar,
-                            onCheckedChange = actions.onSetEnableFloatingBottomBar,
-                        )
-                        AnimatedVisibility(visible = uiState.enableFloatingBottomBar && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            SwitchPreference(
-                                title = stringResource(id = R.string.settings_enable_glass),
-                                summary = stringResource(id = R.string.settings_enable_glass_summary),
+                        if (!liquid) {
+                            ManagerSwitch(
+                                title = stringResource(id = R.string.settings_floating_bottom_bar),
+                                summary = stringResource(id = R.string.settings_floating_bottom_bar_summary),
                                 startAction = {
                                     Icon(
-                                        Icons.Filled.Colorize,
+                                        Icons.Filled.ViewCarousel,
                                         modifier = Modifier.padding(end = 6.dp),
-                                        contentDescription = stringResource(id = R.string.settings_enable_glass),
+                                        contentDescription = stringResource(id = R.string.settings_floating_bottom_bar),
                                         tint = colorScheme.onBackground,
                                     )
                                 },
-                                checked = uiState.enableFloatingBottomBarBlur,
-                                onCheckedChange = actions.onSetEnableFloatingBottomBarBlur,
+                                checked = uiState.enableFloatingBottomBar,
+                                onCheckedChange = actions.onSetEnableFloatingBottomBar,
                             )
+                            AnimatedVisibility(visible = uiState.enableFloatingBottomBar && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                ManagerSwitch(
+                                    title = stringResource(id = R.string.settings_enable_glass),
+                                    summary = stringResource(id = R.string.settings_enable_glass_summary),
+                                    startAction = {
+                                        Icon(
+                                            Icons.Filled.Colorize,
+                                            modifier = Modifier.padding(end = 6.dp),
+                                            contentDescription = stringResource(id = R.string.settings_enable_glass),
+                                            tint = colorScheme.onBackground,
+                                        )
+                                    },
+                                    checked = uiState.enableFloatingBottomBarBlur,
+                                    onCheckedChange = actions.onSetEnableFloatingBottomBarBlur,
+                                )
+                            }
                         }
 
                     }
 
-                    Card(
+                    ManagerCard(
                         modifier = Modifier
                             .padding(top = 12.dp)
                             .fillMaxWidth(),
                     ) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-                            SwitchPreference(
+                            ManagerSwitch(
                                 title = stringResource(id = R.string.settings_global_shader_bg),
                                 summary = stringResource(id = R.string.settings_global_shader_bg_summary),
                                 startAction = {
@@ -359,7 +363,7 @@ fun ColorPaletteScreenMiuix(
                                 onCheckedChange = actions.onSetEnableGlobalShaderBg,
                             )
                         }
-                        SwitchPreference(
+                        ManagerSwitch(
                             title = stringResource(id = R.string.settings_app_expand_limit),
                             summary = stringResource(id = R.string.settings_app_expand_limit_summary),
                             startAction = {
@@ -375,14 +379,14 @@ fun ColorPaletteScreenMiuix(
                         )
                         AnimatedVisibility(visible = uiState.enableAppExpandLimit) {
                             val counts = (1..10).toList()
-                            OverlayDropdownPreference(
+                            ManagerDropdown(
                                 title = stringResource(id = R.string.settings_app_expand_limit_count),
                                 items = counts.map { it.toString() },
                                 selectedIndex = (uiState.appExpandLimit - 1).coerceIn(0, counts.lastIndex),
                                 onSelectedIndexChange = { index -> actions.onSetAppExpandLimit(counts[index]) },
                             )
                         }
-                        SwitchPreference(
+                        ManagerSwitch(
                             title = stringResource(id = R.string.settings_predictive_back),
                             summary = stringResource(id = R.string.settings_predictive_back_summary),
                             startAction = {

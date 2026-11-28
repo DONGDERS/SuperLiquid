@@ -69,7 +69,7 @@ object ThemeController {
         val uiMode = repo.uiMode
         var colorModeValue = repo.themeMode
 
-        if (uiMode == "miuix") {
+        if (UiMode.fromValue(uiMode).supportsLightEffects) {
             val miuixMonet = repo.miuixMonet
             val colorMode = ColorMode.fromValue(colorModeValue)
             colorModeValue = if (!miuixMonet && colorMode.isMonet) {
@@ -108,6 +108,22 @@ fun KernelSUTheme(
 ) {
 
     when (uiMode) {
+        UiMode.LiquidGlass -> MiuixKernelSUTheme(appSettings) {
+            val dark = isInDarkTheme()
+            val scheme = if (appSettings.colorMode.isMonet) {
+                rememberKernelSUColorScheme(
+                    if (appSettings.keyColor == 0) androidx.compose.ui.graphics.Color.Unspecified
+                    else androidx.compose.ui.graphics.Color(appSettings.keyColor),
+                    dark, false, appSettings.paletteStyle, appSettings.colorSpec,
+                )
+            } else io.github.neoruaa.glasmio.core.glasmioColorScheme(dark)
+            io.github.neoruaa.glasmio.core.GlasmioTheme(
+                isDark = dark, colorScheme = scheme,
+                appearance = io.github.neoruaa.glasmio.core.GlassAppearance(
+                    reduceTransparency = !LocalEnableBlur.current,
+                ),
+            ) { io.github.liuran001.mmliquidglass.ui.component.LiquidScene(content) }
+        }
         UiMode.Miuix -> MiuixKernelSUTheme(
             appSettings = appSettings,
             content = content

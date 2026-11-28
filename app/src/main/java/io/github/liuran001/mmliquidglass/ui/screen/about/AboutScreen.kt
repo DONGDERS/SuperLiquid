@@ -35,7 +35,7 @@ fun AboutScreen(onBack: () -> Unit) {
         onOpenLink = { uriHandler.openUri(it) },
     )
     when (LocalUiMode.current) {
-        UiMode.Miuix -> AboutScreenMiuix(state, actions)
+        UiMode.Miuix, UiMode.LiquidGlass -> AboutScreenMiuix(state, actions)
         UiMode.Material -> AboutScreenMaterial(state, actions)
     }
 }

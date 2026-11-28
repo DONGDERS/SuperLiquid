@@ -66,7 +66,7 @@ import io.github.liuran001.mmliquidglass.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
+import io.github.liuran001.mmliquidglass.ui.component.ManagerIconButton
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
@@ -81,7 +81,7 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
-import top.yukonga.miuix.kmp.preference.ArrowPreference
+import io.github.liuran001.mmliquidglass.ui.component.ManagerArrow
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -108,16 +108,18 @@ fun AboutScreenMiuix(
         }
     }
 
-    val enableBlur = LocalEnableBlur.current
+    val liquid = io.github.liuran001.mmliquidglass.ui.component.isLiquidTheme()
+    val enableBlur = LocalEnableBlur.current && !liquid
     val barBlurBackdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = barBlurBackdrop != null && scrollProgress == 1f
-    val barColor = if (blurActive) {
+    val barColor = if (liquid || blurActive) {
         Color.Transparent
     } else {
         if (scrollProgress == 1f) colorScheme.surface else Color.Transparent
     }
 
     Scaffold(
+        containerColor = if (liquid) Color.Transparent else colorScheme.surface,
         topBar = {
             BlurredBar(backdrop = barBlurBackdrop, blurActive = blurActive) {
                 SmallTopAppBar(
@@ -128,7 +130,7 @@ fun AboutScreenMiuix(
                         alpha = ((scrollProgress - 0.35f) / 0.65f).coerceIn(0f, 1f),
                     ),
                     navigationIcon = {
-                        IconButton(
+                        ManagerIconButton(
                             onClick = actions.onBack
                         ) {
                             val layoutDirection = LocalLayoutDirection.current
@@ -178,7 +180,8 @@ private fun AboutContent(
     val backdrop = rememberLayerBackdrop()
 
     val isInDark = isInDarkTheme()
-    val enableBlur = LocalEnableBlur.current
+    val liquid = io.github.liuran001.mmliquidglass.ui.component.isLiquidTheme()
+    val enableBlur = LocalEnableBlur.current && !liquid
     val effectBackground =
         remember(enableBlur) { isRuntimeShaderSupported() && enableBlur && Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM }
 
@@ -261,6 +264,7 @@ private fun AboutContent(
         bgModifier = Modifier.layerBackdrop(backdrop),
         isFullSize = true,
         effectBackground = effectBackground,
+        drawBackground = !liquid,
         alpha = { 1f - scrollProgress },
     ) {
         // Logo area
@@ -437,7 +441,7 @@ private fun AboutContent(
                         ),
                     ) {
                         state.links.forEach {
-                            ArrowPreference(
+                            ManagerArrow(
                                 title = it.fullText,
                                 onClick = {
                                     actions.onOpenLink(it.url)

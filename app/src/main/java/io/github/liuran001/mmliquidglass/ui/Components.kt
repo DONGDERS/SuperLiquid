@@ -65,7 +65,7 @@ fun LCard(content: @Composable ColumnScope.() -> Unit) {
                 .padding(vertical = 6.dp)
         ) { Column(Modifier.padding(16.dp)) { content() } }
 
-        UiMode.Miuix -> io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(
+        UiMode.Miuix, UiMode.LiquidGlass -> io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 6.dp)
@@ -87,7 +87,7 @@ fun LText(text: String, subtitle: Boolean = false) {
             modifier = Modifier.padding(vertical = 2.dp)
         )
 
-        UiMode.Miuix -> MiuixText(
+        UiMode.Miuix, UiMode.LiquidGlass -> MiuixText(
             text,
             fontSize = if (subtitle) 14.sp else 16.sp,
             color = if (subtitle) miuixColors().onBackground else miuixColors().onSurface,
@@ -114,6 +114,7 @@ fun LSwitchRow(
             if (subtitle != null) LText(subtitle, subtitle = true)
         }
         when (LocalUiMode.current) {
+            UiMode.LiquidGlass -> io.github.neoruaa.glasmio.ui.GlasmioSwitch(checked, onChange)
             UiMode.Material -> Switch(checked = checked, onCheckedChange = onChange)
             UiMode.Miuix -> MiuixSwitch(checked = checked, onCheckedChange = onChange)
         }
@@ -159,6 +160,7 @@ fun LSliderRow(
             LText(format(value))
         }
         when (LocalUiMode.current) {
+            UiMode.LiquidGlass -> io.github.neoruaa.glasmio.ui.GlasmioSlider(value, onChange, Modifier.fillMaxWidth(), valueRange = range)
             UiMode.Material -> Slider(
                 value = value,
                 onValueChange = onChange,

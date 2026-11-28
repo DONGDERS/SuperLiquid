@@ -35,8 +35,8 @@ import io.github.liuran001.mmliquidglass.ui.component.material.SegmentedDropdown
 import io.github.liuran001.mmliquidglass.ui.component.material.SegmentedListItem
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
+import io.github.liuran001.mmliquidglass.ui.component.ManagerArrow
+import io.github.liuran001.mmliquidglass.ui.component.ManagerDropdown
 
 @Composable
 fun SettingsPage(
@@ -94,17 +94,17 @@ fun SettingsPage(
                 MaterialSectionTitle(configuration)
                 ConfigBackupRows(onResetDefaults, onDone = { SettingsState.refresh() })
             }
-            UiMode.Miuix -> {
+            UiMode.Miuix, UiMode.LiquidGlass -> {
                 SmallTitle(text = appearance, insideMargin = PaddingValues(16.dp, 8.dp))
                 io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
-                    OverlayDropdownPreference(
+                    ManagerDropdown(
                         title = stringResource(R.string.settings_ui_mode),
                         summary = stringResource(R.string.settings_ui_mode_summary),
                         items = UiMode.entries.map { it.name },
                         selectedIndex = selectedIndex,
                         onSelectedIndexChange = selectMode,
                     )
-                    ArrowPreference(
+                    ManagerArrow(
                         title = stringResource(R.string.settings_theme),
                         summary = stringResource(R.string.settings_theme_summary),
                         onClick = onOpenTheme,
@@ -113,7 +113,7 @@ fun SettingsPage(
                 Spacer(Modifier.height(12.dp))
                 SmallTitle(text = stringResource(R.string.performance_title), insideMargin = PaddingValues(16.dp, 8.dp))
                 io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
-                    OverlayDropdownPreference(
+                    ManagerDropdown(
                         title = stringResource(R.string.performance_title),
                         summary = stringResource(R.string.performance_summary),
                         items = performanceItems, selectedIndex = performanceIndex,
@@ -204,19 +204,19 @@ private fun ConfigBackupCard(onResetDefaults: () -> Unit, onDone: () -> Unit) {
     val exportLauncher = rememberConfigExportLauncher()
     val importLauncher = rememberConfigImportLauncher(onDone)
     io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
-        ArrowPreference(
+        ManagerArrow(
             title = stringResource(R.string.settings_backup_export),
             summary = stringResource(R.string.settings_backup_export_summary),
             onClick = { exportLauncher.launch("superliquid-config.json") },
         )
-        ArrowPreference(
+        ManagerArrow(
             title = stringResource(R.string.settings_backup_import),
             summary = stringResource(R.string.settings_backup_import_summary),
             onClick = {
                 importLauncher.launch(arrayOf("application/json", "text/plain", "text/*"))
             },
         )
-        ArrowPreference(
+        ManagerArrow(
             title = stringResource(R.string.settings_reset),
             summary = stringResource(R.string.settings_reset_summary),
             onClick = onResetDefaults,

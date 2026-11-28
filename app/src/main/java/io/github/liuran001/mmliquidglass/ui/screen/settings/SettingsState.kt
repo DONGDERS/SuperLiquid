@@ -37,5 +37,5 @@ object SettingsState {
     }
 
     fun uiModeIndex(): Int =
-        if (flow.value.uiMode == UiMode.Material.value) 1 else 0
+        UiMode.entries.indexOf(UiMode.fromValue(flow.value.uiMode))
 }
