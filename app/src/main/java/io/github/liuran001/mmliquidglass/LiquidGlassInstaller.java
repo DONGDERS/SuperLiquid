@@ -346,7 +346,7 @@ final class LiquidGlassInstaller {
         ViewGroup candidateBackdrop = page != null ? page : findBackdrop(parent, tabView);
         if (LiquidGlassModule.app() == HostApp.TAOBAO) {
             // The real page is a sibling; the TabHost also contains empty placeholders.
-            View taobaoPage = parent.findViewById(0x7f0a1504);
+            View taobaoPage = parent.findViewById(taobaoResourceId(parent, "tbTabFragment"));
             if (!(taobaoPage instanceof ViewGroup) || taobaoPage.getParent() != parent) return;
             candidateBackdrop = (ViewGroup) taobaoPage;
         }
@@ -741,11 +741,14 @@ final class LiquidGlassInstaller {
         }
     }
 
+    private static int taobaoResourceId(View view, String name) {
+        return view.getResources().getIdentifier(name, "id", view.getContext().getPackageName());
+    }
+
     private static void extendTaobaoPages(ViewGroup pager) {
-        if (pager == null || pager.getId() != 0x7f0a1504
-                || !(pager.getParent() instanceof android.widget.FrameLayout)) return;
-        View parent = (View) pager.getParent();
-        if (parent.getId() != 0x7f0a150c) return;
+        if (pager == null || pager.getId() != taobaoResourceId(pager, "tbTabFragment")
+                || !(pager.getParent() instanceof FrameLayout parent)) return;
+        if (parent.getId() != taobaoResourceId(parent, "tb_main_fragment")) return;
         // Fill the old docked-bar reserve without changing window insets.
         stretchToBottom(pager, parent.getHeight());
         if (isTaobaoCartSelected() || isTaobaoVideoSelected()) return;
@@ -2418,20 +2421,45 @@ final class LiquidGlassInstaller {
         });
     }
 
-    private static void updateTaobaoCartReserve(LiquidGlassHostLayout host, ViewGroup pager) {
-        View page = null;
-        if (isTaobaoCartSelected()) {
-            // The checkout button is part of the full-height Unicorn surface.
-            // Let its native layout anchor it inside a shorter cart viewport.
-            for (int i = 0; i < pager.getChildCount(); i++) {
-                View child = pager.getChildAt(i);
-                View cartRoot = child.findViewById(0x7f0a21c8); // icart_weex_root_view
-                if (child.getVisibility() == View.VISIBLE && cartRoot != null) {
-                    page = child;
-                    break;
-                }
+    private static View findTaobaoCartPage(ViewGroup pager) {
+        int rootId = pager.getResources().getIdentifier("icart_weex_root_view", "id",
+                pager.getContext().getPackageName());
+        View named = null;
+        View surface = null;
+        boolean ambiguous = false;
+        for (int i = 0; i < pager.getChildCount(); i++) {
+            View child = pager.getChildAt(i);
+            if (!child.isShown() || child.getWidth() < pager.getWidth() * 0.9f
+                    || child.getHeight() < pager.getHeight() * 0.6f
+                    || !(child.getLayoutParams() instanceof FrameLayout.LayoutParams lp)
+                    || lp.height != ViewGroup.LayoutParams.MATCH_PARENT) continue;
+            View root = rootId != 0 ? child.findViewById(rootId) : null;
+            if (root != null && root.isShown()) {
+                if (named != null) return null;
+                named = child;
+            } else if (hasCartSurface(child, child.getWidth(), child.getHeight(), 0)) {
+                if (surface != null) ambiguous = true;
+                surface = child;
             }
         }
+        return named != null ? named : (ambiguous ? null : surface);
+    }
+
+    private static boolean hasCartSurface(View view, int width, int height, int depth) {
+        if (depth > 8 || !view.isShown() || view.getWidth() < width * 0.9f
+                || view.getHeight() < height * 0.9f) return false;
+        if (view instanceof android.view.SurfaceView && view.getParent() instanceof View parent
+                && parent.getClass().getName().startsWith("io.unicorn.embedding.")) return true;
+        if (view instanceof ViewGroup group) {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                if (hasCartSurface(group.getChildAt(i), width, height, depth + 1)) return true;
+            }
+        }
+        return false;
+    }
+
+    private static void updateTaobaoCartReserve(LiquidGlassHostLayout host, ViewGroup pager) {
+        View page = isTaobaoCartSelected() ? findTaobaoCartPage(pager) : null;
         View previous = sTaobaoCartPageRef.get();
         if (previous != page) restoreTaobaoCartReserve();
         if (page == null || pager.getHeight() <= 0 || host.getHeight() <= 0
