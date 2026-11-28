@@ -118,10 +118,15 @@ internal class GlasmioPanel(
                 if (onAdd != null) {
                     GlasmioTheme(isDark = dark, colorScheme = glasmioColorScheme(dark)) {
                         BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            val buttonSize = minOf(maxWidth, maxHeight)
+                            val glyphSize = minOf(36.dp, buttonSize * 0.69f)
                             GlasmioIconButton(onClick = { onAdd.run() }, backdrop = source,
-                                size = minOf(maxWidth, maxHeight)) {
-                                if (actionIconColor != null) SfIcon("plus", "发布", tint = Color(actionIconColor))
-                                else SfIcon("plus", "发布")
+                                size = buttonSize) {
+                                if (actionIconColor != null) {
+                                    SfIcon("plus", "发布", tint = Color(actionIconColor), size = glyphSize)
+                                } else {
+                                    SfIcon("plus", "发布", size = glyphSize)
+                                }
                             }
                         }
                     }
@@ -240,29 +245,30 @@ private class GlasmioResourceContext(
     }
 }
 
-/** Bili exposes a separate glyph and label. Enlarge only the glyph. */
+/** Fit the glyph and label as one visual unit, excluding the source cell padding. */
 private fun drawBiliTab(canvas: Canvas, cell: ViewGroup, width: Float, height: Float): Boolean {
     val icon = cell.getChildAt(0) as? ImageView ?: return false
     val label = cell.getChildAt(1) as? TextView ?: return false
     if (icon.visibility != View.VISIBLE || icon.width <= 0 || icon.height <= 0) return false
     val hasLabel = label.visibility == View.VISIBLE && label.width > 0 && label.height > 0
-    val gap = if (hasLabel) (label.top - icon.bottom).coerceAtLeast(0) else 0
-    val labelHeight = if (hasLabel) label.height else 0
-    if (height <= gap + labelHeight || (hasLabel && label.width > width)) return false
-    val scale = minOf(1.5f, width / icon.width, (height - gap - labelHeight) / icon.height)
-    val top = (height - icon.height * scale - gap - labelHeight) / 2f
-    val iconSave = canvas.save()
+    val labelTop = if (hasLabel) maxOf(icon.height, label.top - icon.top) else icon.height
+    val artHeight = labelTop + if (hasLabel) label.height else 0
+    val artWidth = if (hasLabel) maxOf(icon.width, label.width) else icon.width
+    val scale = minOf(1.5f, width / artWidth, height / artHeight)
+    if (scale <= 0f) return false
+    val save = canvas.save()
     try {
-        canvas.translate((width - icon.width * scale) / 2f, top)
+        canvas.translate((width - artWidth * scale) / 2f, (height - artHeight * scale) / 2f)
         canvas.scale(scale, scale)
-        icon.draw(canvas)
-    } finally { canvas.restoreToCount(iconSave) }
-    if (hasLabel) {
-        val labelSave = canvas.save()
+        val iconSave = canvas.save()
         try {
-            canvas.translate((width - label.width) / 2f, top + icon.height * scale + gap)
+            canvas.translate((artWidth - icon.width) / 2f, 0f)
+            icon.draw(canvas)
+        } finally { canvas.restoreToCount(iconSave) }
+        if (hasLabel) {
+            canvas.translate((artWidth - label.width) / 2f, labelTop.toFloat())
             label.draw(canvas)
-        } finally { canvas.restoreToCount(labelSave) }
-    }
+        }
+    } finally { canvas.restoreToCount(save) }
     return true
 }
