@@ -130,7 +130,6 @@ val CompactBottomControlSize = 48.dp
 val NavigationBarSurfaceHeight = 62.dp
 
 private val ExpandedNavigationIconSize = 28.dp
-private val ExpandedNavigationItemHeight = 54.dp
 private val ExpandedNavigationItemMinWidth = 75.dp
 private val NavigationItemIconClearance = 4.dp
 
@@ -274,8 +273,11 @@ fun <T> GlasmioNavigationBar(
     compactItem: GlasmioTabItem<T>? = null,
     onItemIconBoundsChanged: ((T, Rect) -> Unit)? = null,
     blurRadius: Dp = Dp.Unspecified,
+    surfaceHeight: Dp = NavigationBarSurfaceHeight,
+    preserveCapsuleAspect: Boolean = false,
 ) {
     require(items.isNotEmpty())
+    val indicatorHeight = (surfaceHeight - 8.dp).coerceAtLeast(1.dp)
     val compactState = remember(compactProgress) {
         derivedStateOf { compactProgress.value.coerceIn(0f, 1f) }
     }
@@ -332,14 +334,14 @@ fun <T> GlasmioNavigationBar(
     val dragCoordinateSpace = remember { mutableStateOf<LayoutCoordinates?>(null) }
     ProvideGlassMaterialContext(materialContext) {
     BoxWithConstraints(
-        modifier.height(NavigationBarSurfaceHeight).onGloballyPositioned { dragCoordinateSpace.value = it },
+        modifier.height(surfaceHeight).onGloballyPositioned { dragCoordinateSpace.value = it },
         contentAlignment = Alignment.CenterStart,
     ) {
         val density = LocalDensity.current
         val fullWidthPx = constraints.maxWidth.toFloat()
         val compactWidthPx = with(density) { compactSize.toPx() }
-        val compactInsetPx = with(density) { (NavigationBarSurfaceHeight - compactSize).toPx() / 2f }
-        val expandedHeightPx = with(density) { NavigationBarSurfaceHeight.toPx() }
+        val compactInsetPx = with(density) { (surfaceHeight - compactSize).toPx() / 2f }
+        val expandedHeightPx = with(density) { surfaceHeight.toPx() }
         val surfaceGeometry = remember(
             compactProgress, fullWidthPx, compactWidthPx, expandedHeightPx, compactInsetPx, density, compactSize,
         ) {
@@ -350,7 +352,7 @@ fun <T> GlasmioNavigationBar(
                     layoutSize = Size(
                         lerp(fullWidthPx, compactWidthPx, layoutProgress),
                         with(density) {
-                            androidx.compose.ui.unit.lerp(NavigationBarSurfaceHeight, compactSize, layoutProgress).toPx()
+                            androidx.compose.ui.unit.lerp(surfaceHeight, compactSize, layoutProgress).toPx()
                         },
                     ),
                     visualSize = Size(
@@ -396,7 +398,7 @@ fun <T> GlasmioNavigationBar(
         val expandedTabWidthPx = expandedTabs.widthPx
         val labelMaxWidth = expandedTabs.labelMaxWidth(tabItems.size, density)
         val compactInnerWidthPx = (compactWidthPx - paddingPx * 2f).coerceAtLeast(1f)
-        val indicatorHeightPx = with(density) { ExpandedNavigationItemHeight.toPx() }
+        val indicatorHeightPx = with(density) { indicatorHeight.toPx() }
         val currentExpandedTabs = rememberUpdatedState(expandedTabs)
         val currentFullWidthPx = rememberUpdatedState(fullWidthPx)
         val currentPaddingPx = rememberUpdatedState(paddingPx)
@@ -486,7 +488,7 @@ fun <T> GlasmioNavigationBar(
             derivedStateOf { compactIndicatorVisibility(compactState.value) }
         }
         val indicatorSizeModifier = remember(
-            compactState, selectionMotion, compactInnerWidthPx, compactWidthPx, compactSize,
+            compactState, selectionMotion, compactInnerWidthPx, compactWidthPx, compactSize, indicatorHeight,
         ) {
             Modifier.layout { measurable, constraints ->
                 val progress = compactState.value
@@ -494,7 +496,7 @@ fun <T> GlasmioNavigationBar(
                 val width = constraints.constrainWidth((if (settled) compactWidthPx else
                     lerp(selectionMotion.widthPx, compactInnerWidthPx, progress)).roundToInt())
                 val height = constraints.constrainHeight((if (settled) compactSize else
-                    androidx.compose.ui.unit.lerp(ExpandedNavigationItemHeight, compactSize - 8.dp, progress)).roundToPx())
+                    androidx.compose.ui.unit.lerp(indicatorHeight, compactSize - 8.dp, progress)).roundToPx())
                 val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(width, height))
                 layout(width, height) { placeable.placeRelative(0, 0) }
             }
@@ -535,14 +537,15 @@ fun <T> GlasmioNavigationBar(
                 },
             )
         }
-        val commonTransform = remember(surfaceGeometry, fullWidthPx, isLtr) {
+        val commonTransform = remember(surfaceGeometry, fullWidthPx, isLtr, preserveCapsuleAspect, compactProgress) {
             Modifier.graphicsLayer {
                 val geometry = surfaceGeometry.value
                 val fraction = (offsetAnimation.value / fullWidthPx).fastCoerceIn(-1f, 1f)
                 translationX = geometry.compactInset * if (isLtr) 1f else -1f
                 translationX += paddingPx * fraction.sign * EaseOut.transform(abs(fraction))
-                scaleX = geometry.visualSize.width / size.width.coerceAtLeast(1f)
-                scaleY = geometry.visualSize.height / size.height.coerceAtLeast(1f)
+                val useMeasuredBounds = preserveCapsuleAspect && compactProgress.value == 0f
+                scaleX = if (useMeasuredBounds) 1f else geometry.visualSize.width / size.width.coerceAtLeast(1f)
+                scaleY = if (useMeasuredBounds) 1f else geometry.visualSize.height / size.height.coerceAtLeast(1f)
                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(
                     if (isLtr) 0f else 1f,
                     0.5f,
@@ -555,7 +558,7 @@ fun <T> GlasmioNavigationBar(
         val pressProgressState = selectionMotion.pressProgressState
         val platterPuff = remember { Animatable(0f, .001f) }
         val flexWidth = if (compactMode) compactWidthPx else fullWidthPx
-        val flexHeight = with(density) { (if (compactMode) compactSize else NavigationBarSurfaceHeight).toPx() }
+        val flexHeight = with(density) { (if (compactMode) compactSize else surfaceHeight).toPx() }
         val flexShortDimension = minOf(flexWidth, flexHeight) / density.density
         val flexLongDimension = maxOf(flexWidth, flexHeight) / density.density
         val flexSizeProgress = if (flexLongDimension < 120f) 0f else ((flexShortDimension - 44f) / 116f).coerceIn(0f, 1f)
@@ -724,14 +727,14 @@ fun <T> GlasmioNavigationBar(
                 if (drawContext.graphicsLayer === tabsBackdrop.graphicsLayer) drawContent()
             }
         }
-        val hiddenSourceSizeModifier = remember(compactState, fullWidthPx, compactWidthPx, compactSize, density) {
+        val hiddenSourceSizeModifier = remember(compactState, fullWidthPx, compactWidthPx, compactSize, density, surfaceHeight) {
             Modifier.layout { measurable, constraints ->
                 val progress = compactState.value
                 val width = constraints.constrainWidth(
                     morphSurfaceWidthPx(fullWidthPx, compactWidthPx, progress).roundToInt(),
                 )
                 val height = constraints.constrainHeight(lerp(
-                    62.dp.toPx(),
+                    surfaceHeight.toPx(),
                     compactSize.toPx(),
                     progress,
                 ).roundToInt())
@@ -804,11 +807,13 @@ fun <T> GlasmioNavigationBar(
             selectionFeedbackEnabled,
             panelPressScale,
             isLtr,
+            preserveCapsuleAspect,
         ) {
             {
                 val flex = selectionFeedbackEnabled.value
                 scaleX = panelPressScale.value * if (flex) selectionMotion.scaleX else 1f
-                scaleY = panelPressScale.value * if (flex) selectionMotion.scaleY else 1f
+                scaleY = if (preserveCapsuleAspect) scaleX else
+                    panelPressScale.value * if (flex) selectionMotion.scaleY else 1f
                 translationX = if (flex && isLtr) selectionMotion.flexOffsetPx
                     else if (flex) -selectionMotion.flexOffsetPx else 0f
                 // drawBackdrop installs this block on the backdrop layer itself. Keep the
