@@ -537,14 +537,17 @@ fun <T> GlasmioNavigationBar(
                 },
             )
         }
-        val commonTransform = remember(surfaceGeometry, fullWidthPx, isLtr) {
+        val commonTransform = remember(surfaceGeometry, fullWidthPx, isLtr, keepIndicatorCapsule, compactProgress) {
             Modifier.graphicsLayer {
                 val geometry = surfaceGeometry.value
                 val fraction = (offsetAnimation.value / fullWidthPx).fastCoerceIn(-1f, 1f)
                 translationX = geometry.compactInset * if (isLtr) 1f else -1f
                 translationX += paddingPx * fraction.sign * EaseOut.transform(abs(fraction))
-                scaleX = geometry.visualSize.width / size.width.coerceAtLeast(1f)
-                scaleY = geometry.visualSize.height / size.height.coerceAtLeast(1f)
+                // QQ supplies its measured bounds; leave the expanded platter and
+                // the native-content row at their actual size instead of stretching.
+                val useMeasuredBounds = keepIndicatorCapsule && compactProgress.value == 0f
+                scaleX = if (useMeasuredBounds) 1f else geometry.visualSize.width / size.width.coerceAtLeast(1f)
+                scaleY = if (useMeasuredBounds) 1f else geometry.visualSize.height / size.height.coerceAtLeast(1f)
                 transformOrigin = androidx.compose.ui.graphics.TransformOrigin(
                     if (isLtr) 0f else 1f,
                     0.5f,

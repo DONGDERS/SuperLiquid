@@ -49,10 +49,10 @@ internal class GlasmioPanel(
 ) : FrameLayout(context) {
     private var dark by mutableStateOf(night)
     private var blur by mutableStateOf(configuredBlur())
-    private var surfaceHeight by mutableStateOf(io.github.liuran001.mmliquidglass.glasmionav.NavigationBarSurfaceHeight)
+    private var surfaceHeightPx by androidx.compose.runtime.mutableIntStateOf(0)
     private fun configuredBlur() = (5f * GlassConfig.blurRadius.coerceIn(1, 8) / 3f).dp
     fun updateButton(night: Boolean) { dark = night }
-    fun updateSurfaceHeight(px: Int) { surfaceHeight = (px / resources.displayMetrics.density).dp }
+    fun updateSurfaceHeight(px: Int) { surfaceHeightPx = px }
     private var items by mutableStateOf(emptyList<GlasmioTabItem<View>>())
     private var selected by mutableStateOf<View?>(null)
     private var accent by mutableStateOf<Int?>(null)
@@ -168,7 +168,10 @@ internal class GlasmioPanel(
                             },
                             backdrop = source,
                             blurRadius = blur,
-                            surfaceHeight = surfaceHeight,
+                            surfaceHeight = with(androidx.compose.ui.platform.LocalDensity.current) {
+                                surfaceHeightPx.takeIf { it > 0 }?.toDp()
+                                    ?: io.github.liuran001.mmliquidglass.glasmionav.NavigationBarSurfaceHeight
+                            },
                             keepIndicatorCapsule = LiquidGlassModule.app() == HostApp.QQ,
                         )
                     }
