@@ -28,6 +28,10 @@ fun AboutScreen(onBack: () -> Unit) {
                 "原项目 · liuran001/WeChat-LiquidGlass",
                 "https://github.com/liuran001/WeChat-LiquidGlass"
             ),
+            LinkInfo(
+                "Glasmio · NEORUAA/Glasmio",
+                "https://github.com/NEORUAA/Glasmio"
+            ),
         ),
     )
     val actions = AboutScreenActions(
