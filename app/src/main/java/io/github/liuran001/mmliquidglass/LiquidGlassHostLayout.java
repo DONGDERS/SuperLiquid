@@ -133,28 +133,34 @@ final class LiquidGlassHostLayout extends FrameLayout {
     }
 
     private View extremePanel;
+    private boolean extremeOwnsBar;
     private View standardAction;
 
     void setStandardAction(View action) { standardAction = action; }
     private int standardAccessibility;
 
     void setExtremePanel(View panel) {
-        if (extremePanel == panel) return;
+        setExtremePanel(panel, panel != null);
+    }
+
+    void setExtremePanel(View panel, boolean ownsBar) {
+        if (extremePanel == panel && extremeOwnsBar == ownsBar) return;
         View standard = mBar != null ? mBar : standardAction;
-        if (extremePanel == null && standard != null) standardAccessibility = standard.getImportantForAccessibility();
+        if (!extremeOwnsBar && ownsBar && standard != null) standardAccessibility = standard.getImportantForAccessibility();
         extremePanel = panel;
-        if (standard != null) standard.setImportantForAccessibility(panel != null
+        extremeOwnsBar = ownsBar;
+        if (standard != null) standard.setImportantForAccessibility(ownsBar
                 ? IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS : standardAccessibility);
         invalidate();
     }
 
     @Override protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-        if (extremePanel != null && child != extremePanel) return false;
+        if (extremeOwnsBar && child != extremePanel) return false;
         return super.drawChild(canvas, child, drawingTime);
     }
 
     boolean usesExtremePanel() {
-        return extremePanel != null;
+        return extremeOwnsBar;
     }
 
     /**

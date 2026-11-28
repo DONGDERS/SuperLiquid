@@ -1351,6 +1351,7 @@ final class LiquidGlassInstaller {
         boolean iconOnly = isQqIconOnlyRow(tabRow);
         applyQqIconOnlyAlignment(tabRow, iconOnly, density);
         int childCount = tabRow.getChildCount();
+        boolean alipay = LiquidGlassModule.app() == HostApp.ALIPAY;
         int count = 0;
         int unspecified = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
         int measured = 0;
@@ -1362,6 +1363,7 @@ final class LiquidGlassInstaller {
                 continue;
             }
             count++;
+            if (alipay) continue;
             // Measuring a width already multiplied by the previous setting
             // makes repeated live changes compound. Always use the native basis.
             ViewGroup.LayoutParams measureLp = tab.getLayoutParams();
@@ -1401,7 +1403,8 @@ final class LiquidGlassInstaller {
         // pill grow and shrink with unread counts. Use a stable 24dp content
         // basis, which together with the normal 32dp breathing room gives each
         // icon a 56dp touch column.
-        int widest = iconOnly ? Math.round(density * 24f) : Math.max(measured, leaf);
+        int widest = alipay ? AlipayHomeBar.stableColumnContentWidth(tabRow)
+                : iconOnly ? Math.round(density * 24f) : Math.max(measured, leaf);
         if (widest <= 0) {
             return 0;
         }
@@ -1981,8 +1984,10 @@ final class LiquidGlassInstaller {
             private ViewGroup row;
             private GlasmioNavigationInstaller installer;
             private boolean failed;
+            private boolean qqExtremeOwned;
 
             private void clear() {
+                qqExtremeOwned = false;
                 host.setExtremePanel(null);
                 if (installer != null) installer.close();
                 installer = null;
@@ -1993,6 +1998,10 @@ final class LiquidGlassInstaller {
                 if (!GlassConfig.enabled || !GlassConfig.extremePerformance) {
                     clear();
                     failed = false;
+                    return true;
+                }
+                if (host != sHostRef.get() && qqExtremeOwned) {
+                    host.setExtremePanel(null, true);
                     return true;
                 }
                 if (failed || host != sHostRef.get()) {
@@ -2017,7 +2026,15 @@ final class LiquidGlassInstaller {
                         panel.setTranslationX(tabView.getTranslationX());
                         panel.setTranslationY(tabView.getTranslationY());
                     }
-                    host.setExtremePanel(panel);
+                    if (installer.hasFailed()) {
+                        failed = true;
+                        clear();
+                        return true;
+                    }
+                    if (panel != null && LiquidGlassModule.app() == HostApp.QQ) qqExtremeOwned = true;
+                    // A chat transition can hide the backdrop or temporarily empty the row.
+                    // A previously active QQ panel still owns rendering: draw neither bar.
+                    host.setExtremePanel(panel, panel != null || qqExtremeOwned);
                 } catch (Throwable t) {
                     failed = true;
                     clear();

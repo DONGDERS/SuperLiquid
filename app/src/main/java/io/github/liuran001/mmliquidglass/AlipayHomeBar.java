@@ -63,6 +63,28 @@ final class AlipayHomeBar {
         return null;
     }
 
+    /** Do not use measured cell width: the native home animation rewrites it. */
+    static int stableColumnContentWidth(ViewGroup row) {
+        int width = 0;
+        for (int i = 0; i < row.getChildCount(); i++) {
+            View cell = row.getChildAt(i);
+            if (cell.getVisibility() == View.GONE) continue;
+            TextView label = childWithRole(cell, "tab_description", TextView.class);
+            if (label != null) {
+                CharSequence text = label.getText();
+                if (TextUtils.isEmpty(text)) text = HOME_LABELS.get(cell);
+                if (!TextUtils.isEmpty(text)) {
+                    width = Math.max(width, (int) Math.ceil(android.text.Layout.getDesiredWidth(text, label.getPaint())));
+                }
+            }
+            ImageView icon = childWithRole(cell, "tab_icon", ImageView.class);
+            if (icon != null && icon.getLayoutParams() != null && icon.getLayoutParams().width > 0) {
+                width = Math.max(width, icon.getLayoutParams().width);
+            }
+        }
+        return width;
+    }
+
     static void keepHomeLabelVisible(View home) {
         TextView description = childWithRole(home, "tab_description", TextView.class);
         if (description == null) return;

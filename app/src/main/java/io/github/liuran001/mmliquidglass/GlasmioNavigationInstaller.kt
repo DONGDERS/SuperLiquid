@@ -20,6 +20,8 @@ internal class GlasmioNavigationInstaller(
     private var failed = false
     private var items = emptyList<GlasmioTabItem<View>>()
 
+    fun hasFailed(): Boolean = failed
+
     fun activePanel(): View? = panel?.takeIf { !failed && it.visibility == View.VISIBLE && it.isLaidOut && it.width > 0 && it.height > 0 }
 
     fun bindRow(next: ViewGroup) { row = next }
