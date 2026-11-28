@@ -122,7 +122,7 @@ fun KernelSUTheme(
                 appearance = io.github.neoruaa.glasmio.core.GlassAppearance(
                     reduceTransparency = !LocalEnableBlur.current,
                 ),
-            ) { io.github.liuran001.mmliquidglass.ui.component.LiquidScene(content) }
+            ) { io.github.liuran001.mmliquidglass.ui.component.LiquidScene(content = content) }
         }
         UiMode.Miuix -> MiuixKernelSUTheme(
             appSettings = appSettings,

@@ -272,7 +272,37 @@ fun TabLayoutDialog(
                 if (snapshot.current && !showAll) TextButton(text = "保存", onClick = { if (show) applyEdit() })
             }
         }
-        UiMode.Material, UiMode.LiquidGlass -> {
+        UiMode.LiquidGlass -> {
+            val sheet = io.github.neoruaa.glasmio.ui.rememberGlasmioSheetState()
+            val colors = io.github.neoruaa.glasmio.core.LocalGlassColors.current
+            LaunchedEffect(show, sheet.currentValue) {
+                if (!show && sheet.currentValue == io.github.neoruaa.glasmio.ui.GlasmioSheetValue.Hidden) onDismissFinished()
+            }
+            io.github.neoruaa.glasmio.ui.GlasmioBottomSheet(
+                visible = show,
+                sheetState = sheet,
+                onDismissRequest = onDismiss,
+                topBar = {
+                    io.github.neoruaa.glasmio.ui.GlasmioSheetTopToolbar(title, actions = {
+                        io.github.neoruaa.glasmio.ui.GlasmioSheetToolbarButton(onClick = dismiss) {
+                            M3Text(if (showAll) "返回" else "取消")
+                        }
+                        if (snapshot.current && !showAll) {
+                            io.github.neoruaa.glasmio.ui.GlasmioSheetToolbarButton(onClick = { if (show) applyEdit() }) {
+                                M3Text("保存")
+                            }
+                        }
+                    })
+                },
+            ) {
+                val padding = io.github.neoruaa.glasmio.ui.LocalGlasmioSheetContentPadding.current
+                Column(Modifier.fillMaxWidth().padding(padding).padding(horizontal = 16.dp)) {
+                    M3Text(summary, color = colors.secondaryContent, modifier = Modifier.padding(vertical = 8.dp))
+                    body(colors.content, colors.accent.copy(alpha = 0.14f))
+                }
+            }
+        }
+        UiMode.Material -> {
             val transition = remember { MutableTransitionState(false) }
             transition.targetState = show
             LaunchedEffect(show, transition.isIdle, transition.currentState) {
@@ -287,7 +317,6 @@ fun TabLayoutDialog(
                     enter = fadeIn() + scaleIn(initialScale = 0.94f),
                     exit = fadeOut() + scaleOut(targetScale = 0.94f),
                 ) {
-                    val liquid = LocalUiMode.current == UiMode.LiquidGlass
                     val panel: @Composable () -> Unit = {
                         Column(Modifier.fillMaxWidth().padding(20.dp)) {
                             M3Text(title, style = MaterialTheme.typography.titleLarge)
@@ -299,22 +328,13 @@ fun TabLayoutDialog(
                             Row(Modifier.fillMaxWidth()) {
                                 Spacer(Modifier.weight(1f))
                                 val cancelLabel = if (showAll) "返回" else "取消"
-                                if (liquid) {
-                                    io.github.neoruaa.glasmio.ui.GlasmioButton(dismiss, enabled = show, sampleBackdrop = false) { M3Text(cancelLabel) }
-                                    if (snapshot.current && !showAll) {
-                                        Spacer(Modifier.width(8.dp))
-                                        io.github.neoruaa.glasmio.ui.GlasmioButton({ applyEdit() }, enabled = show, sampleBackdrop = false) { M3Text("保存") }
-                                    }
-                                } else {
-                                    M3TextButton(onClick = dismiss, enabled = show) { M3Text(cancelLabel) }
-                                    if (snapshot.current && !showAll) M3TextButton(onClick = { applyEdit() }, enabled = show) { M3Text("保存") }
-                                }
+                                M3TextButton(onClick = dismiss, enabled = show) { M3Text(cancelLabel) }
+                                if (snapshot.current && !showAll) M3TextButton(onClick = { applyEdit() }, enabled = show) { M3Text("保存") }
                             }
                         }
                     }
                     val modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp)
-                    if (liquid) io.github.neoruaa.glasmio.glass.GlassSurface(modifier, sampleBackdrop = false) { panel() }
-                    else Surface(modifier = modifier, shape = RoundedCornerShape(24.dp),
+                    Surface(modifier = modifier, shape = RoundedCornerShape(24.dp),
                         color = MaterialTheme.colorScheme.surface, tonalElevation = 6.dp, content = panel)
                 }
             }

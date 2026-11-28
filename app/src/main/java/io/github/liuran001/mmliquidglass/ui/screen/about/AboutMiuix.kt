@@ -421,7 +421,14 @@ private fun AboutContent(
                         .fillParentMaxHeight()
                         .padding(bottom = innerPadding.calculateBottomPadding() + 12.dp),
                 ) {
-                    Card(
+                    if (liquid) {
+                        io.github.neoruaa.glasmio.ui.GlasmioGroupedList(Modifier.padding(horizontal = 16.dp)) {
+                            state.links.forEachIndexed { index, link ->
+                                io.github.neoruaa.glasmio.ui.GlasmioListRow(link.fullText,
+                                    showTopSeparator = index > 0, onClick = { actions.onOpenLink(link.url) })
+                            }
+                        }
+                    } else Card(
                         modifier = Modifier
                             .padding(horizontal = 12.dp)
                             .then(

@@ -5,6 +5,11 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import io.github.neoruaa.glasmio.core.IosTypography
+import io.github.neoruaa.glasmio.core.LocalGlassColors
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -56,11 +61,17 @@ internal fun MainTabScaffold(
                 modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent,
                 topBar = {
                     Column {
-                        io.github.neoruaa.glasmio.glass.GlassSurface(Modifier.fillMaxWidth()) {
-                            TopAppBar(
-                                title = { Text(title) }, actions = actions,
-                                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                        Row(
+                            Modifier.fillMaxWidth().statusBarsPadding()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                title, Modifier.weight(1f),
+                                color = LocalGlassColors.current.content,
+                                style = IosTypography.largeTitle,
                             )
+                            actions()
                         }
                         belowTopBar()
                     }

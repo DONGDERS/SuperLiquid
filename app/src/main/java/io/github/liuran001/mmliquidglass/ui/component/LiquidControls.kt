@@ -1,21 +1,17 @@
 package io.github.liuran001.mmliquidglass.ui.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.liuran001.mmliquidglass.ui.component.miuix.effect.BgEffectBackground
 import io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg
-import io.github.neoruaa.glasmio.glass.GlassSurface
+import io.github.neoruaa.glasmio.core.LocalGlassColors
 import io.github.neoruaa.glasmio.glass.GlasmioBackdropHost
-import io.github.neoruaa.glasmio.ui.GlasmioMenu
-import io.github.neoruaa.glasmio.ui.GlasmioMenuItem
+import io.github.neoruaa.glasmio.ui.GlasmioGroupedList
+import io.github.neoruaa.glasmio.ui.GlasmioListRow
+import io.github.neoruaa.glasmio.ui.GlasmioPopUpButton
 import io.github.neoruaa.glasmio.ui.GlasmioSwitch
 import io.github.neoruaa.glasmio.ui.GlasmioIconButton
 import io.github.neoruaa.glasmio.ui.GlasmioSegmentedControl
@@ -29,11 +25,16 @@ import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 @Composable
-internal fun LiquidScene(content: @Composable () -> Unit) {
-    val surface = MaterialTheme.colorScheme.background
-    val lightEffects = LocalGlobalShaderBg.current
+internal fun ManagerDetailPage(content: @Composable () -> Unit) {
+    if (isLiquidTheme()) LiquidScene(opaque = true, content = content) else content()
+}
+
+@Composable
+internal fun LiquidScene(opaque: Boolean = false, content: @Composable () -> Unit) {
+    val surface = LocalGlassColors.current.groupedBackground.copy(alpha = 1f)
+    val lightEffects = !opaque && LocalGlobalShaderBg.current
     GlasmioBackdropHost(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().then(if (opaque) Modifier.background(surface) else Modifier),
         sampledContent = {
             Box(Modifier.matchParentSize().background(surface)) {
                 if (lightEffects) BgEffectBackground(
@@ -47,9 +48,7 @@ internal fun LiquidScene(content: @Composable () -> Unit) {
 
 @Composable
 internal fun LiquidCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    GlassSurface(modifier, contentAlignment = Alignment.TopStart) {
-        Column(Modifier.fillMaxWidth(), content = content)
-    }
+    GlasmioGroupedList(modifier = modifier, content = content)
 }
 
 @Composable
@@ -58,21 +57,9 @@ internal fun LiquidPreference(
     summary: String? = null,
     startAction: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
-    trailing: @Composable () -> Unit = {},
+    trailing: (@Composable () -> Unit)? = null,
 ) {
-    val row: @Composable () -> Unit = {
-        Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            startAction?.invoke()
-            Column(Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge)
-                if (summary != null) Text(summary, style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            trailing()
-        }
-    }
-    if (onClick == null) row() else GlassSurface(Modifier.fillMaxWidth(), onClick = onClick) { row() }
+    GlasmioListRow(title, subtitle = summary, leading = startAction, onClick = onClick, trailing = trailing)
 }
 
 @Composable
@@ -80,23 +67,14 @@ internal fun LiquidDropdown(
     title: String, items: List<String>, selectedIndex: Int, onSelectedIndexChange: (Int) -> Unit,
     summary: String? = null, startAction: (@Composable () -> Unit)? = null,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    GlasmioMenu(expanded, { expanded = it }, itemCount = items.size, modifier = Modifier.fillMaxWidth(),
-        exportChildBackdrop = false,
-        anchor = { open ->
-            LiquidPreference(title, summary, startAction, onClick = open) {
-                items.getOrNull(selectedIndex)?.let {
-                    Text(it, modifier = Modifier.widthIn(max = 112.dp), style = MaterialTheme.typography.labelMedium)
-                }
-            }
-        },
-    ) { backdrop, close ->
-        Column(Modifier.verticalScroll(rememberScrollState())) {
-            items.forEachIndexed { index, label ->
-                GlasmioMenuItem(label, onClick = { close(); onSelectedIndexChange(index) }, backdrop = backdrop,
-                    systemName = if (index == selectedIndex) "checkmark" else null)
-            }
-        }
+    LiquidPreference(title, summary, startAction) {
+        if (items.isNotEmpty()) GlasmioPopUpButton(
+            selected = selectedIndex.coerceIn(items.indices),
+            items = items.indices.toList(),
+            onSelected = onSelectedIndexChange,
+            label = { items[it] },
+            modifier = Modifier.widthIn(max = 160.dp),
+        )
     }
 }
 

@@ -12,6 +12,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -102,11 +106,12 @@ private fun rememberAppIdentities(): Map<String, AppIdentity> {
 }
 
 @Composable
-fun AppsScreen(bottomOverlay: Dp) {
+fun AppsScreen(bottomOverlay: Dp, floatingQuery: String? = null, resultsPadding: PaddingValues = PaddingValues()) {
     var tabDialogKey by remember { mutableStateOf<String?>(null) }
     var tabDialogVisible by remember { mutableStateOf(false) }
     var searchOpen by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
+    val liquid = LocalUiMode.current == UiMode.LiquidGlass
     val identities = rememberAppIdentities()
     val cardState = rememberSaveableStateHolder()
     val uiSettings by io.github.liuran001.mmliquidglass.ui.screen.settings.SettingsState.flow.collectAsState()
@@ -117,7 +122,7 @@ fun AppsScreen(bottomOverlay: Dp) {
     fun toggleCard(k: String) {
         expandedKeys = if (k in expandedKeys) expandedKeys - k else (expandedKeys + k).takeLast(expandLimit)
     }
-    val term = query.trim()
+    val term = (floatingQuery ?: if (liquid) "" else query).trim()
     val targets = TARGETS.filter { t ->
         t.label.contains(term, ignoreCase = true) || t.pkg.contains(term, ignoreCase = true) ||
             identities.getValue(t.key).label?.contains(term, ignoreCase = true) == true ||
@@ -136,17 +141,7 @@ fun AppsScreen(bottomOverlay: Dp) {
             )
         }
     }
-    LScreen(
-        title = stringResourceCompat(R.string.apps_title),
-        bottomOverlay = bottomOverlay,
-        actions = {
-            AppSearchButton(searchOpen) {
-                searchOpen = !searchOpen
-                if (!searchOpen) query = ""
-            }
-        },
-        belowTopBar = { if (searchOpen) AppSearchField(query) { query = it } },
-    ) {
+    val list: @Composable ColumnScope.() -> Unit = {
         if (targets.isEmpty()) {
             Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
                 LText(stringResourceCompat(R.string.apps_search_empty), subtitle = true)
@@ -206,9 +201,29 @@ fun AppsScreen(bottomOverlay: Dp) {
                         }
                     }
                 }
-                if (LocalUiMode.current == UiMode.Miuix) Spacer(Modifier.height(12.dp))
+                if (LocalUiMode.current != UiMode.Material) Spacer(Modifier.height(12.dp))
             }
         }
+    }
+    if (floatingQuery != null) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                .padding(resultsPadding).padding(horizontal = 16.dp),
+            content = list,
+        )
+    } else {
+        LScreen(
+            title = stringResourceCompat(R.string.apps_title),
+            bottomOverlay = bottomOverlay,
+            actions = {
+                if (!liquid) AppSearchButton(searchOpen) {
+                    searchOpen = !searchOpen
+                    if (!searchOpen) query = ""
+                }
+            },
+            belowTopBar = { if (!liquid && searchOpen) AppSearchField(query) { query = it } },
+            content = list,
+        )
     }
 }
 
@@ -219,9 +234,7 @@ private fun AppSearchButton(open: Boolean, onClick: () -> Unit) {
         UiMode.Material -> IconButton(onClick = onClick) {
             Icon(if (open) Icons.Filled.Close else Icons.Filled.Search, description)
         }
-        UiMode.LiquidGlass -> io.github.neoruaa.glasmio.ui.GlasmioIconButton(onClick = onClick) {
-            Icon(if (open) Icons.Filled.Close else Icons.Filled.Search, description)
-        }
+        UiMode.LiquidGlass -> Unit
         UiMode.Miuix -> MiuixIconButton(onClick = onClick, minWidth = 48.dp, minHeight = 48.dp) {
             MiuixIcon(if (open) MiuixIcons.Close else MiuixIcons.Search, description, Modifier.size(24.dp))
         }
@@ -239,7 +252,7 @@ private fun AppSearchField(query: String, onQueryChange: (String) -> Unit) {
             value = query, onValueChange = onQueryChange, modifier = modifier,
             placeholder = { LText(hint, subtitle = true) }, singleLine = true,
         )
-        UiMode.LiquidGlass -> io.github.neoruaa.glasmio.ui.GlasmioTextField(query, onQueryChange, modifier, placeholder = hint)
+        UiMode.LiquidGlass -> Unit
         UiMode.Miuix -> MiuixTextField(
             value = query, onValueChange = onQueryChange, modifier = modifier,
             label = hint, useLabelAsPlaceholder = true, singleLine = true,

@@ -2,6 +2,13 @@ package io.github.liuran001.mmliquidglass.ui
 
 import android.os.Bundle
 import io.github.neoruaa.glasmio.glass.render.backdrops.layerBackdrop as recordGlassLayer
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.text.input.TextFieldValue
+import io.github.neoruaa.glasmio.glass.LocalGlassBackdrop
+import io.github.neoruaa.glasmio.glass.render.backdrops.rememberCombinedBackdrop
+import io.github.neoruaa.glasmio.scaffold.GlasmioFloatingSearch
+import io.github.neoruaa.glasmio.scaffold.rememberGlasmioSearchTransition
+
 import io.github.liuran001.mmliquidglass.ui.component.LiquidBottomBar
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -312,11 +319,45 @@ fun MainRoot(pager: PagerState) {
             when (LocalUiMode.current) {
                 // The floating glass bar is a Miuix-skin feature (KSU parity):
                 // it reads MiuixTheme, which the Mat branch does not provide.
-                UiMode.LiquidGlass -> Scaffold(
-                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                    contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal),
-                    bottomBar = { LiquidBottomBar(selectedPage, ::goto, liquidContent) },
-                ) { pad -> pagerContent(pad) }
+                UiMode.LiquidGlass -> {
+                    var searchActive by rememberSaveable { mutableStateOf(false) }
+                    var searchQuery by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+                        mutableStateOf(TextFieldValue())
+                    }
+                    var searchBounds by remember { mutableStateOf<Rect?>(null) }
+                    val searchTransition = rememberGlasmioSearchTransition(searchActive)
+                    val backdrop = rememberCombinedBackdrop(LocalGlassBackdrop.current, liquidContent)
+                    GlasmioFloatingSearch(
+                        active = searchActive,
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        onSearch = {},
+                        onDismiss = {
+                            searchActive = false
+                            searchQuery = TextFieldValue()
+                        },
+                        placeholder = stringResource(R.string.apps_search_hint),
+                        cancelLabel = stringResource(android.R.string.cancel),
+                        backdrop = backdrop,
+                        handleBack = true,
+                        transition = searchTransition,
+                        sourceBoundsInWindow = searchBounds,
+                        results = { padding -> AppsScreen(0.dp, searchQuery.text, padding) },
+                    ) {
+                        Scaffold(
+                            containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                            contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal),
+                            bottomBar = {
+                                LiquidBottomBar(
+                                    selectedPage, ::goto, backdrop, searchTransition.progressState,
+                                    searchActive = searchActive,
+                                    openSearch = { goto(1); searchActive = true },
+                                    onSearchBounds = { searchBounds = it },
+                                )
+                            },
+                        ) { pad -> pagerContent(pad) }
+                    }
+                }
                 UiMode.Material -> Scaffold(
                     containerColor = if (io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current) androidx.compose.ui.graphics.Color.Transparent else androidx.compose.material3.MaterialTheme.colorScheme.background,
                     contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal),
@@ -369,15 +410,19 @@ fun MainRoot(pager: PagerState) {
         }
 
         entry<RouteAbout>(swipeDismiss = NavSwipeDirection.LeftToRight) {
-            io.github.liuran001.mmliquidglass.ui.screen.about.AboutScreen(
-                onBack = { backStack.removeLastOrNull() }
-            )
+            io.github.liuran001.mmliquidglass.ui.component.ManagerDetailPage {
+                io.github.liuran001.mmliquidglass.ui.screen.about.AboutScreen(
+                    onBack = { backStack.removeLastOrNull() }
+                )
+            }
         }
 
         entry<RouteColorPalette>(swipeDismiss = NavSwipeDirection.LeftToRight) {
-            io.github.liuran001.mmliquidglass.ui.screen.colorpalette.ColorPaletteScreen(
-                onBack = { backStack.removeLastOrNull() }
-            )
+            io.github.liuran001.mmliquidglass.ui.component.ManagerDetailPage {
+                io.github.liuran001.mmliquidglass.ui.screen.colorpalette.ColorPaletteScreen(
+                    onBack = { backStack.removeLastOrNull() }
+                )
+            }
         }
     }
 
