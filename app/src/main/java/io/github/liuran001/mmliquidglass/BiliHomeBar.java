@@ -684,7 +684,7 @@ final class BiliHomeBar {
                 ((ViewGroup.MarginLayoutParams) glp).rightMargin = lp.rightMargin;
             }
             parent.addView(host, glp);
-            GlasmioActionInstaller.install(host, backdrop, row);
+            GlasmioActionInstaller.install(host, backdrop, row, PINK);
             return host;
         } catch (Throwable t) {
             LiquidGlassModule.logErr("bili: publish pill failed", t);

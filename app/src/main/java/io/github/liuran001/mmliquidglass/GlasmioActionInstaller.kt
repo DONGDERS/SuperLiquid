@@ -8,7 +8,8 @@ import android.widget.FrameLayout
 /** Keep the app's publish callback and replace the entire control in extreme mode. */
 internal object GlasmioActionInstaller {
     @JvmStatic
-    fun install(host: LiquidGlassHostLayout, page: ViewGroup, standard: View) {
+    @JvmOverloads
+    fun install(host: LiquidGlassHostLayout, page: ViewGroup, standard: View, iconColor: Int? = null) {
         var ancestor: View? = host
         while (ancestor != null) {
             if (ancestor === page) return
@@ -37,7 +38,7 @@ internal object GlasmioActionInstaller {
             } else if (!failed && host.isShown && page.isShown && host.width > 0 && host.height > 0) {
                 try {
                     val button = panel ?: GlasmioPanel(host.context, page, host.isDark(), {}, ::fail,
-                        Runnable { standard.performClick() }).also {
+                        Runnable { standard.performClick() }, iconColor).also {
                         panel = it
                         host.addView(it, FrameLayout.LayoutParams(-1, -1))
                     }

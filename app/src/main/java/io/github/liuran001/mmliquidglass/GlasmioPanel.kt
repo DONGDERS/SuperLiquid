@@ -46,13 +46,12 @@ internal class GlasmioPanel(
     private val onSelected: (View) -> Unit,
     private val failed: (Throwable) -> Unit,
     private val onAdd: Runnable? = null,
+    private val actionIconColor: Int? = null,
 ) : FrameLayout(context) {
     private var dark by mutableStateOf(night)
     private var blur by mutableStateOf(configuredBlur())
-    private var surfaceHeightPx by androidx.compose.runtime.mutableIntStateOf(0)
     private fun configuredBlur() = (5f * GlassConfig.blurRadius.coerceIn(1, 8) / 3f).dp
     fun updateButton(night: Boolean) { dark = night }
-    fun updateSurfaceHeight(px: Int) { surfaceHeightPx = px }
     private var items by mutableStateOf(emptyList<GlasmioTabItem<View>>())
     private var selected by mutableStateOf<View?>(null)
     private var accent by mutableStateOf<Int?>(null)
@@ -116,7 +115,10 @@ internal class GlasmioPanel(
                     GlasmioTheme(isDark = dark, colorScheme = glasmioColorScheme(dark)) {
                         BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             GlasmioIconButton(onClick = { onAdd.run() }, backdrop = source,
-                                size = minOf(maxWidth, maxHeight)) { SfIcon("plus", "发布") }
+                                size = minOf(maxWidth, maxHeight)) {
+                                if (actionIconColor != null) SfIcon("plus", "发布", tint = Color(actionIconColor))
+                                else SfIcon("plus", "发布")
+                            }
                         }
                     }
                     return@setContent
@@ -168,11 +170,6 @@ internal class GlasmioPanel(
                             },
                             backdrop = source,
                             blurRadius = blur,
-                            surfaceHeight = with(androidx.compose.ui.platform.LocalDensity.current) {
-                                surfaceHeightPx.takeIf { it > 0 }?.toDp()
-                                    ?: io.github.liuran001.mmliquidglass.glasmionav.NavigationBarSurfaceHeight
-                            },
-                            keepIndicatorCapsule = LiquidGlassModule.app() == HostApp.QQ,
                         )
                     }
                 }
