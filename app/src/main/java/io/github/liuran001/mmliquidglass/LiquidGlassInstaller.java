@@ -2070,7 +2070,8 @@ final class LiquidGlassInstaller {
                 dropBottomFrostAll();
                 if (LiquidGlassModule.app() == HostApp.QQ) {
                     ViewGroup row = sTabRowRef.get();
-                    QQ_PAGE_CHROME.sync(GlassConfig.enabled && host.isShown() ? sPagerRef.get() : null,
+                    ViewGroup pageRoot = host.getParent() instanceof ViewGroup group ? group : sPagerRef.get();
+                    QQ_PAGE_CHROME.sync(GlassConfig.enabled && host.isShown() ? pageRoot : null,
                             row != null ? row.getHeight() : 0);
                 }
                 if (holdOwnBarChromeHidden(host)) return false;

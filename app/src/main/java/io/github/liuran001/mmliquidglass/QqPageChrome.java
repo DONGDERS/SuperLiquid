@@ -25,7 +25,11 @@ final class QqPageChrome {
         if (hidden != next) {
             clear();
             hidden = next;
-            if (next != null) originalAlpha = next.getAlpha();
+            if (next != null) {
+                originalAlpha = next.getAlpha();
+                LiquidGlassModule.log(android.util.Log.INFO, "QQ: suppressing page-owned dock chrome, height="
+                        + next.getHeight());
+            }
         }
         if (hidden != null && hidden.getAlpha() != 0f) {
             originalAlpha = hidden.getAlpha();
@@ -50,7 +54,6 @@ final class QqPageChrome {
         }
         if (view.getClass() != View.class || view.isClickable() || view.isFocusable()
                 || view.getContentDescription() != null
-                || (view.getBackground() == null && view.getForeground() == null)
                 || Math.abs(bounds.height() - dockHeight) > slop
                 || Math.abs(view.getHeight() - dockHeight) > slop
                 || !overlaysPageContent(view, slop)) return;

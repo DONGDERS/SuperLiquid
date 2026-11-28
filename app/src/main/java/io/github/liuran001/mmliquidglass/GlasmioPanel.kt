@@ -6,6 +6,8 @@ import android.content.ContextWrapper
 
 import android.graphics.Canvas
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
 import android.view.ViewTreeObserver
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -137,20 +139,22 @@ internal class GlasmioPanel(
                             val width = key.width
                             val height = key.height
                             if (key.visibility == View.VISIBLE && width > 0 && height > 0) {
-                                val heybox = LiquidGlassModule.app() == HostApp.HEYBOX
-                                // HeyBox snapshots are already shrunk to fit the standard bar.
-                                // Fit the visible snapshot rather than its padded tab column.
-                                val content = if (heybox) (key as? ViewGroup)?.getChildAt(0) else null
-                                val contentWidth = content?.width?.takeIf { it > 0 } ?: width
-                                val contentHeight = content?.height?.takeIf { it > 0 } ?: height
-                                val scale = minOf(if (heybox) 1.30f else 1f,
-                                    size.width / contentWidth, size.height / contentHeight)
+                                val app = LiquidGlassModule.app()
                                 val canvas = drawContext.canvas.nativeCanvas
+                                val snapshot = (key as? ViewGroup)?.getChildAt(0)
+                                if (app == HostApp.BILIBILI && key is ViewGroup &&
+                                    drawBiliTab(canvas, key, size.width, size.height)) return@ComposeCanvas
+                                val heybox = app == HostApp.HEYBOX && snapshot is android.widget.ImageView &&
+                                    snapshot.width > 0 && snapshot.height > 0
+                                val art = if (heybox) snapshot!! else key
+                                val scale = minOf(if (heybox) 1.5f else 1f,
+                                    size.width / art.width, size.height / art.height)
                                 val save = canvas.save()
                                 try {
-                                    canvas.translate((size.width - scale * width) / 2, (size.height - scale * height) / 2)
+                                    canvas.translate((size.width - scale * art.width) / 2,
+                                        (size.height - scale * art.height) / 2)
                                     canvas.scale(scale, scale)
-                                    key.draw(canvas)
+                                    art.draw(canvas)
                                 } finally { canvas.restoreToCount(save) }
                             }
                         }
@@ -234,4 +238,31 @@ private class GlasmioResourceContext(
     override fun unregisterComponentCallbacks(callback: ComponentCallbacks) {
         hostApplication.unregisterComponentCallbacks(callback)
     }
+}
+
+/** Bili exposes a separate glyph and label. Enlarge only the glyph. */
+private fun drawBiliTab(canvas: Canvas, cell: ViewGroup, width: Float, height: Float): Boolean {
+    val icon = cell.getChildAt(0) as? ImageView ?: return false
+    val label = cell.getChildAt(1) as? TextView ?: return false
+    if (icon.visibility != View.VISIBLE || icon.width <= 0 || icon.height <= 0) return false
+    val hasLabel = label.visibility == View.VISIBLE && label.width > 0 && label.height > 0
+    val gap = if (hasLabel) (label.top - icon.bottom).coerceAtLeast(0) else 0
+    val labelHeight = if (hasLabel) label.height else 0
+    if (height <= gap + labelHeight || (hasLabel && label.width > width)) return false
+    val scale = minOf(1.5f, width / icon.width, (height - gap - labelHeight) / icon.height)
+    val top = (height - icon.height * scale - gap - labelHeight) / 2f
+    val iconSave = canvas.save()
+    try {
+        canvas.translate((width - icon.width * scale) / 2f, top)
+        canvas.scale(scale, scale)
+        icon.draw(canvas)
+    } finally { canvas.restoreToCount(iconSave) }
+    if (hasLabel) {
+        val labelSave = canvas.save()
+        try {
+            canvas.translate((width - label.width) / 2f, top + icon.height * scale + gap)
+            label.draw(canvas)
+        } finally { canvas.restoreToCount(labelSave) }
+    }
+    return true
 }
