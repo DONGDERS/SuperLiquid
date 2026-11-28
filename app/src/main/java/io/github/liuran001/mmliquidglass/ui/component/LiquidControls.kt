@@ -1,6 +1,13 @@
 package io.github.liuran001.mmliquidglass.ui.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
+import io.github.neoruaa.glasmio.core.IosTypography
+import io.github.neoruaa.glasmio.icons.SfIcon
+import io.github.neoruaa.glasmio.ui.glasmioGroupedListSeparator
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -9,8 +16,11 @@ import io.github.liuran001.mmliquidglass.ui.component.miuix.effect.BgEffectBackg
 import io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg
 import io.github.neoruaa.glasmio.core.LocalGlassColors
 import io.github.neoruaa.glasmio.glass.GlasmioBackdropHost
+import io.github.neoruaa.glasmio.glass.LocalBlurBackdrop
+import io.github.neoruaa.glasmio.glass.render.backdrops.rememberLayerBackdrop
+import io.github.neoruaa.glasmio.glass.glassBackdropSource
+import io.github.neoruaa.glasmio.glass.trackBackdropPosition
 import io.github.neoruaa.glasmio.ui.GlasmioGroupedList
-import io.github.neoruaa.glasmio.ui.GlasmioListRow
 import io.github.neoruaa.glasmio.ui.GlasmioPopUpButton
 import io.github.neoruaa.glasmio.ui.GlasmioSwitch
 import io.github.neoruaa.glasmio.ui.GlasmioIconButton
@@ -26,7 +36,15 @@ import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 @Composable
 internal fun ManagerDetailPage(content: @Composable () -> Unit) {
-    if (isLiquidTheme()) LiquidScene(opaque = true, content = content) else content()
+    if (isLiquidTheme()) LiquidScene(opaque = true) {
+        val page = rememberLayerBackdrop()
+        val background = LocalGlassColors.current.groupedBackground.copy(alpha = 1f)
+        CompositionLocalProvider(LocalBlurBackdrop provides page) {
+            Box(Modifier.fillMaxSize().glassBackdropSource(page).trackBackdropPosition(page).background(background)) {
+                content()
+            }
+        }
+    } else content()
 }
 
 @Composable
@@ -58,8 +76,37 @@ internal fun LiquidPreference(
     startAction: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
+    showTopSeparator: Boolean = true,
+    showDisclosure: Boolean = onClick != null && trailing == null,
 ) {
-    GlasmioListRow(title, subtitle = summary, leading = startAction, onClick = onClick, trailing = trailing)
+    val colors = LocalGlassColors.current
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = if (summary == null) 52.dp else 68.dp)
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (startAction != null) {
+            startAction()
+            Spacer(Modifier.width(8.dp))
+        }
+        Row(
+            Modifier.weight(1f).heightIn(min = if (summary == null) 52.dp else 68.dp)
+                .glasmioGroupedListSeparator(colors.separator, visible = showTopSeparator)
+                .padding(vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(title, style = IosTypography.body, color = colors.content)
+                if (summary != null) Text(summary, style = IosTypography.subheadline, color = colors.secondaryContent)
+            }
+            if (trailing != null) {
+                Box(Modifier.widthIn(max = 152.dp), contentAlignment = Alignment.CenterEnd) { trailing() }
+            }
+            if (showDisclosure) SfIcon("chevron.forward", null, size = 18.dp, mirrored = true, tint = colors.tertiaryContent)
+        }
+    }
 }
 
 @Composable
@@ -67,7 +114,7 @@ internal fun LiquidDropdown(
     title: String, items: List<String>, selectedIndex: Int, onSelectedIndexChange: (Int) -> Unit,
     summary: String? = null, startAction: (@Composable () -> Unit)? = null,
 ) {
-    LiquidPreference(title, summary, startAction) {
+    LiquidPreference(title, summary, startAction, trailing = {
         if (items.isNotEmpty()) GlasmioPopUpButton(
             selected = selectedIndex.coerceIn(items.indices),
             items = items.indices.toList(),
@@ -75,13 +122,13 @@ internal fun LiquidDropdown(
             label = { items[it] },
             modifier = Modifier.widthIn(max = 160.dp),
         )
-    }
+    })
 }
 
 @Composable
 internal fun LiquidSwitchPreference(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit,
     summary: String? = null, startAction: (@Composable () -> Unit)? = null) {
-    LiquidPreference(title, summary, startAction) { GlasmioSwitch(checked, onCheckedChange) }
+    LiquidPreference(title, summary, startAction, trailing = { GlasmioSwitch(checked, onCheckedChange) })
 }
 
 @Composable internal fun isLiquidTheme() = LocalUiMode.current == UiMode.LiquidGlass

@@ -296,9 +296,50 @@ fun TabLayoutDialog(
                 },
             ) {
                 val padding = io.github.neoruaa.glasmio.ui.LocalGlasmioSheetContentPadding.current
-                Column(Modifier.fillMaxWidth().padding(padding).padding(horizontal = 16.dp)) {
-                    M3Text(summary, color = colors.secondaryContent, modifier = Modifier.padding(vertical = 8.dp))
-                    body(colors.content, colors.accent.copy(alpha = 0.14f))
+                androidx.compose.foundation.lazy.LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        start = 16.dp, end = 16.dp,
+                        top = padding.calculateTopPadding() + 8.dp,
+                        bottom = padding.calculateBottomPadding() + 24.dp,
+                    ),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(20.dp),
+                ) {
+                    item {
+                        M3Text(summary, color = colors.secondaryContent,
+                            style = io.github.neoruaa.glasmio.core.IosTypography.subheadline)
+                    }
+                    if (showAll) item { candidateBody(colors.content) }
+                    val first = items.firstOrNull()
+                    if (first != null && !showAll) item {
+                        io.github.neoruaa.glasmio.ui.GlasmioGroupedList {
+                            io.github.liuran001.mmliquidglass.ui.component.LiquidPreference(
+                                snapshot.items.firstOrNull { it.key == first.first }?.label ?: first.first,
+                                showTopSeparator = false,
+                                trailing = { Icon(Icons.Filled.Lock, "基础项目", tint = colors.secondaryContent) },
+                            )
+                        }
+                    }
+                    if (first != null && items.size > 1 && !showAll) item {
+                        io.github.neoruaa.glasmio.ui.GlasmioReorderableGroup(
+                            items = items.drop(1),
+                            onReorder = { if (show) items = listOf(first) + it },
+                            dragHandleContentDescription = "调整顺序",
+                            moveUpLabel = "上移",
+                            moveDownLabel = "下移",
+                        ) { (id, hidden) ->
+                            M3Text(snapshot.items.firstOrNull { it.key == id }?.label ?: id,
+                                color = colors.content, style = io.github.neoruaa.glasmio.core.IosTypography.body,
+                                modifier = Modifier.weight(1f))
+                            if (TabLayoutEditor.locked(appKey, id)) {
+                                Icon(Icons.Filled.Lock, "基础项目", tint = colors.secondaryContent)
+                            } else {
+                                io.github.neoruaa.glasmio.ui.GlasmioSwitch(
+                                    !hidden, { setIncluded(id, it) }, enabled = show,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

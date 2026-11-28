@@ -5,6 +5,9 @@ import io.github.neoruaa.glasmio.glass.render.backdrops.layerBackdrop as recordG
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.text.input.TextFieldValue
 import io.github.neoruaa.glasmio.glass.LocalGlassBackdrop
+import io.github.neoruaa.glasmio.glass.LocalBlurBackdrop
+import io.github.neoruaa.glasmio.glass.rememberCrossWindowBackdrop
+import io.github.neoruaa.glasmio.glass.trackBackdropPosition
 import io.github.neoruaa.glasmio.glass.render.backdrops.rememberCombinedBackdrop
 import io.github.neoruaa.glasmio.scaffold.GlasmioFloatingSearch
 import io.github.neoruaa.glasmio.scaffold.rememberGlasmioSearchTransition
@@ -176,6 +179,10 @@ fun MainRoot(pager: PagerState) {
                 UiMode.Material, UiMode.LiquidGlass -> androidx.compose.material3.MaterialTheme.colorScheme.surface
             }
             val liquidContent = io.github.neoruaa.glasmio.glass.render.backdrops.rememberLayerBackdrop()
+            val menuBackdrop = rememberCombinedBackdrop(
+                rememberCrossWindowBackdrop(LocalGlassBackdrop.current),
+                rememberCrossWindowBackdrop(liquidContent),
+            )
             val pageBackdrop =
                 top.yukonga.miuix.kmp.blur.rememberLayerBackdrop {
                     drawRect(backdropSurface)
@@ -214,7 +221,7 @@ fun MainRoot(pager: PagerState) {
                         .padding(viewportPadding)
                         .consumeWindowInsets(viewportPadding)
                         .then(
-                            if (liquid) Modifier.recordGlassLayer(liquidContent) else
+                            if (liquid) Modifier.recordGlassLayer(liquidContent).trackBackdropPosition(liquidContent) else
                             if (captureGlass) Modifier.layerBackdrop(pageBackdrop)
                             else Modifier
                         )
@@ -342,7 +349,15 @@ fun MainRoot(pager: PagerState) {
                         handleBack = true,
                         transition = searchTransition,
                         sourceBoundsInWindow = searchBounds,
-                        results = { padding -> AppsScreen(0.dp, searchQuery.text, padding) },
+                        results = { padding ->
+                            val resultsLayer = io.github.neoruaa.glasmio.glass.render.backdrops.rememberLayerBackdrop()
+                            val resultsMenu = rememberCombinedBackdrop(menuBackdrop, rememberCrossWindowBackdrop(resultsLayer))
+                            CompositionLocalProvider(LocalBlurBackdrop provides resultsMenu) {
+                                Box(Modifier.fillMaxSize().recordGlassLayer(resultsLayer).trackBackdropPosition(resultsLayer)) {
+                                    AppsScreen(0.dp, searchQuery.text, padding)
+                                }
+                            }
+                        },
                     ) {
                         Scaffold(
                             containerColor = androidx.compose.ui.graphics.Color.Transparent,
@@ -355,7 +370,11 @@ fun MainRoot(pager: PagerState) {
                                     onSearchBounds = { searchBounds = it },
                                 )
                             },
-                        ) { pad -> pagerContent(pad) }
+                        ) { pad ->
+                            CompositionLocalProvider(LocalBlurBackdrop provides menuBackdrop) {
+                                pagerContent(pad)
+                            }
+                        }
                     }
                 }
                 UiMode.Material -> Scaffold(

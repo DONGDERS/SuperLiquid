@@ -424,7 +424,7 @@ private fun AboutContent(
                     if (liquid) {
                         io.github.neoruaa.glasmio.ui.GlasmioGroupedList(Modifier.padding(horizontal = 16.dp)) {
                             state.links.forEachIndexed { index, link ->
-                                io.github.neoruaa.glasmio.ui.GlasmioListRow(link.fullText,
+                                io.github.liuran001.mmliquidglass.ui.component.LiquidPreference(link.fullText,
                                     showTopSeparator = index > 0, onClick = { actions.onOpenLink(link.url) })
                             }
                         }

@@ -149,6 +149,22 @@ fun LSliderRow(
     },
     onChange: (Float) -> Unit
 ) {
+    if (LocalUiMode.current == UiMode.LiquidGlass) {
+        val colors = io.github.neoruaa.glasmio.core.LocalGlassColors.current
+        val typography = io.github.neoruaa.glasmio.core.IosTypography
+        io.github.neoruaa.glasmio.ui.GlasmioCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(title, Modifier.weight(1f), color = colors.content, style = typography.headline)
+                    Text(format(value), color = colors.secondaryContent, style = typography.body)
+                }
+                io.github.neoruaa.glasmio.ui.GlasmioSlider(
+                    value, onChange, Modifier.fillMaxWidth(), valueRange = range,
+                )
+            }
+        }
+        return
+    }
     Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
         Row(
             modifier = Modifier
@@ -160,7 +176,7 @@ fun LSliderRow(
             LText(format(value))
         }
         when (LocalUiMode.current) {
-            UiMode.LiquidGlass -> io.github.neoruaa.glasmio.ui.GlasmioSlider(value, onChange, Modifier.fillMaxWidth(), valueRange = range)
+            UiMode.LiquidGlass -> Unit
             UiMode.Material -> Slider(
                 value = value,
                 onValueChange = onChange,

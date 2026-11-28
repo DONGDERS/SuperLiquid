@@ -59,6 +59,11 @@ import top.yukonga.miuix.kmp.basic.TextField as MiuixTextField
 import top.yukonga.miuix.kmp.basic.Card as MiuixCard
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
+import androidx.compose.foundation.lazy.items
+import io.github.liuran001.mmliquidglass.ui.component.LiquidPreference
+import io.github.neoruaa.glasmio.ui.GlasmioGroupedList
+import androidx.compose.ui.graphics.Color
+import io.github.neoruaa.glasmio.scaffold.GlasmioPinnedListPage
 import top.yukonga.miuix.kmp.icon.extended.GridView
 import top.yukonga.miuix.kmp.icon.extended.Search
 import io.github.liuran001.mmliquidglass.ui.component.ManagerArrow
@@ -141,6 +146,60 @@ fun AppsScreen(bottomOverlay: Dp, floatingQuery: String? = null, resultsPadding:
             )
         }
     }
+    val app: @Composable (Target) -> Unit = { t ->
+        cardState.SaveableStateProvider(t.key) {
+            AppCard(t, identities.getValue(t.key), t.key in expandedKeys, { toggleCard(t.key) }) {
+            val cfg = when (t.key) {
+                "mm" -> Config.mm
+                "qq" -> Config.qq
+                "heybox" -> Config.heybox
+                "kugou" -> Config.kugou
+                "pinduoduo" -> Config.pinduoduo
+                "taobao" -> Config.taobao
+                "alipay" -> Config.alipay
+                "railway" -> Config.railway
+                else -> Config.bili.base
+            }
+            val tabs = RuntimeTabs.snapshot(t.key)
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                LText(tabs.status, subtitle = true)
+                if (tabs.current) LText(
+                    tabs.items.joinToString(" · ") { item ->
+                        Config.tabLayout(t.key).takeIf { it.catalogToken == tabs.token }
+                            ?.labels?.get(item.key) ?: item.label
+                    }, subtitle = true,
+                )
+            }
+            AppParams(
+                cfg = cfg,
+                set = { Config.setApp(t.key, it) },
+                // The Heybox pill overruns its frame at a width of 1.0.
+                widthRange = if (t.key == "heybox") 0.2f..0.9f else 0.5f..1.2f,
+                onEditTabs = {
+                    tabDialogKey = t.key
+                    tabDialogVisible = true
+                },
+            )
+            when (t.key) {
+                "railway" -> LSliderRow(
+                    stringResourceCompat(R.string.apps_railway_notice_lift),
+                    Config.railwayNoticeLiftDp.toFloat(),
+                    0f..48f,
+                    steps = 47,
+                ) { Config.setRailwayNoticeLiftDp(it.toInt()) }
+                "kugou" -> LSliderRow(
+                    stringResourceCompat(R.string.apps_kugou_player_lift),
+                    Config.kugouPlayerLiftDp.toFloat(),
+                    0f..48f,
+                    steps = 47,
+                ) { Config.setKugouPlayerLiftDp(it.toInt()) }
+                "bili" -> PlusParams(Config.bili.plus) { Config.setBili(Config.bili.copy(plus = it)) }
+                "heybox" -> PlusParams(Config.heyboxPlus, Config::setHeyboxPlus)
+                else -> Unit
+            }
+        }
+        }
+    }
     val list: @Composable ColumnScope.() -> Unit = {
         if (targets.isEmpty()) {
             Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -149,58 +208,7 @@ fun AppsScreen(bottomOverlay: Dp, floatingQuery: String? = null, resultsPadding:
         }
         targets.forEach { t ->
             key(t.key) {
-                cardState.SaveableStateProvider(t.key) {
-                    AppCard(t, identities.getValue(t.key), t.key in expandedKeys, { toggleCard(t.key) }) {
-                        val cfg = when (t.key) {
-                            "mm" -> Config.mm
-                            "qq" -> Config.qq
-                            "heybox" -> Config.heybox
-                            "kugou" -> Config.kugou
-                            "pinduoduo" -> Config.pinduoduo
-                            "taobao" -> Config.taobao
-                            "alipay" -> Config.alipay
-                            "railway" -> Config.railway
-                            else -> Config.bili.base
-                        }
-                        val tabs = RuntimeTabs.snapshot(t.key)
-                        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                            LText(tabs.status, subtitle = true)
-                            if (tabs.current) LText(
-                                tabs.items.joinToString(" · ") { item ->
-                                    Config.tabLayout(t.key).takeIf { it.catalogToken == tabs.token }
-                                        ?.labels?.get(item.key) ?: item.label
-                                }, subtitle = true,
-                            )
-                        }
-                        AppParams(
-                            cfg = cfg,
-                            set = { Config.setApp(t.key, it) },
-                            // The Heybox pill overruns its frame at a width of 1.0.
-                            widthRange = if (t.key == "heybox") 0.2f..0.9f else 0.5f..1.2f,
-                            onEditTabs = {
-                                tabDialogKey = t.key
-                                tabDialogVisible = true
-                            },
-                        )
-                        when (t.key) {
-                            "railway" -> LSliderRow(
-                                stringResourceCompat(R.string.apps_railway_notice_lift),
-                                Config.railwayNoticeLiftDp.toFloat(),
-                                0f..48f,
-                                steps = 47,
-                            ) { Config.setRailwayNoticeLiftDp(it.toInt()) }
-                            "kugou" -> LSliderRow(
-                                stringResourceCompat(R.string.apps_kugou_player_lift),
-                                Config.kugouPlayerLiftDp.toFloat(),
-                                0f..48f,
-                                steps = 47,
-                            ) { Config.setKugouPlayerLiftDp(it.toInt()) }
-                            "bili" -> PlusParams(Config.bili.plus) { Config.setBili(Config.bili.copy(plus = it)) }
-                            "heybox" -> PlusParams(Config.heyboxPlus, Config::setHeyboxPlus)
-                            else -> Unit
-                        }
-                    }
-                }
+                app(t)
                 if (LocalUiMode.current != UiMode.Material) Spacer(Modifier.height(12.dp))
             }
         }
@@ -211,6 +219,16 @@ fun AppsScreen(bottomOverlay: Dp, floatingQuery: String? = null, resultsPadding:
                 .padding(resultsPadding).padding(horizontal = 16.dp),
             content = list,
         )
+    } else if (liquid) {
+        val effects = io.github.liuran001.mmliquidglass.ui.theme.LocalGlobalShaderBg.current
+        GlasmioPinnedListPage(
+            title = stringResourceCompat(R.string.apps_title),
+            bottomPadding = bottomOverlay,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            backgroundColor = if (effects) Color.Transparent else null,
+        ) {
+            items(targets, key = { it.key }) { app(it) }
+        }
     } else {
         LScreen(
             title = stringResourceCompat(R.string.apps_title),
@@ -272,7 +290,19 @@ private fun AppCard(
     val title = t.label + (if (identity.installed) "" else " · " + stringResourceCompat(R.string.apps_not_installed))
     val toggle = onToggle
     when (LocalUiMode.current) {
-        UiMode.Miuix, UiMode.LiquidGlass -> io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
+        UiMode.LiquidGlass -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            GlasmioGroupedList {
+                LiquidPreference(
+                    title, summary = t.pkg, startAction = { AppIcon(identity.icon) },
+                    onClick = toggle, showDisclosure = false, showTopSeparator = false,
+                    trailing = { Icon(if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore, null) },
+                )
+            }
+            AnimatedVisibility(visible = expanded) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
+            }
+        }
+        UiMode.Miuix -> io.github.liuran001.mmliquidglass.ui.component.miuix.ShaderCard(modifier = Modifier.fillMaxWidth()) {
             ManagerArrow(
                 title = title,
                 summary = t.pkg,
@@ -323,12 +353,13 @@ private fun AppParams(
     widthRange: ClosedFloatingPointRange<Float>,
     onEditTabs: (() -> Unit)? = null
 ) {
-    Column {
+    val liquid = LocalUiMode.current == UiMode.LiquidGlass
+    Column(verticalArrangement = Arrangement.spacedBy(if (liquid) 12.dp else 0.dp)) {
         // No per-app enable switch: LSPosed's own toggle already gates the
         // module; a second switch here was redundant state.
         run {
             // Tab layout editor leads the panel on every host.
-            if (onEditTabs != null) {
+            if (!liquid && onEditTabs != null) {
                 LActionRow(stringResourceCompat(R.string.apps_tab_layout),
                     stringResourceCompat(R.string.apps_tab_layout_summary), onEditTabs)
             }
@@ -343,7 +374,19 @@ private fun AppParams(
                 UiMode.Material -> io.github.liuran001.mmliquidglass.ui.component.material.SegmentedDropdownItem(
                     title = title, summary = summary, items = items, selectedIndex = index, onItemSelected = select,
                 )
-                UiMode.Miuix, UiMode.LiquidGlass -> io.github.liuran001.mmliquidglass.ui.component.ManagerDropdown(
+                UiMode.LiquidGlass -> GlasmioGroupedList {
+                    if (onEditTabs != null) LiquidPreference(
+                        title = stringResourceCompat(R.string.apps_tab_layout),
+                        summary = stringResourceCompat(R.string.apps_tab_layout_summary),
+                        showTopSeparator = false,
+                        onClick = onEditTabs,
+                    )
+                    io.github.liuran001.mmliquidglass.ui.component.ManagerDropdown(
+                        title = title, summary = summary, items = items,
+                        selectedIndex = index, onSelectedIndexChange = select,
+                    )
+                }
+                UiMode.Miuix -> io.github.liuran001.mmliquidglass.ui.component.ManagerDropdown(
                     title = title, summary = summary, items = items, selectedIndex = index, onSelectedIndexChange = select,
                 )
             }
