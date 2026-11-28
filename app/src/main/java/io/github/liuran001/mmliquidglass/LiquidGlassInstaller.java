@@ -1367,6 +1367,12 @@ final class LiquidGlassInstaller {
             }
             count++;
             if (alipay) continue;
+            if (tab instanceof PinduoduoHomeBar.TabCopy copy) {
+                // The laid-out mirror already includes the column padding.
+                // Use its intrinsic width on both install and rebind.
+                leaf = Math.max(leaf, copy.contentWidth());
+                continue;
+            }
             // Measuring a width already multiplied by the previous setting
             // makes repeated live changes compound. Always use the native basis.
             ViewGroup.LayoutParams measureLp = tab.getLayoutParams();

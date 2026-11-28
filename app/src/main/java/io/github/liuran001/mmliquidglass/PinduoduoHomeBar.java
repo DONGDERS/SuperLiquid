@@ -358,8 +358,12 @@ final class PinduoduoHomeBar {
 
         }
 
+        int contentWidth() {
+            return naturalWidth;
+        }
+
         @Override protected void onMeasure(int widthSpec, int heightSpec) {
-            setMeasuredDimension(resolveSize(naturalWidth, widthSpec),
+            setMeasuredDimension(resolveSize(contentWidth(), widthSpec),
                     resolveSize(source.getHeight(), heightSpec));
         }
 
